@@ -1,49 +1,66 @@
-﻿@model GEPCP_Ferreteria_El_Pana.Models.EmpleadoViewModel
+﻿@model IEnumerable<GEPCP_Ferreteria_El_Pana.Models.EmpleadoViewModel>
+
 @{
-    ViewData["Title"] = "Editar Empleado - GEPCP Ferretería El Pana";
+    ViewData["Title"] = "Empleados - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Editar Empleado</h2>
+<h2 class="mb-4">Listado de Empleados</h2>
 
-<form asp-action="Edit" method="post">
-    <input type="hidden" asp-for="EmpleadoId" />
+<p>
+    <a asp-action="Create" class="btn btn-success btn-lg">Nuevo Empleado</a>
+</p>
 
-    <div class="row g-3">
-        <div class="col-md-4">
-            <label asp-for="Cedula" class="form-label fw-bold"></label>
-            <input asp-for="Cedula" class="form-control form-control-lg" readonly />
-        </div>
-        <div class="col-md-8">
-            <label asp-for="Nombre" class="form-label fw-bold"></label>
-            <input asp-for="Nombre" class="form-control form-control-lg" />
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="PrimerApellido" class="form-label fw-bold"></label>
-            <input asp-for="PrimerApellido" class="form-control form-control-lg" />
-        </div>
-        <div class="col-md-6">
-            <label asp-for="SegundoApellido" class="form-label fw-bold"></label>
-            <input asp-for="SegundoApellido" class="form-control form-control-lg" />
-        </div>
-
-        <!-- DROPDOWN DE PUESTOS (correcto) -->
-        <div class="col-md-6">
-            <label asp-for="Puesto" class="form-label fw-bold"></label>
-            <select asp-for="Puesto" class="form-select form-select-lg" asp-items="ViewBag.Puestos">
-                <option value="">-- Seleccione un puesto --</option>
-            </select>
-        </div>
-
-        <div class="col-md-6">
-            <label asp-for="SalarioBase" class="form-label fw-bold"></label>
-            <input asp-for="SalarioBase" type="number" class="form-control form-control-lg" />
-        </div>
+@if (Model == null || !Model.Any())
+{
+    <div class="alert alert-info">
+        No hay empleados registrados aún.
     </div>
-
-    <div class="mt-4">
-        <button type="submit" class="btn btn-primary btn-lg">Guardar Cambios</button>
-        <a href="/Empleados" class="btn btn-secondary btn-lg">Cancelar</a>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Cédula</th>
+                    <th>Nombre Completo</th>
+                    <th>Puesto</th>
+                    <th>Salario Base</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Cedula</td>
+                        <td>
+                            @item.Nombre @item.PrimerApellido @(string.IsNullOrEmpty(item.SegundoApellido) ? "" : item.SegundoApellido)
+                        </td>
+                        <td>@item.Puesto</td>
+                        <td>@item.SalarioBase.ToString("N0") ₡</td>
+                        <td>
+                            <span class="badge @(item.Estado == "Activo" ? "bg-success" : "bg-danger")">
+                                @item.Estado
+                            </span>
+                        </td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@item.EmpleadoId" class="btn btn-primary btn-sm">Editar</a>
+                            <a asp-action="Details" asp-route-id="@item.EmpleadoId" class="btn btn-info btn-sm">Detalles</a>
+                            <!-- Si tienes Delete, agrégalo aquí con confirmación -->
+                            <!-- <a asp-action="Delete" asp-route-id="@item.EmpleadoId" class="btn btn-danger btn-sm">Eliminar</a> -->
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
-</form>
+}
+
+@section Scripts {
+    <!-- Opcional: si quieres agregar DataTables o algún JS extra para la tabla -->
+    <!-- <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script> -->
+    <!-- <script>$(document).ready(function () { $('.table').DataTable(); });</script> -->
+}
