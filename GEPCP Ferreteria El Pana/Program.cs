@@ -1,31 +1,15 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
-using GEPCP_Ferreteria_El_Pana.Services;
-
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-builder.Services.AddControllersWithViews();
-
-// ── Configuración de la base de datos ── SQLite (desarrollo y producción)
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Si ya tienes Identity o autenticación, mantenla aquí
-// builder.Services.AddDefaultIdentity<IdentityUser>(...)
-
-// ... resto del código (AddRazorPages si usas, etc.)
-
-var app = builder.Build();
-
-// ... Configure the HTTP request pipeline (middleware)
+﻿using Microsoft.EntityFrameworkCore;                    // ← Necesario para UseSqlite
+using GEPCP_Ferreteria_El_Pana.Data;                   // Para ApplicationDbContext
+using GEPCP_Ferreteria_El_Pana.Services;               // Para IAuthService, AuthService
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ==================== SERVICIOS ====================
+// ── SERVICIOS ────────────────────────────────────────────────
+
+// Controladores + Vistas (MVC)
 builder.Services.AddControllersWithViews();
 
-// === SESIÓN (OBLIGATORIO para login y roles) ===
+// Sesión (necesaria para login/roles)
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
@@ -33,12 +17,21 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// === SERVICIOS DE SEGURIDAD ===
+// Base de datos - SQLite
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Servicios personalizados
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// ==================== PIPELINE ====================
+// Si usas Identity en el futuro, agrégalo aquí:
+// builder.Services.AddDefaultIdentity<IdentityUser>(options => { ... })
+//     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// ── CONSTRUCCIÓN DE LA APLICACIÓN ─────────────────────────────
 var app = builder.Build();
 
+// ── PIPELINE DE MIDDLEWARE ────────────────────────────────────
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -47,18 +40,14 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 app.UseRouting();
 
-// ←←← ESTA LÍNEA ES LA QUE FALTABA ←←←
-app.UseSession();
-
+app.UseSession();          // ← Importante: después de UseRouting, antes de UseAuthorization
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
-
-
 
 app.Run();
