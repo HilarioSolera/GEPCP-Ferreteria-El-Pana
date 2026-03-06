@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using GEPCP_Ferreteria_El_Pana.Models;   // ajusta el namespace si tu modelo está en otro lugar
+using GEPCP_Ferreteria_El_Pana.Models;
 
 namespace GEPCP_Ferreteria_El_Pana.Data
 {
@@ -10,21 +10,18 @@ namespace GEPCP_Ferreteria_El_Pana.Data
         {
         }
 
-        public DbSet<EmpleadoViewModel> Empleados { get; set; } = null!;
+        public DbSet<Empleado> Empleados { get; set; } = null!;  // ← Cambia a Empleado (entidad)
 
-        // Agrega después cuando los implementes:
-        // public DbSet<Comision> Comisiones { get; set; }
-        // public DbSet<Planilla> Planillas { get; set; }
-        // public DbSet<Prestamo> Prestamos { get; set; }
+        // Si tienes otros DbSet, agrégalos aquí
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Opcional: configuraciones adicionales
-            modelBuilder.Entity<EmpleadoViewModel>()
+            // Opcional: configuraciones extras
+            modelBuilder.Entity<Empleado>()
                 .Property(e => e.SalarioBase)
-                .HasColumnType("decimal(18,2)");
+                .HasPrecision(18, 2);
         }
     }
 }

@@ -1,105 +1,262 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Filters;
-using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace GEPCP_Ferreteria_El_Pana.Controllers
 {
     [CustomAuthorize("RRHH")]
     public class EmpleadosController : Controller
     {
-        private static List<string> ObtenerPuestos()   // ← static para eliminar warning
+        private readonly ApplicationDbContext _context;
+
+        public EmpleadosController(ApplicationDbContext context)
         {
-            return new List<string>
-            {
-                "Encargada de RR.HH.", "Bodeguero", "Vendedor", "Gerente General",
-                "Chofer de Entregas", "Cajero", "Asistente de Ventas", "Contador",
-                "Atención al Cliente", "Jefe de Bodega", "Repositor", "Especialista en Pinturas"
-            };
+            _context = context;
         }
 
-        [HttpGet]
-        public IActionResult Index()
+        // Lista estática de puestos (migra esto a una tabla Puestos más adelante)
+        private static readonly List<string> PuestosDisponibles = new()
+        {
+            "Encargada de RR.HH.", "Bodeguero", "Vendedor", "Gerente General",
+            "Chofer de Entregas", "Cajero", "Asistente de Ventas", "Contador",
+            "Atención al Cliente", "Jefe de Bodega", "Repositor", "Especialista en Pinturas"
+        };
+
+        // GET: /Empleados (Listado)
+        public async Task<IActionResult> Index()
         {
             ViewBag.Usuario = HttpContext.Session.GetString("Usuario");
 
-            var empleados = new List<EmpleadoViewModel>
-            {
-                new EmpleadoViewModel { EmpleadoId = 1, Cedula = "116100256", Nombre = "Hilario", PrimerApellido = "Solera", SegundoApellido = "Meza", Puesto = "Encargada de RR.HH.", SalarioBase = 450000, Estado = "Activo" },
-                new EmpleadoViewModel { EmpleadoId = 2, Cedula = "112340567", Nombre = "Juan", PrimerApellido = "Pérez", SegundoApellido = "", Puesto = "Chofer de Entregas", SalarioBase = 380000, Estado = "Activo" }
-            };
+            var empleados = await _context.Empleados
+                .AsNoTracking()
+                .OrderBy(e => e.PrimerApellido)
+                .ThenBy(e => e.Nombre)
+                .ToListAsync();
 
-            return View(empleados);
+            var viewModels = empleados.Select(e => new EmpleadoViewModel
+            {
+                EmpleadoId = e.EmpleadoId,
+                Cedula = e.Cedula,
+                Nombre = e.Nombre,
+                PrimerApellido = e.PrimerApellido,
+                SegundoApellido = e.SegundoApellido,
+                Puesto = e.Puesto,
+                SalarioBase = e.SalarioBase,
+                Estado = e.Activo ? "Activo" : "Inactivo"
+            }).ToList();
+
+            return View(viewModels);
         }
 
-        [HttpGet]
+        // GET: /Empleados/Details/5
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var empleado = await _context.Empleados
+                .FirstOrDefaultAsync(e => e.EmpleadoId == id);
+
+            if (empleado == null)
+            {
+                return NotFound();
+            }
+
+            var model = new EmpleadoViewModel
+            {
+                EmpleadoId = empleado.EmpleadoId,
+                Cedula = empleado.Cedula,
+                Nombre = empleado.Nombre,
+                PrimerApellido = empleado.PrimerApellido,
+                SegundoApellido = empleado.SegundoApellido,
+                Puesto = empleado.Puesto,
+                SalarioBase = empleado.SalarioBase,
+                Estado = empleado.Activo ? "Activo" : "Inactivo"
+            };
+
+            return View(model);
+        }
+
+        // GET: /Empleados/Create
         public IActionResult Create()
         {
-            ViewBag.Puestos = new SelectList(ObtenerPuestos());
-            return View();
+            ViewBag.Puestos = new SelectList(PuestosDisponibles);
+            return View(new EmpleadoViewModel());
         }
 
+        // POST: /Empleados/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(EmpleadoViewModel model)
+        public async Task<IActionResult> Create(EmpleadoViewModel model)
         {
             if (!ModelState.IsValid)
             {
-                ViewBag.Puestos = new SelectList(ObtenerPuestos());
+                ViewBag.Puestos = new SelectList(PuestosDisponibles);
                 return View(model);
             }
 
-            TempData["Success"] = "Empleado creado correctamente";
-            return RedirectToAction("Index");
-        }
-
-        [HttpGet]
-        public IActionResult Edit(int id)
-        {
-            var empleado = new EmpleadoViewModel
+            var empleado = new Empleado
             {
-                EmpleadoId = id,
-                Cedula = id == 1 ? "116100256" : "112340567",
-                Nombre = id == 1 ? "Hilario" : "Juan",
-                PrimerApellido = id == 1 ? "Solera" : "Pérez",
-                SegundoApellido = id == 1 ? "Meza" : "",
-                Puesto = id == 1 ? "Encargada de RR.HH." : "Chofer de Entregas",
-                SalarioBase = id == 1 ? 450000 : 380000,
-                Estado = "Activo"
+                Cedula = model.Cedula,
+                Nombre = model.Nombre,
+                PrimerApellido = model.PrimerApellido,
+                SegundoApellido = model.SegundoApellido,
+                Puesto = model.Puesto,
+                SalarioBase = model.SalarioBase,
+                Activo = true
+                // Puedes agregar FechaIngreso = DateTime.Now si lo tienes en la entidad
             };
 
-            ViewBag.Puestos = new SelectList(ObtenerPuestos(), empleado.Puesto);
-            return View(empleado);
+            _context.Add(empleado);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Empleado creado correctamente.";
+            return RedirectToAction(nameof(Index));
         }
 
+        // GET: /Empleados/Edit/5
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var empleado = await _context.Empleados.FindAsync(id);
+            if (empleado == null)
+            {
+                return NotFound();
+            }
+
+            var model = new EmpleadoViewModel
+            {
+                EmpleadoId = empleado.EmpleadoId,
+                Cedula = empleado.Cedula,
+                Nombre = empleado.Nombre,
+                PrimerApellido = empleado.PrimerApellido,
+                SegundoApellido = empleado.SegundoApellido,
+                Puesto = empleado.Puesto,
+                SalarioBase = empleado.SalarioBase,
+                Estado = empleado.Activo ? "Activo" : "Inactivo"
+            };
+
+            ViewBag.Puestos = new SelectList(PuestosDisponibles, model.Puesto);
+            return View(model);
+        }
+
+        // POST: /Empleados/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(EmpleadoViewModel model)
+        public async Task<IActionResult> Edit(int id, EmpleadoViewModel model)
         {
+            if (id != model.EmpleadoId)
+            {
+                return NotFound();
+            }
+
             if (!ModelState.IsValid)
             {
-                ViewBag.Puestos = new SelectList(ObtenerPuestos());
+                ViewBag.Puestos = new SelectList(PuestosDisponibles);
                 return View(model);
             }
 
-            TempData["Success"] = "Empleado actualizado correctamente";
-            return RedirectToAction("Index");
+            var empleado = await _context.Empleados.FindAsync(id);
+            if (empleado == null)
+            {
+                return NotFound();
+            }
+
+            empleado.Cedula = model.Cedula;
+            empleado.Nombre = model.Nombre;
+            empleado.PrimerApellido = model.PrimerApellido;
+            empleado.SegundoApellido = model.SegundoApellido;
+            empleado.Puesto = model.Puesto;
+            empleado.SalarioBase = model.SalarioBase;
+            // Si tienes Estado como bool en la entidad, puedes mapearlo aquí si lo necesitas
+
+            try
+            {
+                _context.Update(empleado);
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Empleado actualizado correctamente.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!await _context.Empleados.AnyAsync(e => e.EmpleadoId == id))
+                {
+                    return NotFound();
+                }
+                throw;
+            }
         }
 
+        // POST: /Empleados/Desactivar/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Desactivar(int id)
+        public async Task<IActionResult> Desactivar(int id)
         {
-            TempData["Success"] = "Empleado desactivado correctamente";
-            return RedirectToAction("Index");
+            var empleado = await _context.Empleados.FindAsync(id);
+            if (empleado == null)
+            {
+                return NotFound();
+            }
+
+            empleado.Activo = false;
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Empleado desactivado correctamente.";
+            return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
+        // POST: /Empleados/Delete/5
+        [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            TempData["Success"] = "Empleado eliminado correctamente (demo)";
-            return RedirectToAction("Index");
+            var empleado = await _context.Empleados.FindAsync(id);
+            if (empleado != null)
+            {
+                _context.Empleados.Remove(empleado);
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Empleado eliminado correctamente.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: /Empleados/Delete/5 (opcional - vista de confirmación)
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var empleado = await _context.Empleados
+                .FirstOrDefaultAsync(e => e.EmpleadoId == id);
+
+            if (empleado == null)
+            {
+                return NotFound();
+            }
+
+            var model = new EmpleadoViewModel
+            {
+                EmpleadoId = empleado.EmpleadoId,
+                Cedula = empleado.Cedula,
+                Nombre = empleado.Nombre,
+                PrimerApellido = empleado.PrimerApellido,
+                Puesto = empleado.Puesto,
+                SalarioBase = empleado.SalarioBase
+            };
+
+            return View(model);
         }
     }
 }
