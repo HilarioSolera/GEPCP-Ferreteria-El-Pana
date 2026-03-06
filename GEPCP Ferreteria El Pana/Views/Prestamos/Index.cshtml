@@ -1,0 +1,65 @@
+﻿@{
+    ViewData["Title"] = "Préstamos - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2 class="mb-4">
+    Préstamos a Empleados
+    <a href="/Prestamos/Create" class="btn btn-success btn-lg float-end">
+        <i class="bi bi-plus-circle"></i> Nuevo Préstamo
+    </a>
+</h2>
+
+<table class="table table-hover table-striped align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>Empleado</th>
+            <th>Monto Original</th>
+            <th>Saldo Actual</th>
+            <th>Cuota Mensual</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Hilario Solera Meza</td>
+            <td>₡150,000</td>
+            <td class="fw-bold text-danger">₡90,000</td>
+            <td>₡15,000</td>
+            <td><span class="badge bg-success">Activo</span></td>
+            <td>
+                <button onclick="registrarAbono(1)" class="btn btn-sm btn-warning">
+                    <i class="bi bi-cash-coin"></i> Registrar Abono
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>₡80,000</td>
+            <td class="fw-bold text-danger">₡80,000</td>
+            <td>₡8,000</td>
+            <td><span class="badge bg-success">Activo</span></td>
+            <td>
+                <button onclick="registrarAbono(2)" class="btn btn-sm btn-warning">
+                    <i class="bi bi-cash-coin"></i> Registrar Abono
+                </button>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        function registrarAbono(prestamoId) {
+            let monto = prompt("Ingrese el monto del abono (₡):");
+            if (monto && parseFloat(monto) > 0) {
+                // Envía el abono al controlador
+                fetch('/Prestamos/RegistrarAbono?prestamoId=' + prestamoId + '&monto=' + monto, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+                }).then(() => location.reload());
+            }
+        }
+    </script>
+}

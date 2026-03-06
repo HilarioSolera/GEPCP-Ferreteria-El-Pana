@@ -1,0 +1,59 @@
+﻿@model GEPCP_Ferreteria_El_Pana.Models.EmpleadoViewModel
+@{
+    ViewData["Title"] = "Nuevo Empleado - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Nuevo Empleado</h2>
+
+<form asp-action="Create" method="post">
+    <div class="row g-3">
+        <!-- Cédula -->
+        <div class="col-md-4">
+            <label asp-for="Cedula" class="form-label fw-bold"></label>
+            <input asp-for="Cedula" class="form-control form-control-lg" />
+            <span asp-validation-for="Cedula" class="text-danger"></span>
+        </div>
+
+        <!-- Nombre -->
+        <div class="col-md-8">
+            <label asp-for="Nombre" class="form-label fw-bold"></label>
+            <input asp-for="Nombre" class="form-control form-control-lg" />
+            <span asp-validation-for="Nombre" class="text-danger"></span>
+        </div>
+
+        <!-- Primer Apellido -->
+        <div class="col-md-6">
+            <label asp-for="PrimerApellido" class="form-label fw-bold"></label>
+            <input asp-for="PrimerApellido" class="form-control form-control-lg" />
+            <span asp-validation-for="PrimerApellido" class="text-danger"></span>
+        </div>
+
+        <!-- Segundo Apellido -->
+        <div class="col-md-6">
+            <label asp-for="SegundoApellido" class="form-label fw-bold"></label>
+            <input asp-for="SegundoApellido" class="form-control form-control-lg" />
+        </div>
+
+        <!-- Puesto (Dropdown) -->
+        <div class="col-md-6">
+            <label asp-for="Puesto" class="form-label fw-bold"></label>
+            <select asp-for="Puesto" class="form-select form-select-lg" asp-items="ViewBag.Puestos">
+                <option value="">-- Seleccione un puesto --</option>
+            </select>
+            <span asp-validation-for="Puesto" class="text-danger"></span>
+        </div>
+
+        <!-- Salario Base -->
+        <div class="col-md-6">
+            <label asp-for="SalarioBase" class="form-label fw-bold"></label>
+            <input asp-for="SalarioBase" type="number" class="form-control form-control-lg" />
+            <span asp-validation-for="SalarioBase" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-success btn-lg px-5">Guardar Empleado</button>
+        <a href="/Empleados" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+    </div>
+</form>

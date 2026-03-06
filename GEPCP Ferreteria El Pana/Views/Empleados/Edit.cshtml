@@ -1,0 +1,48 @@
+﻿@model GEPCP_Ferreteria_El_Pana.Models.EmpleadoViewModel
+@{
+    ViewData["Title"] = "Editar Empleado - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Editar Empleado</h2>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="EmpleadoId" />
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label asp-for="Cedula" class="form-label fw-bold"></label>
+            <input asp-for="Cedula" class="form-control form-control-lg" readonly />
+        </div>
+        <div class="col-md-8">
+            <label asp-for="Nombre" class="form-label fw-bold"></label>
+            <input asp-for="Nombre" class="form-control form-control-lg" />
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="PrimerApellido" class="form-label fw-bold"></label>
+            <input asp-for="PrimerApellido" class="form-control form-control-lg" />
+        </div>
+        <div class="col-md-6">
+            <label asp-for="SegundoApellido" class="form-label fw-bold"></label>
+            <input asp-for="SegundoApellido" class="form-control form-control-lg" />
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="Puesto" class="form-label fw-bold"></label>
+            <select asp-for="Puesto" class="form-select form-select-lg" asp-items="ViewBag.Puestos">
+                <option value="">-- Seleccione un puesto --</option>
+            </select>
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="SalarioBase" class="form-label fw-bold"></label>
+            <input asp-for="SalarioBase" type="number" class="form-control form-control-lg" />
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary btn-lg">Guardar Cambios</button>
+        <a href="/Empleados" class="btn btn-secondary btn-lg">Cancelar</a>
+    </div>
+</form>

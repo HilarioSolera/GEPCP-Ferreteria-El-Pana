@@ -1,0 +1,38 @@
+﻿@model GEPCP_Ferreteria_El_Pana.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Ingreso - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="login-page">
+    <div class="container">
+        <div class="row justify-content-center align-items-center min-vh-100">
+            <div class="col-md-5 col-lg-4">
+                <div class="login-card">
+                    <div class="card-header text-center py-4">
+                        <h3>GEPCP Ferretería El Pana</h3>
+                        <small>Acceso exclusivo RR.HH. y Jefatura</small>
+                    </div>
+                    <div class="card-body p-5">
+                        <form asp-action="Login" method="post">
+                            <div class="mb-4">
+                                <label asp-for="Usuario" class="form-label fw-bold">Usuario o Correo</label>
+                                <input asp-for="Usuario" class="form-control form-control-lg" placeholder="admin.rrhh" />
+                                <span asp-validation-for="Usuario" class="text-danger"></span>
+                            </div>
+                            <div class="mb-4">
+                                <label asp-for="Password" class="form-label fw-bold">Contraseña</label>
+                                <input asp-for="Password" type="password" class="form-control form-control-lg" placeholder="••••••••" />
+                                <span asp-validation-for="Password" class="text-danger"></span>
+                            </div>
+
+                            <button type="submit" class="btn btn-orange btn-lg w-100 py-3">
+                                Ingresar al Sistema
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,69 @@
+﻿@model List<GEPCP_Ferreteria_El_Pana.Models.EmpleadoViewModel>
+@{
+    ViewData["Title"] = "Empleados - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2 class="mb-4">
+    Gestión de Empleados
+    <a href="/Empleados/Create" class="btn btn-success btn-lg float-end">
+        <i class="bi bi-plus-circle"></i> Nuevo Empleado
+    </a>
+</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<table class="table table-hover table-striped align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>Cédula</th>
+            <th>Nombre Completo</th>
+            <th>Puesto</th>
+            <th>Salario Base</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td><strong>@item.Cedula</strong></td>
+                <td>@item.Nombre @item.PrimerApellido @item.SegundoApellido</td>
+                <td>@item.Puesto</td>
+                <td>₡@item.SalarioBase.ToString("N0")</td>
+                <td>
+                    @if (item.Estado == "Activo")
+                    {
+                        <span class="badge bg-success">Activo</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Inactivo</span>
+                    }
+                </td>
+                <td>
+                    <a href="/Empleados/Edit/@item.EmpleadoId" class="btn btn-sm btn-primary me-1">Editar</a>
+
+                    <form asp-action="Desactivar" method="post" class="d-inline me-1"
+                          onsubmit="return confirm('¿Desactivar este empleado?')">
+                        <input type="hidden" name="id" value="@item.EmpleadoId" />
+                        <button type="submit" class="btn btn-sm btn-warning">Desactivar</button>
+                    </form>
+
+                    <form asp-action="Delete" method="post" class="d-inline"
+                          onsubmit="return confirm('¿Eliminar permanentemente?')">
+                        <input type="hidden" name="id" value="@item.EmpleadoId" />
+                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
