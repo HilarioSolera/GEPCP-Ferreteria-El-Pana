@@ -19,7 +19,7 @@ builder.Services.AddSession(options =>
 
 // Base de datos - SQLite
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Servicios personalizados
 builder.Services.AddScoped<IAuthService, AuthService>();

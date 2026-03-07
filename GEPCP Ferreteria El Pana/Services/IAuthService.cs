@@ -10,24 +10,24 @@ namespace GEPCP_Ferreteria_El_Pana.Services
 
     public class AuthService : IAuthService
     {
-        private readonly List<User> _users;
-        private readonly PasswordHasher<User> _hasher;
+        private readonly List<Usuario> _users;
+        private readonly PasswordHasher<Usuario> _hasher;
 
         public AuthService()
         {
-            _hasher = new PasswordHasher<User>();
+            _hasher = new PasswordHasher<Usuario>();
 
             // Usuarios semilla (solo demo). En producción usa base de datos / secretos.
-            _users = new List<User>
+            _users = new List<Usuario>
             {
-                new User
+                new Usuario
                 {
                     Usuario = "admin.rrhh",
                     Rol = "RRHH",
                     NombreCompleto = "Administrador RRHH",
                     PasswordHash = string.Empty // se rellenará abajo
                 },
-                new User
+                new Usuario
                 {
                     Usuario = "jefatura",
                     Rol = "Jefatura",

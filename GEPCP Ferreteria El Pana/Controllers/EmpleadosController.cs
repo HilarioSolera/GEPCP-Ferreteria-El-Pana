@@ -17,7 +17,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _context = context;
         }
 
-        // Lista estática de puestos (migra esto a una tabla Puestos más adelante)
+        // Lista estática de puestos (migra a tabla más adelante)
         private static readonly List<string> PuestosDisponibles = new()
         {
             "Encargada de RR.HH.", "Bodeguero", "Vendedor", "Gerente General",
@@ -32,8 +32,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
             var empleados = await _context.Empleados
                 .AsNoTracking()
-                .OrderBy(e => e.PrimerApellido)
-                .ThenBy(e => e.Nombre)
+                .OrderBy(e => e.EmpleadoId)  // Temporal por ID para evitar errores; cambia a PrimerApellido cuando arregles longitudes
                 .ToListAsync();
 
             var viewModels = empleados.Select(e => new EmpleadoViewModel
@@ -59,9 +58,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 return NotFound();
             }
 
-            var empleado = await _context.Empleados
-                .FirstOrDefaultAsync(e => e.EmpleadoId == id);
-
+            var empleado = await _context.Empleados.FirstOrDefaultAsync(e => e.EmpleadoId == id);
             if (empleado == null)
             {
                 return NotFound();
@@ -109,7 +106,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 Puesto = model.Puesto,
                 SalarioBase = model.SalarioBase,
                 Activo = true
-                // Puedes agregar FechaIngreso = DateTime.Now si lo tienes en la entidad
             };
 
             _context.Add(empleado);
@@ -177,7 +173,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             empleado.SegundoApellido = model.SegundoApellido;
             empleado.Puesto = model.Puesto;
             empleado.SalarioBase = model.SalarioBase;
-            // Si tienes Estado como bool en la entidad, puedes mapearlo aquí si lo necesitas
 
             try
             {
@@ -204,7 +199,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             var empleado = await _context.Empleados.FindAsync(id);
             if (empleado == null)
             {
-                return NotFound();
+                TempData["Error"] = "Empleado no encontrado.";
+                return RedirectToAction(nameof(Index));
             }
 
             empleado.Activo = false;
@@ -220,17 +216,20 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var empleado = await _context.Empleados.FindAsync(id);
-            if (empleado != null)
+            if (empleado == null)
             {
-                _context.Empleados.Remove(empleado);
-                await _context.SaveChangesAsync();
-                TempData["Success"] = "Empleado eliminado correctamente.";
+                TempData["Error"] = "Empleado no encontrado.";
+                return RedirectToAction(nameof(Index));
             }
 
+            _context.Empleados.Remove(empleado);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Empleado eliminado correctamente.";
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: /Empleados/Delete/5 (opcional - vista de confirmación)
+        // GET: /Empleados/Delete/5 (vista de confirmación para eliminar)
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -238,9 +237,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 return NotFound();
             }
 
-            var empleado = await _context.Empleados
-                .FirstOrDefaultAsync(e => e.EmpleadoId == id);
-
+            var empleado = await _context.Empleados.FirstOrDefaultAsync(e => e.EmpleadoId == id);
             if (empleado == null)
             {
                 return NotFound();

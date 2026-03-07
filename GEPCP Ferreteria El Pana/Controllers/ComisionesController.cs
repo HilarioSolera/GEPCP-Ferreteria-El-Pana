@@ -1,43 +1,138 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
+using GEPCP_Ferreteria_El_Pana.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace GEPCP_Ferreteria_El_Pana.Controllers
 {
-    [CustomAuthorize("RRHH", "Jefatura")]
+    [CustomAuthorize("RRHH")]
     public class ComisionesController : Controller
     {
-        [HttpGet]
-        public IActionResult Index()
+        private readonly ApplicationDbContext _context;
+
+        public ComisionesController(ApplicationDbContext context)
         {
-            ViewBag.Usuario = HttpContext.Session.GetString("Usuario");
-            ViewBag.Periodo = "Julio 2025 - Quincena 1";
+            _context = context;
+        }
 
-            // Datos de prueba (después vendrán de la BD)
-            var comisiones = new List<dynamic>
+        public async Task<IActionResult> Index()
+        {
+            var comisiones = await _context.Comisiones.Include(c => c.Empleado).ToListAsync();
+            return View(comisiones);
+        }
+
+        // GET: Create
+        public async Task<IActionResult> Create()
+        {
+            ViewBag.Empleados = await _context.Empleados.Select(e => new SelectListItem
             {
-                new { Chofer = "Juan Pérez", Entregas = 45, MontoCalculado = 225000m, MontoFinal = 225000m, Ajustado = false },
-                new { Chofer = "Carlos Ramírez", Entregas = 32, MontoCalculado = 160000m, MontoFinal = 175000m, Ajustado = true }
-            };
-
-            ViewBag.Comisiones = comisiones;
+                Value = e.EmpleadoId.ToString(),
+                Text = $"{e.Nombre} {e.PrimerApellido}"
+            }).ToListAsync();
 
             return View();
         }
 
+        // POST: Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult GuardarReglaGlobal(string tipoCalculo, decimal valor)
+        public async Task<IActionResult> Create(Comision model)
         {
-            TempData["Success"] = $"Regla global guardada: {tipoCalculo} = {valor} - GEPCP Ferretería El Pana";
-            return RedirectToAction("Index");
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Empleados = await _context.Empleados.Select(e => new SelectListItem
+                {
+                    Value = e.EmpleadoId.ToString(),
+                    Text = $"{e.Nombre} {e.PrimerApellido}"
+                }).ToListAsync();
+                return View(model);
+            }
+
+            _context.Add(model);
+            await _context.SaveChangesAsync();
+            TempData["Success"] = "Comisión creada correctamente.";
+            return RedirectToAction(nameof(Index));
         }
 
+        // GET: Edit/5
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var comision = await _context.Comisiones.FindAsync(id);
+            if (comision == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.Empleados = await _context.Empleados.Select(e => new SelectListItem
+            {
+                Value = e.EmpleadoId.ToString(),
+                Text = $"{e.Nombre} {e.PrimerApellido}",
+                Selected = e.EmpleadoId == comision.EmpleadoId
+            }).ToListAsync();
+
+            return View(comision);
+        }
+
+        // POST: Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult AjustarComision(int id, decimal montoFinal)
+        public async Task<IActionResult> Edit(int id, Comision model)
         {
-            TempData["Success"] = $"Comisión ajustada a ₡{montoFinal} correctamente";
-            return RedirectToAction("Index");
+            if (id != model.ComisionId)
+            {
+                return NotFound();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Empleados = await _context.Empleados.Select(e => new SelectListItem
+                {
+                    Value = e.EmpleadoId.ToString(),
+                    Text = $"{e.Nombre} {e.PrimerApellido}"
+                }).ToListAsync();
+                return View(model);
+            }
+
+            try
+            {
+                _context.Update(model);
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Comisión actualizada correctamente.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!await _context.Comisiones.AnyAsync(c => c.ComisionId == id))
+                {
+                    return NotFound();
+                }
+                throw;
+            }
+        }
+
+        // POST: Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var comision = await _context.Comisiones.FindAsync(id);
+            if (comision == null)
+            {
+                return NotFound();
+            }
+
+            _context.Comisiones.Remove(comision);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Comisión eliminada correctamente.";
+            return RedirectToAction(nameof(Index));
         }
     }
 }
