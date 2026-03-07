@@ -8,11 +8,74 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     /// <inheritdoc />
-    public partial class AddFullModulesAndRelations : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Empleados",
+                columns: table => new
+                {
+                    EmpleadoId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Cedula = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Nombre = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    PrimerApellido = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    SegundoApellido = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Puesto = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    SalarioBase = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    Activo = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Empleados", x => x.EmpleadoId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Puestos",
+                columns: table => new
+                {
+                    PuestoId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Nombre = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    SalarioBase = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Activo = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Puestos", x => x.PuestoId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Roles",
+                columns: table => new
+                {
+                    RolId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Nombre = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Roles", x => x.RolId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Usuarios",
+                columns: table => new
+                {
+                    UsuarioId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    NombreUsuario = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    NombreCompleto = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Rol = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Usuarios", x => x.UsuarioId);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Comisiones",
                 columns: table => new
@@ -85,21 +148,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "Puestos",
-                columns: table => new
-                {
-                    PuestoId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Nombre = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    SalarioBase = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Activo = table.Column<bool>(type: "bit", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Puestos", x => x.PuestoId);
-                });
-
             migrationBuilder.InsertData(
                 table: "Puestos",
                 columns: new[] { "PuestoId", "Activo", "Nombre", "SalarioBase" },
@@ -109,10 +157,34 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     { 2, true, "Vendedor", 380000m }
                 });
 
+            migrationBuilder.InsertData(
+                table: "Roles",
+                columns: new[] { "RolId", "Nombre" },
+                values: new object[,]
+                {
+                    { 1, "RRHH" },
+                    { 2, "Jefatura" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Usuarios",
+                columns: new[] { "UsuarioId", "NombreCompleto", "NombreUsuario", "PasswordHash", "Rol" },
+                values: new object[,]
+                {
+                    { 1, "Administrador RRHH", "admin.rrhh", "$2a$11$5Ky5KbMUNhvOoXmQzE6wOuNGO1WLiKAg0yOWlWbEwVcrXMHrKxMuC", "RRHH" },
+                    { 2, "Usuario Jefatura", "jefatura", "$2a$11$Qh3dMkY8RkT2e1VNxUvLfONqjGTz5AkXWpBmI9HuCsdLwYeRbGqiK", "Jefatura" }
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Comisiones_EmpleadoId",
                 table: "Comisiones",
                 column: "EmpleadoId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Empleados_Cedula",
+                table: "Empleados",
+                column: "Cedula",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Planillas_EmpleadoId",
@@ -139,6 +211,15 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
 
             migrationBuilder.DropTable(
                 name: "Puestos");
+
+            migrationBuilder.DropTable(
+                name: "Roles");
+
+            migrationBuilder.DropTable(
+                name: "Usuarios");
+
+            migrationBuilder.DropTable(
+                name: "Empleados");
         }
     }
 }

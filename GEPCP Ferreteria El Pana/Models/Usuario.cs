@@ -4,12 +4,12 @@ namespace GEPCP_Ferreteria_El_Pana.Models
     {
         public int UsuarioId { get; set; }
 
-        public string NombreUsuario { get; set; } = string.Empty;
+        public string NombreUsuario { get; set; } = string.Empty; // Renombrado para evitar conflicto
 
-        public string CorreoElectronico { get; set; } = string.Empty;
+        public string NombreCompleto { get; set; } = string.Empty;
 
-        public string PasswordHash { get; set; } = string.Empty;  // Encriptado con BCrypt
+        public string PasswordHash { get; set; } = string.Empty;
 
-        public int RolId { get; set; }  // 1 = RRHH, 2 = Jefatura
+        public string Rol { get; set; } = string.Empty;
     }
 }

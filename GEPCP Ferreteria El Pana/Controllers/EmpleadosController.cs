@@ -17,22 +17,24 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _context = context;
         }
 
-        // Lista estática de puestos (migra a tabla más adelante)
-        private static readonly List<string> PuestosDisponibles = new()
+        private async Task<SelectList> ObtenerPuestosSelectList(string? selectedPuesto = null)
         {
-            "Encargada de RR.HH.", "Bodeguero", "Vendedor", "Gerente General",
-            "Chofer de Entregas", "Cajero", "Asistente de Ventas", "Contador",
-            "Atención al Cliente", "Jefe de Bodega", "Repositor", "Especialista en Pinturas"
-        };
+            var puestos = await _context.Puestos
+                .Where(p => p.Activo)
+                .Select(p => p.Nombre)
+                .ToListAsync();
 
-        // GET: /Empleados (Listado)
+            return new SelectList(puestos, selectedPuesto);
+        }
+
+        // GET: /Empleados
         public async Task<IActionResult> Index()
         {
             ViewBag.Usuario = HttpContext.Session.GetString("Usuario");
 
             var empleados = await _context.Empleados
                 .AsNoTracking()
-                .OrderBy(e => e.EmpleadoId)  // Temporal por ID para evitar errores; cambia a PrimerApellido cuando arregles longitudes
+                .OrderBy(e => e.PrimerApellido)
                 .ToListAsync();
 
             var viewModels = empleados.Select(e => new EmpleadoViewModel
@@ -53,16 +55,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         // GET: /Empleados/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
-            var empleado = await _context.Empleados.FirstOrDefaultAsync(e => e.EmpleadoId == id);
-            if (empleado == null)
-            {
-                return NotFound();
-            }
+            var empleado = await _context.Empleados
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.EmpleadoId == id);
+
+            if (empleado == null) return NotFound();
 
             var model = new EmpleadoViewModel
             {
@@ -80,9 +79,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         }
 
         // GET: /Empleados/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewBag.Puestos = new SelectList(PuestosDisponibles);
+            ViewBag.Puestos = await ObtenerPuestosSelectList();
             return View(new EmpleadoViewModel());
         }
 
@@ -91,9 +90,15 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EmpleadoViewModel model)
         {
+            // Validar cédula única
+            if (await _context.Empleados.AnyAsync(e => e.Cedula == model.Cedula))
+            {
+                ModelState.AddModelError("Cedula", "Ya existe un empleado con esa cédula.");
+            }
+
             if (!ModelState.IsValid)
             {
-                ViewBag.Puestos = new SelectList(PuestosDisponibles);
+                ViewBag.Puestos = await ObtenerPuestosSelectList();
                 return View(model);
             }
 
@@ -110,7 +115,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
             _context.Add(empleado);
             await _context.SaveChangesAsync();
-
             TempData["Success"] = "Empleado creado correctamente.";
             return RedirectToAction(nameof(Index));
         }
@@ -118,16 +122,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         // GET: /Empleados/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var empleado = await _context.Empleados.FindAsync(id);
-            if (empleado == null)
-            {
-                return NotFound();
-            }
+            if (empleado == null) return NotFound();
 
             var model = new EmpleadoViewModel
             {
@@ -141,7 +139,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 Estado = empleado.Activo ? "Activo" : "Inactivo"
             };
 
-            ViewBag.Puestos = new SelectList(PuestosDisponibles, model.Puesto);
+            ViewBag.Puestos = await ObtenerPuestosSelectList(model.Puesto);
             return View(model);
         }
 
@@ -150,22 +148,22 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, EmpleadoViewModel model)
         {
-            if (id != model.EmpleadoId)
+            if (id != model.EmpleadoId) return NotFound();
+
+            // Validar cédula única excluyendo el empleado actual
+            if (await _context.Empleados.AnyAsync(e => e.Cedula == model.Cedula && e.EmpleadoId != id))
             {
-                return NotFound();
+                ModelState.AddModelError("Cedula", "Ya existe otro empleado con esa cédula.");
             }
 
             if (!ModelState.IsValid)
             {
-                ViewBag.Puestos = new SelectList(PuestosDisponibles);
+                ViewBag.Puestos = await ObtenerPuestosSelectList();
                 return View(model);
             }
 
             var empleado = await _context.Empleados.FindAsync(id);
-            if (empleado == null)
-            {
-                return NotFound();
-            }
+            if (empleado == null) return NotFound();
 
             empleado.Cedula = model.Cedula;
             empleado.Nombre = model.Nombre;
@@ -184,9 +182,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 if (!await _context.Empleados.AnyAsync(e => e.EmpleadoId == id))
-                {
                     return NotFound();
-                }
                 throw;
             }
         }
@@ -205,9 +201,33 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
             empleado.Activo = false;
             await _context.SaveChangesAsync();
-
             TempData["Success"] = "Empleado desactivado correctamente.";
             return RedirectToAction(nameof(Index));
+        }
+
+        // GET: /Empleados/Delete/5
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var empleado = await _context.Empleados
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.EmpleadoId == id);
+
+            if (empleado == null) return NotFound();
+
+            var model = new EmpleadoViewModel
+            {
+                EmpleadoId = empleado.EmpleadoId,
+                Cedula = empleado.Cedula,
+                Nombre = empleado.Nombre,
+                PrimerApellido = empleado.PrimerApellido,
+                SegundoApellido = empleado.SegundoApellido,
+                Puesto = empleado.Puesto,
+                SalarioBase = empleado.SalarioBase
+            };
+
+            return View(model);
         }
 
         // POST: /Empleados/Delete/5
@@ -215,6 +235,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            // BUG-12 corregido: verificar préstamos activos antes de eliminar
+            if (await _context.Prestamos.AnyAsync(p => p.EmpleadoId == id && p.Activo))
+            {
+                TempData["Error"] = "No se puede eliminar un empleado con préstamos activos. Desactivelo en su lugar.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var empleado = await _context.Empleados.FindAsync(id);
             if (empleado == null)
             {
@@ -224,36 +251,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
             _context.Empleados.Remove(empleado);
             await _context.SaveChangesAsync();
-
             TempData["Success"] = "Empleado eliminado correctamente.";
             return RedirectToAction(nameof(Index));
-        }
-
-        // GET: /Empleados/Delete/5 (vista de confirmación para eliminar)
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var empleado = await _context.Empleados.FirstOrDefaultAsync(e => e.EmpleadoId == id);
-            if (empleado == null)
-            {
-                return NotFound();
-            }
-
-            var model = new EmpleadoViewModel
-            {
-                EmpleadoId = empleado.EmpleadoId,
-                Cedula = empleado.Cedula,
-                Nombre = empleado.Nombre,
-                PrimerApellido = empleado.PrimerApellido,
-                Puesto = empleado.Puesto,
-                SalarioBase = empleado.SalarioBase
-            };
-
-            return View(model);
         }
     }
 }

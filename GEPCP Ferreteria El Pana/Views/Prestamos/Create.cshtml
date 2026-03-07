@@ -4,31 +4,81 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Nuevo Préstamo a Empleado</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-cash-coin"></i> Nuevo Préstamo a Empleado</h2>
+    <a href="/Prestamos" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
 
-<form asp-action="Create" method="post">
-    <div class="row g-3">
-        <div class="col-md-6">
-            <label asp-for="NombreEmpleado" class="form-label fw-bold"></label>
-            <input asp-for="NombreEmpleado" class="form-control form-control-lg" placeholder="Hilario Solera Meza" />
-        </div>
-        <div class="col-md-6">
-            <label asp-for="MontoPrincipal" class="form-label fw-bold"></label>
-            <input asp-for="MontoPrincipal" type="number" class="form-control form-control-lg" />
-        </div>
+<div class="card shadow-sm border-0">
+    <div class="card-body p-4">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row g-3">
 
-        <div class="col-md-6">
-            <label asp-for="CuotaMensual" class="form-label fw-bold"></label>
-            <input asp-for="CuotaMensual" type="number" class="form-control form-control-lg" />
-        </div>
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Fecha de Inicio</label>
-            <input type="date" class="form-control form-control-lg" value="2025-07-01" />
-        </div>
+                <div class="col-md-12">
+                    <label asp-for="EmpleadoId" class="form-label fw-bold">
+                        <i class="bi bi-person"></i> Empleado
+                    </label>
+                    <select asp-for="EmpleadoId" asp-items="ViewBag.Empleados"
+                            class="form-select form-select-lg">
+                        <option value="">— Seleccione un empleado —</option>
+                    </select>
+                    <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="MontoPrincipal" class="form-label fw-bold">
+                        <i class="bi bi-cash"></i> Monto del Préstamo (₡)
+                    </label>
+                    <input asp-for="MontoPrincipal" type="number" min="1" step="1"
+                           class="form-control form-control-lg" placeholder="0" />
+                    <span asp-validation-for="MontoPrincipal" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="CuotaMensual" class="form-label fw-bold">
+                        <i class="bi bi-calendar-check"></i> Cuota Mensual (₡)
+                    </label>
+                    <input asp-for="CuotaMensual" type="number" min="1" step="1"
+                           class="form-control form-control-lg" placeholder="0" />
+                    <span asp-validation-for="CuotaMensual" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="CuotasTotal" class="form-label fw-bold">
+                        <i class="bi bi-hash"></i> Número de Cuotas
+                    </label>
+                    <input asp-for="CuotasTotal" type="number" min="1" max="120"
+                           class="form-control form-control-lg" placeholder="Ej: 12" />
+                    <span asp-validation-for="CuotasTotal" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-calendar"></i> Fecha de Inicio
+                    </label>
+                    <input type="text" class="form-control form-control-lg"
+                           value="@DateTime.Now.ToString("dd/MM/yyyy")" readonly />
+                </div>
+
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-lg px-5">
+                    <i class="bi bi-check-circle"></i> Registrar Préstamo
+                </button>
+                <a href="/Prestamos" class="btn btn-secondary btn-lg px-5">
+                    Cancelar
+                </a>
+            </div>
+        </form>
     </div>
+</div>
 
-    <div class="mt-4">
-        <button type="submit" class="btn btn-success btn-lg px-5">Registrar Préstamo</button>
-        <a href="/Prestamos" class="btn btn-secondary btn-lg px-5">Cancelar</a>
-    </div>
-</form>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

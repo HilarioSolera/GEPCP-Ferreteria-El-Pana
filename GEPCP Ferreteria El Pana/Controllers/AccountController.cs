@@ -16,6 +16,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         [HttpGet]
         public IActionResult Login()
         {
+            // Si ya tiene sesión activa, redirigir al Dashboard
             if (HttpContext.Session.GetString("Usuario") != null)
                 return RedirectToAction("Dashboard", "Home");
 
@@ -26,7 +27,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Login(LoginViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
+            if (!ModelState.IsValid)
+                return View(model);
 
             if (_authService.ValidateUser(model.Usuario, model.Password, out string rol))
             {
@@ -35,10 +37,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 return RedirectToAction("Dashboard", "Home");
             }
 
-            ModelState.AddModelError("", "Usuario o contraseña incorrectos");
+            ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
             return View(model);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();

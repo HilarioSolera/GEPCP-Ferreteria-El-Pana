@@ -1,0 +1,85 @@
+﻿@model GEPCP_Ferreteria_El_Pana.Models.UsuarioCreateViewModel
+@{
+    ViewData["Title"] = "Nuevo Usuario - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-plus"></i> Nuevo Usuario</h2>
+    <a href="/Usuarios" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-4">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label asp-for="NombreUsuario" class="form-label fw-bold">
+                        <i class="bi bi-person"></i> Nombre de Usuario
+                    </label>
+                    <input asp-for="NombreUsuario" class="form-control form-control-lg"
+                           placeholder="Ej: maria.lopez" autocomplete="off" />
+                    <span asp-validation-for="NombreUsuario" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="NombreCompleto" class="form-label fw-bold">
+                        <i class="bi bi-person-badge"></i> Nombre Completo
+                    </label>
+                    <input asp-for="NombreCompleto" class="form-control form-control-lg"
+                           placeholder="Ej: María López Jiménez" />
+                    <span asp-validation-for="NombreCompleto" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Password" class="form-label fw-bold">
+                        <i class="bi bi-lock"></i> Contraseña
+                    </label>
+                    <input asp-for="Password" type="password"
+                           class="form-control form-control-lg"
+                           placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="ConfirmarPassword" class="form-label fw-bold">
+                        <i class="bi bi-lock-fill"></i> Confirmar Contraseña
+                    </label>
+                    <input asp-for="ConfirmarPassword" type="password"
+                           class="form-control form-control-lg"
+                           placeholder="Repetí la contraseña" autocomplete="new-password" />
+                    <span asp-validation-for="ConfirmarPassword" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="Rol" class="form-label fw-bold">
+                        <i class="bi bi-shield"></i> Rol
+                    </label>
+                    <select asp-for="Rol" class="form-select form-select-lg">
+                        <option value="RRHH">RRHH</option>
+                        <option value="Jefatura">Jefatura</option>
+                    </select>
+                    <span asp-validation-for="Rol" class="text-danger small"></span>
+                </div>
+
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-lg px-5">
+                    <i class="bi bi-check-circle"></i> Crear Usuario
+                </button>
+                <a href="/Usuarios" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

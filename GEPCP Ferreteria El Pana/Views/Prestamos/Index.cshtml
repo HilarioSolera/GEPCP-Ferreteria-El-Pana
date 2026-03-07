@@ -1,14 +1,60 @@
-﻿@{
+﻿@model List<GEPCP_Ferreteria_El_Pana.Models.Prestamo>
+@{
     ViewData["Title"] = "Préstamos - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2 class="mb-4">
-    Préstamos a Empleados
-    <a href="/Prestamos/Create" class="btn btn-success btn-lg float-end">
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-cash-coin"></i> Préstamos a Empleados</h2>
+    <a href="/Prestamos/Create" class="btn btn-success btn-lg">
         <i class="bi bi-plus-circle"></i> Nuevo Préstamo
     </a>
-</h2>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@* Modal Registrar Abono *@
+<div class="modal fade" id="modalAbono" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="bi bi-cash-coin"></i> Registrar Abono</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="RegistrarAbono" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" id="modalPrestamoId" name="prestamoId" />
+                    <p>Saldo actual: <strong id="modalSaldo" class="text-danger"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Monto del Abono (₡)</label>
+                        <input type="number" name="monto" class="form-control form-control-lg"
+                               min="1" step="1" required placeholder="0" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-check-circle"></i> Aplicar Abono
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <table class="table table-hover table-striped align-middle">
     <thead class="table-dark">
@@ -17,49 +63,79 @@
             <th>Monto Original</th>
             <th>Saldo Actual</th>
             <th>Cuota Mensual</th>
+            <th>Fecha</th>
             <th>Estado</th>
-            <th>Acciones</th>
+            <th class="text-center">Acciones</th>
         </tr>
     </thead>
     <tbody>
-        <tr>
-            <td>Hilario Solera Meza</td>
-            <td>₡150,000</td>
-            <td class="fw-bold text-danger">₡90,000</td>
-            <td>₡15,000</td>
-            <td><span class="badge bg-success">Activo</span></td>
-            <td>
-                <button onclick="registrarAbono(1)" class="btn btn-sm btn-warning">
-                    <i class="bi bi-cash-coin"></i> Registrar Abono
-                </button>
-            </td>
-        </tr>
-        <tr>
-            <td>Juan Pérez</td>
-            <td>₡80,000</td>
-            <td class="fw-bold text-danger">₡80,000</td>
-            <td>₡8,000</td>
-            <td><span class="badge bg-success">Activo</span></td>
-            <td>
-                <button onclick="registrarAbono(2)" class="btn btn-sm btn-warning">
-                    <i class="bi bi-cash-coin"></i> Registrar Abono
-                </button>
-            </td>
-        </tr>
+        @if (Model == null || !Model.Any())
+        {
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                    No hay préstamos registrados.
+                </td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var p in Model)
+            {
+                <tr>
+                    <td>
+                        <strong>@p.Empleado.PrimerApellido @p.Empleado.Nombre</strong>
+                        <br /><small class="text-muted">@p.Empleado.Cedula</small>
+                    </td>
+                    <td>₡@p.Monto.ToString("N0")</td>
+                    <td class="fw-bold @(p.Activo ? "text-danger" : "text-muted")">
+                        ₡@p.Monto.ToString("N0")
+                    </td>
+                    <td>₡@p.CuotaMensual.ToString("N0")</td>
+                    <td>@p.FechaPrestamo.ToString("dd/MM/yyyy")</td>
+                    <td>
+                        @if (p.Activo)
+                        {
+                            <span class="badge bg-success">Activo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Cerrado</span>
+                        }
+                    </td>
+                    <td class="text-center">
+                        @if (p.Activo)
+                        {
+                            <button class="btn btn-sm btn-warning me-1"
+                                    onclick="abrirModalAbono(@p.PrestamoId, @p.Monto)">
+                                <i class="bi bi-cash-coin"></i> Abono
+                            </button>
+                            <form asp-action="Cerrar" method="post" class="d-inline"
+                                  onsubmit="return confirm('¿Cerrar este préstamo manualmente?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@p.PrestamoId" />
+                                <button type="submit" class="btn btn-sm btn-secondary">
+                                    <i class="bi bi-lock"></i> Cerrar
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="text-muted small">Saldado</span>
+                        }
+                    </td>
+                </tr>
+            }
+        }
     </tbody>
 </table>
 
 @section Scripts {
     <script>
-        function registrarAbono(prestamoId) {
-            let monto = prompt("Ingrese el monto del abono (₡):");
-            if (monto && parseFloat(monto) > 0) {
-                // Envía el abono al controlador
-                fetch('/Prestamos/RegistrarAbono?prestamoId=' + prestamoId + '&monto=' + monto, {
-                    method: 'POST',
-                    headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
-                }).then(() => location.reload());
-            }
+        function abrirModalAbono(prestamoId, saldo) {
+            document.getElementById('modalPrestamoId').value = prestamoId;
+            document.getElementById('modalSaldo').textContent = '₡' + saldo.toLocaleString('es-CR');
+            new bootstrap.Modal(document.getElementById('modalAbono')).show();
         }
     </script>
 }

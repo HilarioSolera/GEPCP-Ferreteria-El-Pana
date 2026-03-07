@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260306065150_AddFullModulesAndRelations")]
-    partial class AddFullModulesAndRelations
+    [Migration("20260307212332_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -94,6 +94,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("EmpleadoId");
+
+                    b.HasIndex("Cedula")
+                        .IsUnique();
 
                     b.ToTable("Empleados");
                 });
@@ -207,6 +210,82 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                             Activo = true,
                             Nombre = "Vendedor",
                             SalarioBase = 380000m
+                        });
+                });
+
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Rol", b =>
+                {
+                    b.Property<int>("RolId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RolId"));
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("RolId");
+
+                    b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            RolId = 1,
+                            Nombre = "RRHH"
+                        },
+                        new
+                        {
+                            RolId = 2,
+                            Nombre = "Jefatura"
+                        });
+                });
+
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Usuario", b =>
+                {
+                    b.Property<int>("UsuarioId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UsuarioId"));
+
+                    b.Property<string>("NombreCompleto")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NombreUsuario")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Rol")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UsuarioId");
+
+                    b.ToTable("Usuarios");
+
+                    b.HasData(
+                        new
+                        {
+                            UsuarioId = 1,
+                            NombreCompleto = "Administrador RRHH",
+                            NombreUsuario = "admin.rrhh",
+                            PasswordHash = "$2a$11$5Ky5KbMUNhvOoXmQzE6wOuNGO1WLiKAg0yOWlWbEwVcrXMHrKxMuC",
+                            Rol = "RRHH"
+                        },
+                        new
+                        {
+                            UsuarioId = 2,
+                            NombreCompleto = "Usuario Jefatura",
+                            NombreUsuario = "jefatura",
+                            PasswordHash = "$2a$11$Qh3dMkY8RkT2e1VNxUvLfONqjGTz5AkXWpBmI9HuCsdLwYeRbGqiK",
+                            Rol = "Jefatura"
                         });
                 });
 

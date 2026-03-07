@@ -3,39 +3,140 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2 class="mb-4">Dashboard - Período Activo: Julio 2025 Quincena 1</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">
+            <i class="bi bi-speedometer2"></i> Dashboard Ejecutivo
+        </h2>
+        <small class="text-muted">
+            Bienvenido, <strong>@ViewBag.Usuario</strong> —
+            Rol: <span class="badge bg-secondary">@ViewBag.Rol</span>
+        </small>
+    </div>
+    <span class="text-muted small">@DateTime.Now.ToString("dddd, dd MMMM yyyy")</span>
+</div>
 
-<div class="row">
+@* Mensajes de éxito/error *@
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@* KPIs *@
+<div class="row g-4 mb-5">
+
     <div class="col-md-3">
-        <div class="card text-white bg-success card-kpi">
-            <div class="card-body">
-                <h5><i class="bi bi-people"></i> Empleados Activos</h5>
-                <h3>28</h3>
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                    <i class="bi bi-people-fill fs-3 text-success"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Empleados Activos</div>
+                    <div class="fs-3 fw-bold text-success">@ViewBag.TotalEmpleadosActivos</div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <a href="/Empleados" class="small text-decoration-none text-success">
+                    Ver empleados <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
         </div>
     </div>
+
     <div class="col-md-3">
-        <div class="card text-white bg-primary card-kpi">
-            <div class="card-body">
-                <h5><i class="bi bi-cash-stack"></i> Planilla Estimada</h5>
-                <h3>₡4,850,000</h3>
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                    <i class="bi bi-cash-stack fs-3 text-primary"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Planilla Estimada</div>
+                    <div class="fs-3 fw-bold text-primary">
+                        ₡@ViewBag.TotalPlanillaEstimada.ToString("N0")
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <a href="/Planilla" class="small text-decoration-none text-primary">
+                    Ver planilla <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
         </div>
     </div>
+
     <div class="col-md-3">
-        <div class="card text-white bg-warning card-kpi">
-            <div class="card-body">
-                <h5><i class="bi bi-credit-card"></i> Saldo Préstamos</h5>
-                <h3>₡1,240,000</h3>
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                    <i class="bi bi-credit-card fs-3 text-warning"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Saldo Préstamos</div>
+                    <div class="fs-3 fw-bold text-warning">
+                        ₡@ViewBag.TotalSaldoPrestamos.ToString("N0")
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <a href="/Prestamos" class="small text-decoration-none text-warning">
+                    Ver préstamos <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
         </div>
     </div>
+
     <div class="col-md-3">
-        <div class="card text-white bg-info card-kpi">
-            <div class="card-body">
-                <h5><i class="bi bi-graph-up"></i> Comisiones Total</h5>
-                <h3>₡320,000</h3>
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                    <i class="bi bi-graph-up fs-3 text-info"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Comisiones del Período</div>
+                    <div class="fs-3 fw-bold text-info">
+                        ₡@ViewBag.TotalComisiones.ToString("N0")
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <a href="/Comisiones" class="small text-decoration-none text-info">
+                    Ver comisiones <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
         </div>
+    </div>
+
+</div>
+
+@* Accesos rápidos *@
+<h5 class="mb-3 text-muted">Accesos Rápidos</h5>
+<div class="row g-3">
+    <div class="col-md-3">
+        <a href="/Empleados/Create" class="btn btn-outline-success w-100 py-3">
+            <i class="bi bi-person-plus fs-4 d-block mb-1"></i>
+            Nuevo Empleado
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="/Prestamos/Create" class="btn btn-outline-warning w-100 py-3">
+            <i class="bi bi-cash-coin fs-4 d-block mb-1"></i>
+            Nuevo Préstamo
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="/Comisiones/Create" class="btn btn-outline-info w-100 py-3">
+            <i class="bi bi-graph-up-arrow fs-4 d-block mb-1"></i>
+            Nueva Comisión
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="/Planilla/Index" class="btn btn-outline-primary w-100 py-3">
+            <i class="bi bi-file-earmark-text fs-4 d-block mb-1"></i>
+            Ver Planilla
+        </a>
     </div>
 </div>

@@ -17,86 +17,68 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _context = context;
         }
 
+        // GET: /Comisiones
         public async Task<IActionResult> Index()
         {
-            var comisiones = await _context.Comisiones.Include(c => c.Empleado).ToListAsync();
+            var comisiones = await _context.Comisiones
+                .Include(c => c.Empleado)
+                .OrderByDescending(c => c.Fecha)
+                .ToListAsync();
+
             return View(comisiones);
         }
 
-        // GET: Create
+        // GET: /Comisiones/Create
         public async Task<IActionResult> Create()
         {
-            ViewBag.Empleados = await _context.Empleados.Select(e => new SelectListItem
-            {
-                Value = e.EmpleadoId.ToString(),
-                Text = $"{e.Nombre} {e.PrimerApellido}"
-            }).ToListAsync();
-
-            return View();
+            await CargarEmpleadosViewBag();
+            return View(new Comision { Fecha = DateTime.Now });
         }
 
-        // POST: Create
+        // POST: /Comisiones/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Comision model)
         {
+            // Quitar validación de navegación (EF la resuelve por FK)
+            ModelState.Remove("Empleado");
+
             if (!ModelState.IsValid)
             {
-                ViewBag.Empleados = await _context.Empleados.Select(e => new SelectListItem
-                {
-                    Value = e.EmpleadoId.ToString(),
-                    Text = $"{e.Nombre} {e.PrimerApellido}"
-                }).ToListAsync();
+                await CargarEmpleadosViewBag();
                 return View(model);
             }
 
             _context.Add(model);
             await _context.SaveChangesAsync();
-            TempData["Success"] = "Comisión creada correctamente.";
+            TempData["Success"] = "Comisión registrada correctamente.";
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: Edit/5
+        // GET: /Comisiones/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var comision = await _context.Comisiones.FindAsync(id);
-            if (comision == null)
-            {
-                return NotFound();
-            }
+            if (comision == null) return NotFound();
 
-            ViewBag.Empleados = await _context.Empleados.Select(e => new SelectListItem
-            {
-                Value = e.EmpleadoId.ToString(),
-                Text = $"{e.Nombre} {e.PrimerApellido}",
-                Selected = e.EmpleadoId == comision.EmpleadoId
-            }).ToListAsync();
-
+            await CargarEmpleadosViewBag(comision.EmpleadoId);
             return View(comision);
         }
 
-        // POST: Edit/5
+        // POST: /Comisiones/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Comision model)
         {
-            if (id != model.ComisionId)
-            {
-                return NotFound();
-            }
+            if (id != model.ComisionId) return NotFound();
+
+            ModelState.Remove("Empleado");
 
             if (!ModelState.IsValid)
             {
-                ViewBag.Empleados = await _context.Empleados.Select(e => new SelectListItem
-                {
-                    Value = e.EmpleadoId.ToString(),
-                    Text = $"{e.Nombre} {e.PrimerApellido}"
-                }).ToListAsync();
+                await CargarEmpleadosViewBag(model.EmpleadoId);
                 return View(model);
             }
 
@@ -110,14 +92,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 if (!await _context.Comisiones.AnyAsync(c => c.ComisionId == id))
-                {
                     return NotFound();
-                }
                 throw;
             }
         }
 
-        // POST: Delete/5
+        // POST: /Comisiones/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -125,7 +105,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             var comision = await _context.Comisiones.FindAsync(id);
             if (comision == null)
             {
-                return NotFound();
+                TempData["Error"] = "Comisión no encontrada.";
+                return RedirectToAction(nameof(Index));
             }
 
             _context.Comisiones.Remove(comision);
@@ -133,6 +114,20 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
             TempData["Success"] = "Comisión eliminada correctamente.";
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task CargarEmpleadosViewBag(int? selectedId = null)
+        {
+            ViewBag.Empleados = await _context.Empleados
+                .Where(e => e.Activo)
+                .OrderBy(e => e.PrimerApellido)
+                .Select(e => new SelectListItem
+                {
+                    Value = e.EmpleadoId.ToString(),
+                    Text = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}",
+                    Selected = e.EmpleadoId == selectedId
+                })
+                .ToListAsync();
         }
     }
 }

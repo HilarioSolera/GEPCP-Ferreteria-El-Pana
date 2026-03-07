@@ -1,91 +1,171 @@
-﻿@{
+﻿@model List<GEPCP_Ferreteria_El_Pana.Models.PlanillaDetalleViewModel>
+@{
     ViewData["Title"] = "Planilla - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    bool periodoCerrado = ViewBag.PeriodoCerrado ?? false;
 }
 
-<h2 class="mb-4">
-    Planilla
-    <small class="text-muted">- @ViewBag.Periodo</small>
-    <span class="badge bg-@(ViewBag.Estado == "Abierto" ? "success" : "secondary") fs-6">@ViewBag.Estado</span>
-</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-file-earmark-text"></i> Planilla</h2>
+        <small class="text-muted">
+            Período: <strong>@ViewBag.Periodo</strong> —
+            @if (periodoCerrado)
+            {
+                <span class="badge bg-secondary">Cerrado</span>
+            }
+            else
+            {
+                <span class="badge bg-success">Abierto</span>
+            }
+        </small>
+    </div>
+</div>
 
-<div class="row g-4 mb-5">
-    <!-- TOTAL BRUTO -->
-    <div class="col-md-4">
-        <div class="card text-white bg-success h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-cash-stack fs-1"></i>
-                <h5 class="mt-3">Total Bruto</h5>
-                <h2 class="display-5">₡@ViewBag.TotalBruto.ToString("N0")</h2>
-            </div>
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@* KPIs de planilla *@
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="text-muted small">Empleados</div>
+            <div class="fs-3 fw-bold text-dark">@ViewBag.TotalEmpleados</div>
         </div>
     </div>
-
-    <!-- TOTAL DEDUCCIONES -->
-    <div class="col-md-4">
-        <div class="card text-white bg-warning h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-credit-card fs-1"></i>
-                <h5 class="mt-3">Total Deducciones</h5>
-                <h2 class="display-5">₡@ViewBag.TotalDeducciones.ToString("N0")</h2>
-            </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="text-muted small">Total Bruto</div>
+            <div class="fs-3 fw-bold text-success">₡@ViewBag.TotalBruto.ToString("N0")</div>
         </div>
     </div>
-
-    <!-- TOTAL NETO -->
-    <div class="col-md-4">
-        <div class="card text-white bg-primary h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-graph-up-arrow fs-1"></i>
-                <h5 class="mt-3">Total Neto a Pagar</h5>
-                <h2 class="display-5">₡@ViewBag.TotalNeto.ToString("N0")</h2>
-            </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="text-muted small">Total Deducciones</div>
+            <div class="fs-3 fw-bold text-warning">₡@ViewBag.TotalDeducciones.ToString("N0")</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="text-muted small">Total Neto a Pagar</div>
+            <div class="fs-3 fw-bold text-primary">₡@ViewBag.TotalNeto.ToString("N0")</div>
         </div>
     </div>
 </div>
 
-<!-- BOTONES DE ACCIÓN -->
-<div class="mb-4">
-    <form asp-action="Calcular" method="post" class="d-inline">
-        <button type="submit" class="btn btn-warning btn-lg px-5">
-            <i class="bi bi-calculator"></i> Calcular Planilla
-        </button>
-    </form>
+@* Botones de acción — solo si el período está abierto *@
+@if (!periodoCerrado)
+{
+    <div class="mb-4 d-flex gap-2">
+        <form asp-action="Calcular" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-warning btn-lg px-4">
+                <i class="bi bi-calculator"></i> Recalcular Planilla
+            </button>
+        </form>
 
-    <form asp-action="CerrarPeriodo" method="post" class="d-inline ms-3">
-        <button type="submit" class="btn btn-success btn-lg px-5">
-            <i class="bi bi-lock"></i> Cerrar Período (Inmutable)
-        </button>
-    </form>
-</div>
+        <form asp-action="CerrarPeriodo" method="post" class="d-inline"
+              onsubmit="return confirm('¿Cerrar el período? Esta acción es irreversible.')">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-danger btn-lg px-4">
+                <i class="bi bi-lock-fill"></i> Cerrar Período (Inmutable)
+            </button>
+        </form>
+    </div>
+}
+else
+{
+    <div class="alert alert-secondary mb-4">
+        <i class="bi bi-lock-fill"></i>
+        Este período ya fue cerrado y consolidado. Los datos son de solo lectura.
+    </div>
+}
 
-<hr />
-
-<h5>Detalle por Empleado (demo - después vendrá de la BD)</h5>
-<table class="table table-hover table-striped">
+@* Detalle por empleado *@
+<h5 class="mb-3">Detalle por Empleado</h5>
+<table class="table table-hover table-striped align-middle">
     <thead class="table-dark">
         <tr>
             <th>Empleado</th>
+            <th>Puesto</th>
             <th>Salario Base</th>
             <th>Comisiones</th>
             <th>Cuota Préstamo</th>
-            <th>Neto</th>
+            <th class="text-end">Neto a Pagar</th>
         </tr>
     </thead>
     <tbody>
-        <tr>
-            <td>Hilario Solera Meza</td>
-            <td>₡450,000</td>
-            <td>₡45,000</td>
-            <td>₡15,000</td>
-            <td class="text-success fw-bold">₡480,000</td>
-        </tr>
-        <tr>
-            <td>Juan Pérez</td>
-            <td>₡380,000</td>
-            <td>₡32,000</td>
-            <td>₡8,000</td>
-            <td class="text-success fw-bold">₡404,000</td>
-        </tr>
+        @if (Model == null || !Model.Any())
+        {
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                    No hay empleados activos en este período.
+                </td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var d in Model)
+            {
+                <tr>
+                    <td>
+                        <strong>@d.NombreCompleto</strong>
+                        <br /><small class="text-muted">@d.Cedula</small>
+                    </td>
+                    <td><span class="badge bg-secondary">@d.Puesto</span></td>
+                    <td>₡@d.SalarioBase.ToString("N0")</td>
+                    <td class="text-success">
+                        @if (d.Comisiones > 0)
+                        {
+                            <span>+₡@d.Comisiones.ToString("N0")</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">—</span>
+                        }
+                    </td>
+                    <td class="text-danger">
+                        @if (d.CuotasPrestamos > 0)
+                        {
+                            <span>-₡@d.CuotasPrestamos.ToString("N0")</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">—</span>
+                        }
+                    </td>
+                    <td class="text-end fw-bold text-primary fs-5">
+                        ₡@d.SalarioNeto.ToString("N0")
+                    </td>
+                </tr>
+            }
+        }
     </tbody>
+    @if (Model != null && Model.Any())
+    {
+        <tfoot class="table-dark">
+            <tr>
+                <td colspan="2"><strong>TOTALES</strong></td>
+                <td><strong>₡@ViewBag.TotalBruto.ToString("N0")</strong></td>
+                <td></td>
+                <td class="text-danger"><strong>-₡@ViewBag.TotalDeducciones.ToString("N0")</strong></td>
+                <td class="text-end text-warning fs-5">
+                    <strong>₡@ViewBag.TotalNeto.ToString("N0")</strong>
+                </td>
+            </tr>
+        </tfoot>
+    }
 </table>

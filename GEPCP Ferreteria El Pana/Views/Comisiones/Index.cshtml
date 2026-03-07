@@ -1,48 +1,48 @@
-﻿@model List<GEPCP_Ferreteria_El_Pana.Models.EmpleadoViewModel>
+﻿@model List<GEPCP_Ferreteria_El_Pana.Models.Comision>
 @{
-    ViewData["Title"] = "Empleados - GEPCP Ferretería El Pana";
+    ViewData["Title"] = "Comisiones - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">
-        <i class="bi bi-people"></i> Gestión de Empleados
-    </h2>
-    <a href="/Empleados/Create" class="btn btn-success btn-lg">
-        <i class="bi bi-plus-circle"></i> Nuevo Empleado
+    <h2 class="mb-0"><i class="bi bi-graph-up-arrow"></i> Comisiones</h2>
+    <a href="/Comisiones/Create" class="btn btn-success btn-lg">
+        <i class="bi bi-plus-circle"></i> Nueva Comisión
     </a>
 </div>
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <div class="alert alert-success alert-dismissible fade show">
         <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
-
-<div class="row g-2 mb-3">
-    <div class="col-md-5">
-        <input type="text" id="filtroTexto" class="form-control"
-               placeholder="Buscar por nombre o cédula..." oninput="filtrarTabla()" />
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    <div class="col-md-3">
-        <select id="filtroEstado" class="form-select" onchange="filtrarTabla()">
-            <option value="">Todos los estados</option>
-            <option value="Activo">Activo</option>
-            <option value="Inactivo">Inactivo</option>
-        </select>
-    </div>
-</div>
+}
 
-<table class="table table-hover table-striped align-middle" id="tablaEmpleados">
+@* Resumen total *@
+@if (Model != null && Model.Any())
+{
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-calculator"></i>
+        Total comisiones registradas: <strong>@Model.Count</strong> —
+        Monto total: <strong>₡@Model.Sum(c => c.Monto).ToString("N0")</strong>
+    </div>
+}
+
+<table class="table table-hover table-striped align-middle" id="tablaComisiones">
     <thead class="table-dark">
         <tr>
-            <th>Cédula</th>
-            <th>Nombre Completo</th>
-            <th>Puesto</th>
-            <th>Salario Base</th>
-            <th>Estado</th>
+            <th>Empleado</th>
+            <th>Fecha</th>
+            <th>Monto</th>
+            <th>Descripción</th>
             <th class="text-center">Acciones</th>
         </tr>
     </thead>
@@ -50,47 +50,32 @@
         @if (Model == null || !Model.Any())
         {
             <tr>
-                <td colspan="6" class="text-center text-muted py-4">
+                <td colspan="5" class="text-center text-muted py-4">
                     <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                    No hay empleados registrados.
+                    No hay comisiones registradas.
                 </td>
             </tr>
         }
         else
         {
-            @foreach (var item in Model)
+            @foreach (var c in Model)
             {
                 <tr>
-                    <td><strong>@item.Cedula</strong></td>
-                    <td>@item.Nombre @item.PrimerApellido @item.SegundoApellido</td>
-                    <td>@item.Puesto</td>
-                    <td>₡@item.SalarioBase.ToString("N0")</td>
                     <td>
-                        @if (item.Estado == "Activo")
-                        {
-                            <span class="badge bg-success">Activo</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-secondary">Inactivo</span>
-                        }
+                        <strong>@c.Empleado.PrimerApellido @c.Empleado.Nombre</strong>
+                        <br /><small class="text-muted">@c.Empleado.Puesto</small>
                     </td>
+                    <td>@c.Fecha.ToString("dd/MM/yyyy")</td>
+                    <td class="fw-bold text-success">₡@c.Monto.ToString("N0")</td>
+                    <td>@c.Descripcion</td>
                     <td class="text-center">
-                        <a href="/Empleados/Edit/@item.EmpleadoId" class="btn btn-sm btn-primary me-1">
+                        <a href="/Comisiones/Edit/@c.ComisionId" class="btn btn-sm btn-primary me-1">
                             <i class="bi bi-pencil"></i> Editar
                         </a>
-                        <form asp-action="Desactivar" method="post" class="d-inline me-1"
-                              onsubmit="return confirm('¿Desactivar este empleado?')">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@item.EmpleadoId" />
-                            <button type="submit" class="btn btn-sm btn-warning">
-                                <i class="bi bi-person-slash"></i> Desactivar
-                            </button>
-                        </form>
                         <form asp-action="Delete" method="post" class="d-inline"
-                              onsubmit="return confirm('¿Eliminar permanentemente?')">
+                              onsubmit="return confirm('¿Eliminar esta comisión?')">
                             @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@item.EmpleadoId" />
+                            <input type="hidden" name="id" value="@c.ComisionId" />
                             <button type="submit" class="btn btn-sm btn-danger">
                                 <i class="bi bi-trash"></i> Eliminar
                             </button>
@@ -101,21 +86,3 @@
         }
     </tbody>
 </table>
-
-@section Scripts {
-    <script>
-        function filtrarTabla() {
-            const texto = document.getElementById('filtroTexto').value.toLowerCase();
-            const estado = document.getElementById('filtroEstado').value.toLowerCase();
-            const filas = document.querySelectorAll('#tablaEmpleados tbody tr');
-            filas.forEach(fila => {
-                const cedula = fila.cells[0]?.innerText.toLowerCase() ?? '';
-                const nombre = fila.cells[1]?.innerText.toLowerCase() ?? '';
-                const estadoFila = fila.cells[4]?.innerText.toLowerCase() ?? '';
-                const coincideTexto = cedula.includes(texto) || nombre.includes(texto);
-                const coincideEstado = estado === '' || estadoFila.includes(estado);
-                fila.style.display = coincideTexto && coincideEstado ? '' : 'none';
-            });
-        }
-    </script>
-}

@@ -1,5 +1,5 @@
-﻿using GEPCP_Ferreteria_El_Pana.Models;
-using Microsoft.AspNetCore.Identity;
+﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Models;
 
 namespace GEPCP_Ferreteria_El_Pana.Services
 {
@@ -10,52 +10,29 @@ namespace GEPCP_Ferreteria_El_Pana.Services
 
     public class AuthService : IAuthService
     {
-        private readonly List<Usuario> _users;
-        private readonly PasswordHasher<Usuario> _hasher;
+        private readonly ApplicationDbContext _context;
 
-        public AuthService()
+        public AuthService(ApplicationDbContext context)
         {
-            _hasher = new PasswordHasher<Usuario>();
-
-            // Usuarios semilla (solo demo). En producción usa base de datos / secretos.
-            _users = new List<Usuario>
-            {
-                new Usuario
-                {
-                    Usuario = "admin.rrhh",
-                    Rol = "RRHH",
-                    NombreCompleto = "Administrador RRHH",
-                    PasswordHash = string.Empty // se rellenará abajo
-                },
-                new Usuario
-                {
-                    Usuario = "jefatura",
-                    Rol = "Jefatura",
-                    NombreCompleto = "Usuario Jefatura",
-                    PasswordHash = string.Empty
-                }
-            };
-
-            // Asignar hashes seguros a las contraseñas iniciales
-            var rrhh = _users.First(u => u.Usuario == "admin.rrhh");
-            rrhh.PasswordHash = _hasher.HashPassword(rrhh, "Admin2025!");
-
-            var jefe = _users.First(u => u.Usuario == "jefatura");
-            jefe.PasswordHash = _hasher.HashPassword(jefe, "Jefe2025!");
+            _context = context;
         }
 
         public bool ValidateUser(string usuario, string password, out string rol)
         {
             rol = string.Empty;
+
             if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(password))
                 return false;
 
-            var user = _users.FirstOrDefault(u => u.Usuario.Equals(usuario, System.StringComparison.OrdinalIgnoreCase));
+            var user = _context.Usuarios
+                .FirstOrDefault(u => u.NombreUsuario.ToLower() == usuario.ToLower());
+
             if (user == null)
                 return false;
 
-            var verify = _hasher.VerifyHashedPassword(user, user.PasswordHash, password);
-            if (verify == PasswordVerificationResult.Success)
+            bool passwordValida = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
+
+            if (passwordValida)
             {
                 rol = user.Rol;
                 return true;

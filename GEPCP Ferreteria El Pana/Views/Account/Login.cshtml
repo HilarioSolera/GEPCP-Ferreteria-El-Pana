@@ -9,30 +9,76 @@
         <div class="row justify-content-center align-items-center min-vh-100">
             <div class="col-md-5 col-lg-4">
                 <div class="login-card">
+
                     <div class="card-header text-center py-4">
-                        <h3>GEPCP Ferretería El Pana</h3>
-                        <small>Acceso exclusivo RR.HH. y Jefatura</small>
+                        <h4 class="mb-1 fw-bold">
+                            <i class="bi bi-building"></i> GEPCP
+                        </h4>
+                        <p class="mb-0 small">
+                            Ferretería El Pana — Acceso exclusivo RR.HH. y Jefatura
+                        </p>
                     </div>
+
                     <div class="card-body p-5">
+
+                        @* Mensaje de error *@
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            foreach (var error in ViewData.ModelState[""]?.Errors
+                            ?? new Microsoft.AspNetCore.Mvc.ModelBinding.ModelErrorCollection())
+                            {
+                                <div class="alert alert-danger py-2">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    @error.ErrorMessage
+                                </div>
+                            }
+                        }
+
                         <form asp-action="Login" method="post">
+                            @Html.AntiForgeryToken()
+
                             <div class="mb-4">
-                                <label asp-for="Usuario" class="form-label fw-bold">Usuario o Correo</label>
-                                <input asp-for="Usuario" class="form-control form-control-lg" placeholder="admin.rrhh" />
-                                <span asp-validation-for="Usuario" class="text-danger"></span>
+                                <label asp-for="Usuario" class="form-label fw-bold">
+                                    <i class="bi bi-person"></i> Usuario
+                                </label>
+                                <input asp-for="Usuario"
+                                       class="form-control form-control-lg"
+                                       placeholder="admin.rrhh"
+                                       autocomplete="username" />
+                                <span asp-validation-for="Usuario" class="text-danger small"></span>
                             </div>
+
                             <div class="mb-4">
-                                <label asp-for="Password" class="form-label fw-bold">Contraseña</label>
-                                <input asp-for="Password" type="password" class="form-control form-control-lg" placeholder="••••••••" />
-                                <span asp-validation-for="Password" class="text-danger"></span>
+                                <label asp-for="Password" class="form-label fw-bold">
+                                    <i class="bi bi-lock"></i> Contraseña
+                                </label>
+                                <input asp-for="Password"
+                                       type="password"
+                                       class="form-control form-control-lg"
+                                       placeholder="••••••••"
+                                       autocomplete="current-password" />
+                                <span asp-validation-for="Password" class="text-danger small"></span>
                             </div>
 
                             <button type="submit" class="btn btn-orange btn-lg w-100 py-3">
-                                Ingresar al Sistema
+                                <i class="bi bi-box-arrow-in-right"></i> Ingresar al Sistema
                             </button>
+
                         </form>
                     </div>
+
+                    <div class="card-footer text-center text-muted small py-2">
+                        GEPCP &copy; @DateTime.Now.Year — Ferretería El Pana SRL
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

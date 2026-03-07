@@ -1,0 +1,126 @@
+﻿@model GEPCP_Ferreteria_El_Pana.Models.EmpleadoViewModel
+@{
+    ViewData["Title"] = "Detalle Empleado - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-badge"></i> Detalle del Empleado</h2>
+    <div class="d-flex gap-2">
+        <a href="/Empleados/Edit/@Model.EmpleadoId" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+        <a href="/Empleados/Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center"
+         style="background-color: #FF7A00;">
+        <h5 class="mb-0 text-white fw-bold">
+            <i class="bi bi-person-circle"></i>
+            @Model.PrimerApellido @Model.SegundoApellido @Model.Nombre
+        </h5>
+        @if (Model.Estado == "Activo")
+        {
+            <span class="badge bg-success fs-6">Activo</span>
+        }
+        else
+        {
+            <span class="badge bg-secondary fs-6">Inactivo</span>
+        }
+    </div>
+
+    <div class="card-body p-4">
+        <div class="row g-4">
+
+            <div class="col-md-6">
+                <div class="card border-0 bg-light h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-person"></i> Información Personal
+                        </h6>
+                        <table class="table table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <td class="fw-bold text-muted" style="width:45%">Cédula</td>
+                                    <td>@Model.Cedula</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Nombre</td>
+                                    <td>@Model.Nombre</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Primer Apellido</td>
+                                    <td>@Model.PrimerApellido</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Segundo Apellido</td>
+                                    <td>@(string.IsNullOrEmpty(Model.SegundoApellido) ? "—" : Model.SegundoApellido)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card border-0 bg-light h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-briefcase"></i> Información Laboral
+                        </h6>
+                        <table class="table table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <td class="fw-bold text-muted" style="width:45%">Puesto</td>
+                                    <td>@Model.Puesto</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Salario Base</td>
+                                    <td class="fw-bold text-success">₡@Model.SalarioBase.ToString("N2")</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Estado</td>
+                                    <td>
+                                        @if (Model.Estado == "Activo")
+                                        {
+                                            <span class="badge bg-success">Activo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inactivo</span>
+                                        }
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card-footer bg-transparent d-flex gap-2 py-3">
+        <a href="/Empleados/Edit/@Model.EmpleadoId" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar Empleado
+        </a>
+        @if (Model.Estado == "Activo")
+        {
+            <form asp-controller="Empleados" asp-action="Desactivar" method="post" class="d-inline"
+                  onsubmit="return confirm('¿Desactivar a @Model.Nombre @Model.PrimerApellido?')">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.EmpleadoId" />
+                <button type="submit" class="btn btn-secondary">
+                    <i class="bi bi-pause-circle"></i> Desactivar
+                </button>
+            </form>
+        }
+        <a href="/Empleados/Index" class="btn btn-outline-secondary ms-auto">
+            <i class="bi bi-arrow-left"></i> Volver al Listado
+        </a>
+    </div>
+</div>

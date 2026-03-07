@@ -1,0 +1,88 @@
+﻿@model List<GEPCP_Ferreteria_El_Pana.Models.Usuario>
+@{
+    ViewData["Title"] = "Usuarios - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var usuarioActual = Context.Session.GetString("Usuario");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-people"></i> Gestión de Usuarios</h2>
+    <a href="/Usuarios/Create" class="btn btn-success btn-lg">
+        <i class="bi bi-person-plus"></i> Nuevo Usuario
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<table class="table table-hover table-striped align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>Usuario</th>
+            <th>Nombre Completo</th>
+            <th>Rol</th>
+            <th class="text-center">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Any())
+        {
+            <tr>
+                <td colspan="4" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                    No hay usuarios registrados.
+                </td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var u in Model)
+            {
+                <tr>
+                    <td>
+                        <strong>@u.NombreUsuario</strong>
+                        @if (u.NombreUsuario == usuarioActual)
+                        {
+                            <span class="badge bg-primary ms-1">Tú</span>
+                        }
+                    </td>
+                    <td>@u.NombreCompleto</td>
+                    <td>
+                        <span class="badge @(u.Rol == "RRHH" ? "bg-success" : "bg-info")">
+                            @u.Rol
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <a href="/Usuarios/CambiarPassword/@u.UsuarioId"
+                           class="btn btn-sm btn-warning me-1">
+                            <i class="bi bi-key"></i> Cambiar Contraseña
+                        </a>
+                        @if (u.NombreUsuario != usuarioActual)
+                        {
+                            <form asp-action="Delete" method="post" class="d-inline"
+                                  onsubmit="return confirm('¿Eliminar el usuario @u.NombreUsuario?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@u.UsuarioId" />
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
