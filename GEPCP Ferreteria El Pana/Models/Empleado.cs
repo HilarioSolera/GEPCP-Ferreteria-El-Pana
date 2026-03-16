@@ -1,46 +1,49 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Collections.Generic;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
     public class Empleado
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int EmpleadoId { get; set; }
 
-        [Required, StringLength(20)]
-        [Display(Name = "Cédula")]
+        [Required]
+        [StringLength(20)]
         public string Cedula { get; set; } = string.Empty;
 
-        [Required, StringLength(100)]
-        [Display(Name = "Nombre")]
+        [Required]
+        [StringLength(100)]
         public string Nombre { get; set; } = string.Empty;
 
-        [Required, StringLength(50)]
-        [Display(Name = "Primer Apellido")]
+        [Required]
+        [StringLength(50)]
         public string PrimerApellido { get; set; } = string.Empty;
 
         [StringLength(50)]
-        [Display(Name = "Segundo Apellido")]
         public string? SegundoApellido { get; set; }
 
-        [Required, StringLength(100)]
-        [Display(Name = "Puesto")]
+        [Required]
+        [StringLength(100)]
         public string Puesto { get; set; } = string.Empty;
 
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
-        [Display(Name = "Salario Base")]
         public decimal SalarioBase { get; set; }
 
-        [Display(Name = "Activo")]
         public bool Activo { get; set; } = true;
 
-        // Colecciones de navegación (relaciones uno-a-muchos)
-        public virtual ICollection<Comision> Comisiones { get; set; } = new List<Comision>();
-        public virtual ICollection<Planilla> Planillas { get; set; } = new List<Planilla>();
-        public virtual ICollection<Prestamo> Prestamos { get; set; } = new List<Prestamo>();
+        // ── NUEVOS CAMPOS ──────────────────────────────
+        [StringLength(20)]
+        [Display(Name = "Teléfono / Celular")]
+        public string? Telefono { get; set; }
+
+        [StringLength(150)]
+        [EmailAddress]
+        [Display(Name = "Correo Electrónico")]
+        public string? CorreoElectronico { get; set; }
+        // ───────────────────────────────────────────────
+
+        // Navegación
+        public ICollection<Comision> Comisiones { get; set; } = new List<Comision>();
+        public ICollection<Planilla> Planillas { get; set; } = new List<Planilla>();
+        public ICollection<Prestamo> Prestamos { get; set; } = new List<Prestamo>();
     }
 }

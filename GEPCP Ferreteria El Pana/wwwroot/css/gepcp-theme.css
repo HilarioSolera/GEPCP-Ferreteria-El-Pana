@@ -1,75 +1,125 @@
 ﻿:root {
     --primary-orange: #FF7A00;
+    --primary-dark: #CC6200;
+    --white-glass: rgba(255, 255, 255, 0.12);
+    --white-border: rgba(255, 255, 255, 0.30);
+    --text-light: rgba(255, 255, 255, 0.95);
+    --text-muted: rgba(255, 255, 255, 0.65);
+    --shadow-heavy: 0 25px 60px rgba(0, 0, 0, 0.45);
+    --shadow-glow: 0 0 40px rgba(255, 122, 0, 0.35);
 }
 
-/* FONDO CON LOGO GRANDE PERO COMPLETO */
+/* ── FONDO LOGIN ─────────────────────────────────────────── */
 .login-page {
-    background-image: url('/images/logo-el-pana.png');
-    background-size: 48%; /* ← más pequeño para que se vea completo */
+    background-image: url('/images/logo-el-pana.jpg');
+    background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
     background-attachment: fixed;
     min-height: 100vh;
     position: relative;
+    display: flex;
+    align-items: center;
 }
 
-    /* Fondo oscuro para que se lea todo */
+    /* Overlay degradado sobre el fondo */
     .login-page::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient( 135deg, rgba(20, 10, 0, 0.82) 0%, rgba(180, 80, 0, 0.55) 50%, rgba(20, 10, 0, 0.82) 100% );
+        z-index: 1;
+    }
+
+/* ── CARD GLASSMORPHISM ──────────────────────────────────── */
+.login-card {
+    background: var(--white-glass);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--white-border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-heavy), var(--shadow-glow);
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+    .login-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 35px 70px rgba(0,0,0,0.5), 0 0 50px rgba(255,122,0,0.4);
+    }
+
+    /* Línea brillante superior */
+    .login-card::before {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
-        bottom: 0;
-        background: rgba(28, 28, 28, 0.72);
-        z-index: 1;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, #FF7A00, #FFB347, #FF7A00, transparent);
+        z-index: 3;
     }
 
-/* Navbar siempre arriba */
-.navbar {
-    z-index: 100 !important;
-    position: relative;
-}
-
-/* Card y botón naranja del logo */
-.login-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
-    position: relative;
-    z-index: 2;
-}
-
+    /* ── HEADER DE LA CARD ───────────────────────────────────── */
     .login-card .card-header {
-        background: var(--primary-orange);
+        background: linear-gradient(135deg, rgba(255,122,0,0.90), rgba(204,98,0,0.90));
         color: white;
+        border: none;
+        padding: 2rem 2rem 1.5rem;
+        text-align: center;
+        border-radius: 20px 20px 0 0 !important;
     }
 
-.btn-orange {
-    background-color: var(--primary-orange);
-    color: white;
-    border: none;
-}
+        .login-card .card-header h4 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            margin-bottom: 0.3rem;
+        }
 
-    .btn-orange:hover {
-        background-color: #e66a00;
-    }
-/* MENU INTERACTIVO + FORMAL */
-.menu-link {
-    color: white !important;
-    font-weight: 500;
-    padding: 8px 16px !important;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-}
+        .login-card .card-header p {
+            font-size: 0.82rem;
+            opacity: 0.88;
+            margin-bottom: 0;
+        }
 
-    .menu-link:hover {
-        background-color: rgba(255, 255, 255, 0.25) !important;
-        color: white !important;
-        transform: scale(1.05);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    /* ── BODY DE LA CARD ─────────────────────────────────────── */
+    .login-card .card-body {
+        padding: 2.2rem 2.5rem;
     }
 
-    .menu-link i {
-        margin-right: 6px;
+    /* ── LABELS ──────────────────────────────────────────────── */
+    .login-card .form-label {
+        color: var(--text-light);
+        font-weight: 600;
+        font-size: 0.88rem;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        margin-bottom: 0.4rem;
     }
+
+    /* ── INPUTS ──────────────────────────────────────────────── */
+    .login-card .form-control {
+        background: rgba(255, 255, 255, 0.18);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 10px;
+        color: white;
+        font-size: 1rem;
+        padding: 0.75rem 1rem;
+        transition: all 0.25s ease;
+    }
+
+        .login-card .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.45);
+        }
+
+        .login-card .form-control:focus {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: #FF7A00;
+            box-shadow: 0 0 0 3px rgba(255,122,0,0.30), 0 4px 15px rgba(255,122,0,0.15);
+            color: white;
+            outline: non

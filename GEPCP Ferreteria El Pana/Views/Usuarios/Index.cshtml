@@ -6,83 +6,128 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="bi bi-people"></i> Gestión de Usuarios</h2>
-    <a href="/Usuarios/Create" class="btn btn-success btn-lg">
+    <h2 class="mb-0"><i class="bi bi-person-gear"></i> Gestión de Usuarios</h2>
+    <a asp-action="Create" class="btn btn-success btn-lg">
         <i class="bi bi-person-plus"></i> Nuevo Usuario
     </a>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+@* KPIs *@
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-4 fw-bold text-primary">@ViewBag.TotalUsuarios</div>
+            <div class="text-muted small">Total Usuarios</div>
+        </div>
     </div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-4 fw-bold text-success">@ViewBag.TotalRRHH</div>
+            <div class="text-muted small">Usuarios RRHH</div>
+        </div>
     </div>
-}
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-4 fw-bold text-info">@ViewBag.TotalJefatura</div>
+            <div class="text-muted small">Usuarios Jefatura</div>
+        </div>
+    </div>
+</div>
 
-<table class="table table-hover table-striped align-middle">
-    <thead class="table-dark">
-        <tr>
-            <th>Usuario</th>
-            <th>Nombre Completo</th>
-            <th>Rol</th>
-            <th class="text-center">Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (!Model.Any())
+@* Búsqueda *@
+<form asp-action="Index" method="get" class="mb-4">
+    <div class="input-group shadow-sm">
+        <span class="input-group-text bg-white">
+            <i class="bi bi-search text-muted"></i>
+        </span>
+        <input type="text" name="busqueda" value="@ViewBag.Busqueda"
+               class="form-control border-start-0"
+               placeholder="Buscar por usuario, nombre completo o rol..." />
+        <button type="submit" class="btn btn-primary px-4">Buscar</button>
+        @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string))
         {
-            <tr>
-                <td colspan="4" class="text-center text-muted py-4">
-                    <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                    No hay usuarios registrados.
-                </td>
-            </tr>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Limpiar
+            </a>
         }
-        else
-        {
-            @foreach (var u in Model)
-            {
+    </div>
+</form>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info text-center py-4">
+        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+        No se encontraron usuarios.
+    </div>
+}
+else
+{
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-hover align-middle mb-0">
+            <thead style="background-color: #FF7A00; color: white;">
                 <tr>
-                    <td>
-                        <strong>@u.NombreUsuario</strong>
-                        @if (u.NombreUsuario == usuarioActual)
-                        {
-                            <span class="badge bg-primary ms-1">Tú</span>
-                        }
-                    </td>
-                    <td>@u.NombreCompleto</td>
-                    <td>
-                        <span class="badge @(u.Rol == "RRHH" ? "bg-success" : "bg-info")">
-                            @u.Rol
-                        </span>
-                    </td>
-                    <td class="text-center">
-                        <a href="/Usuarios/CambiarPassword/@u.UsuarioId"
-                           class="btn btn-sm btn-warning me-1">
-                            <i class="bi bi-key"></i> Cambiar Contraseña
-                        </a>
-                        @if (u.NombreUsuario != usuarioActual)
-                        {
-                            <form asp-action="Delete" method="post" class="d-inline"
-                                  onsubmit="return confirm('¿Eliminar el usuario @u.NombreUsuario?')">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@u.UsuarioId" />
-                                <button type="submit" class="btn btn-sm btn-danger">
-                                    <i class="bi bi-trash"></i> Eliminar
-                                </button>
-                            </form>
-                        }
-                    </td>
+                    <th>Usuario</th>
+                    <th>Nombre Completo</th>
+                    <th class="text-center">Rol</th>
+                    <th class="text-center">Acciones</th>
                 </tr>
-            }
-        }
-    </tbody>
-</table>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    var esActual = u.NombreUsuario == usuarioActual;
+                    <tr class="@(esActual ? "table-warning" : "")">
+                        <td>
+                            <i class="bi bi-person-circle text-muted me-1"></i>
+                            <strong>@u.NombreUsuario</strong>
+                            @if (esActual)
+                            {
+                                <span class="badge bg-primary ms-1">
+                                    <i class="bi bi-check-circle"></i> Tú
+                                </span>
+                            }
+                        </td>
+                        <td>@u.NombreCompleto</td>
+                        <td class="text-center">
+                            <span class="badge fs-6 @(u.Rol == "RRHH" ? "bg-success" : "bg-info")">
+                                <i class="bi @(u.Rol == "RRHH" ? "bi-shield-fill-check" : "bi-person-badge")"></i>
+                                @u.Rol
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <a asp-action="CambiarPassword" asp-route-id="@u.UsuarioId"
+                                   class="btn btn-sm btn-warning" title="Cambiar contraseña">
+                                    <i class="bi bi-key"></i>
+                                </a>
+                                @if (!esActual)
+                                {
+                                    <form asp-action="Delete" method="post" class="d-inline"
+                                          onsubmit="return confirm('¿Eliminar el usuario @u.NombreUsuario? Esta acción no se puede deshacer.')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@u.UsuarioId" />
+                                        <button type="submit" class="btn btn-sm btn-danger"
+                                                title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                            disabled title="No podés eliminar tu propio usuario">
+                                        <i class="bi bi-lock"></i>
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="text-muted small mt-2 text-end">
+        Total: <strong>@Model.Count</strong> usuario(s)
+    </div>
+}

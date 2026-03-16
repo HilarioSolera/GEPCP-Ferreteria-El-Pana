@@ -1,6 +1,7 @@
 ﻿@{
     ViewData["Title"] = "Dashboard Ejecutivo";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var rol = ViewBag.Rol as string ?? "";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -13,20 +14,13 @@
             Rol: <span class="badge bg-secondary">@ViewBag.Rol</span>
         </small>
     </div>
-    <span class="text-muted small">@DateTime.Now.ToString("dddd, dd MMMM yyyy")</span>
+    <span class="text-muted small">
+        @DateTime.Now.ToString("dddd, dd MMMM yyyy")
+    </span>
 </div>
 
-@* Mensajes de éxito/error *@
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="bi bi-check-circle-fill"></i> @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
-@* KPIs *@
-<div class="row g-4 mb-5">
+@* ── KPIs FILA 1 ──────────────────────────────────────────────────── *@
+<div class="row g-4 mb-4">
 
     <div class="col-md-3">
         <div class="card border-0 shadow-sm h-100">
@@ -36,11 +30,14 @@
                 </div>
                 <div>
                     <div class="text-muted small">Empleados Activos</div>
-                    <div class="fs-3 fw-bold text-success">@ViewBag.TotalEmpleadosActivos</div>
+                    <div class="fs-3 fw-bold text-success">
+                        @ViewBag.TotalEmpleadosActivos
+                    </div>
                 </div>
             </div>
             <div class="card-footer bg-transparent border-0 pt-0">
-                <a href="/Empleados" class="small text-decoration-none text-success">
+                <a asp-controller="Empleados" asp-action="Index"
+                   class="small text-decoration-none text-success">
                     Ver empleados <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
@@ -61,7 +58,8 @@
                 </div>
             </div>
             <div class="card-footer bg-transparent border-0 pt-0">
-                <a href="/Planilla" class="small text-decoration-none text-primary">
+                <a asp-controller="Planilla" asp-action="Index"
+                   class="small text-decoration-none text-primary">
                     Ver planilla <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
@@ -72,7 +70,7 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="rounded-circle bg-warning bg-opacity-10 p-3">
-                    <i class="bi bi-credit-card fs-3 text-warning"></i>
+                    <i class="bi bi-cash-coin fs-3 text-warning"></i>
                 </div>
                 <div>
                     <div class="text-muted small">Saldo Préstamos</div>
@@ -82,7 +80,8 @@
                 </div>
             </div>
             <div class="card-footer bg-transparent border-0 pt-0">
-                <a href="/Prestamos" class="small text-decoration-none text-warning">
+                <a asp-controller="Prestamos" asp-action="Index"
+                   class="small text-decoration-none text-warning">
                     Ver préstamos <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
@@ -96,14 +95,15 @@
                     <i class="bi bi-graph-up fs-3 text-info"></i>
                 </div>
                 <div>
-                    <div class="text-muted small">Comisiones del Período</div>
+                    <div class="text-muted small">Comisiones Registradas</div>
                     <div class="fs-3 fw-bold text-info">
                         ₡@ViewBag.TotalComisiones.ToString("N0")
                     </div>
                 </div>
             </div>
             <div class="card-footer bg-transparent border-0 pt-0">
-                <a href="/Comisiones" class="small text-decoration-none text-info">
+                <a asp-controller="Comisiones" asp-action="Index"
+                   class="small text-decoration-none text-info">
                     Ver comisiones <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
@@ -112,31 +112,116 @@
 
 </div>
 
-@* Accesos rápidos *@
-<h5 class="mb-3 text-muted">Accesos Rápidos</h5>
+@* ── KPIs FILA 2 ──────────────────────────────────────────────────── *@
+<div class="row g-4 mb-5">
+
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-danger bg-opacity-10 p-3">
+                    <i class="bi bi-credit-card fs-3 text-danger"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Préstamos Activos</div>
+                    <div class="fs-3 fw-bold text-danger">
+                        @ViewBag.TotalPrestamosActivos
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0">
+                <a asp-controller="Prestamos" asp-action="Index"
+                   class="small text-decoration-none text-danger">
+                    Ver préstamos <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if (rol == "RRHH")
+    {
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle p-3"
+                         style="background-color: rgba(255,122,0,0.10);">
+                        <i class="bi bi-briefcase fs-3"
+                           style="color: #FF7A00;"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Puestos Activos</div>
+                        <div class="fs-3 fw-bold" style="color: #FF7A00;">
+                            @ViewBag.TotalPuestosActivos
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0">
+                    <a asp-controller="Puestos" asp-action="Index"
+                       class="small text-decoration-none"
+                       style="color: #FF7A00;">
+                        Ver puestos <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+
+</div>
+
+@* ── ACCESOS RÁPIDOS ──────────────────────────────────────────────── *@
+<h5 class="mb-3 text-muted">
+    <i class="bi bi-lightning-charge"></i> Accesos Rápidos
+</h5>
 <div class="row g-3">
-    <div class="col-md-3">
-        <a href="/Empleados/Create" class="btn btn-outline-success w-100 py-3">
-            <i class="bi bi-person-plus fs-4 d-block mb-1"></i>
-            Nuevo Empleado
-        </a>
-    </div>
-    <div class="col-md-3">
-        <a href="/Prestamos/Create" class="btn btn-outline-warning w-100 py-3">
-            <i class="bi bi-cash-coin fs-4 d-block mb-1"></i>
-            Nuevo Préstamo
-        </a>
-    </div>
-    <div class="col-md-3">
-        <a href="/Comisiones/Create" class="btn btn-outline-info w-100 py-3">
-            <i class="bi bi-graph-up-arrow fs-4 d-block mb-1"></i>
-            Nueva Comisión
-        </a>
-    </div>
-    <div class="col-md-3">
-        <a href="/Planilla/Index" class="btn btn-outline-primary w-100 py-3">
+
+    @if (rol == "RRHH")
+    {
+        <div class="col-md-2">
+            <a asp-controller="Empleados" asp-action="Create"
+               class="btn btn-outline-success w-100 py-3">
+                <i class="bi bi-person-plus fs-4 d-block mb-1"></i>
+                Nuevo Empleado
+            </a>
+        </div>
+
+        <div class="col-md-2">
+            <a asp-controller="Prestamos" asp-action="Create"
+               class="btn btn-outline-warning w-100 py-3">
+                <i class="bi bi-cash-coin fs-4 d-block mb-1"></i>
+                Nuevo Préstamo
+            </a>
+        </div>
+
+        <div class="col-md-2">
+            <a asp-controller="Comisiones" asp-action="Create"
+               class="btn btn-outline-info w-100 py-3">
+                <i class="bi bi-graph-up-arrow fs-4 d-block mb-1"></i>
+                Nueva Comisión
+            </a>
+        </div>
+
+        <div class="col-md-2">
+            <a asp-controller="Empleados" asp-action="Index"
+               class="btn btn-outline-secondary w-100 py-3">
+                <i class="bi bi-people fs-4 d-block mb-1"></i>
+                Ver Empleados
+            </a>
+        </div>
+
+        <div class="col-md-2">
+            <a asp-controller="Puestos" asp-action="Index"
+               class="btn btn-outline-secondary w-100 py-3">
+                <i class="bi bi-briefcase fs-4 d-block mb-1"></i>
+                Ver Puestos
+            </a>
+        </div>
+    }
+
+    <div class="col-md-2">
+        <a asp-controller="Planilla" asp-action="Index"
+           class="btn btn-outline-primary w-100 py-3">
             <i class="bi bi-file-earmark-text fs-4 d-block mb-1"></i>
             Ver Planilla
         </a>
     </div>
+
 </div>

@@ -36,6 +36,7 @@
     <div class="card-body p-4">
         <div class="row g-4">
 
+            @* Información Personal *@
             <div class="col-md-6">
                 <div class="card border-0 bg-light h-100">
                     <div class="card-body">
@@ -60,12 +61,43 @@
                                     <td class="fw-bold text-muted">Segundo Apellido</td>
                                     <td>@(string.IsNullOrEmpty(Model.SegundoApellido) ? "—" : Model.SegundoApellido)</td>
                                 </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Teléfono</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(Model.Telefono))
+                                        {
+                                            <a href="tel:@Model.Telefono" class="text-decoration-none">
+                                                <i class="bi bi-phone"></i> @Model.Telefono
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Correo</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(Model.CorreoElectronico))
+                                        {
+                                            <a href="mailto:@Model.CorreoElectronico" class="text-decoration-none">
+                                                <i class="bi bi-envelope"></i> @Model.CorreoElectronico
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
+            @* Información Laboral *@
             <div class="col-md-6">
                 <div class="card border-0 bg-light h-100">
                     <div class="card-body">
@@ -119,6 +151,9 @@
                 </button>
             </form>
         }
+        <a href="/Empleados/Delete/@Model.EmpleadoId" class="btn btn-danger">
+            <i class="bi bi-trash"></i> Eliminar
+        </a>
         <a href="/Empleados/Index" class="btn btn-outline-secondary ms-auto">
             <i class="bi bi-arrow-left"></i> Volver al Listado
         </a>

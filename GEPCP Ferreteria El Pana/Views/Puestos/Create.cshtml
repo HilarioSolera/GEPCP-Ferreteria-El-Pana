@@ -5,40 +5,51 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-briefcase"></i> Nuevo Puesto</h2>
-    <a href="/Puestos" class="btn btn-outline-secondary">
+    <h2 class="mb-0"><i class="bi bi-briefcase"></i> Nuevo Puesto</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
-<div class="card shadow-sm border-0">
+<div class="card shadow-sm border-0" style="max-width: 600px;">
     <div class="card-body p-4">
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
             <div class="row g-3">
 
-                <div class="col-md-8">
+                <div class="col-12">
                     <label asp-for="Nombre" class="form-label fw-bold">
-                        <i class="bi bi-briefcase"></i> Nombre del Puesto
+                        <i class="bi bi-briefcase"></i> Nombre del Puesto <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Nombre" class="form-control form-control-lg"
+                           maxlength="100"
                            placeholder="Ej: Vendedor, Chofer, Bodeguero" />
                     <span asp-validation-for="Nombre" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-12">
                     <label asp-for="SalarioBase" class="form-label fw-bold">
-                        <i class="bi bi-cash"></i> Salario Base (₡)
+                        <i class="bi bi-currency-dollar"></i> Salario Base (₡) <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="SalarioBase" type="number" min="0" step="1"
-                           class="form-control form-control-lg" placeholder="0" />
+                    <input asp-for="SalarioBase" type="number" min="0"
+                           step="0.01" max="9999999.99"
+                           class="form-control form-control-lg"
+                           placeholder="Ej: 380000" />
+                    <div class="form-text text-muted">
+                        Este salario se usará como referencia al crear empleados con este puesto.
+                    </div>
                     <span asp-validation-for="SalarioBase" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-4">
-                    <div class="form-check form-switch mt-4">
+                <div class="col-12">
+                    <div class="form-check form-switch mt-2">
                         <input asp-for="Activo" class="form-check-input" type="checkbox" />
-                        <label asp-for="Activo" class="form-check-label fw-bold">Activo</label>
+                        <label asp-for="Activo" class="form-check-label fw-bold">
+                            Puesto activo
+                        </label>
+                        <div class="form-text text-muted">
+                            Solo los puestos activos aparecen al crear empleados.
+                        </div>
                     </div>
                 </div>
 
@@ -48,7 +59,7 @@
                 <button type="submit" class="btn btn-success btn-lg px-5">
                     <i class="bi bi-check-circle"></i> Crear Puesto
                 </button>
-                <a href="/Puestos" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
             </div>
         </form>
     </div>

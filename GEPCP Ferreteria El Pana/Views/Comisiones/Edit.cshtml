@@ -5,13 +5,13 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-pencil"></i> Editar Comisión</h2>
-    <a href="/Comisiones" class="btn btn-outline-secondary">
+    <h2 class="mb-0"><i class="bi bi-pencil"></i> Editar Comisión</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
-<div class="card shadow-sm border-0">
+<div class="card shadow-sm border-0" style="max-width: 700px;">
     <div class="card-body p-4">
         <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
@@ -19,9 +19,9 @@
 
             <div class="row g-3">
 
-                <div class="col-md-12">
+                <div class="col-12">
                     <label asp-for="EmpleadoId" class="form-label fw-bold">
-                        <i class="bi bi-person"></i> Empleado
+                        <i class="bi bi-person"></i> Empleado <span class="text-danger">*</span>
                     </label>
                     <select asp-for="EmpleadoId" asp-items="ViewBag.Empleados"
                             class="form-select form-select-lg">
@@ -32,36 +32,41 @@
 
                 <div class="col-md-6">
                     <label asp-for="Monto" class="form-label fw-bold">
-                        <i class="bi bi-cash"></i> Monto (₡)
+                        <i class="bi bi-cash"></i> Monto (₡) <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Monto" type="number" min="1" step="1"
+                    <input asp-for="Monto" type="number" min="1" step="0.01"
+                           max="9999999.99"
                            class="form-control form-control-lg" />
                     <span asp-validation-for="Monto" class="text-danger small"></span>
                 </div>
 
                 <div class="col-md-6">
                     <label asp-for="Fecha" class="form-label fw-bold">
-                        <i class="bi bi-calendar"></i> Fecha
+                        <i class="bi bi-calendar"></i> Fecha <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Fecha" type="date" class="form-control form-control-lg" />
+                    <input asp-for="Fecha" type="date"
+                           class="form-control form-control-lg"
+                           max="@DateTime.Today.ToString("yyyy-MM-dd")" />
                     <span asp-validation-for="Fecha" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-12">
+                <div class="col-12">
                     <label asp-for="Descripcion" class="form-label fw-bold">
-                        <i class="bi bi-chat-text"></i> Descripción
+                        <i class="bi bi-chat-text"></i> Descripción <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Descripcion" class="form-control form-control-lg" />
+                    <input asp-for="Descripcion" class="form-control form-control-lg"
+                           maxlength="200" />
+                    <div class="form-text text-muted">Máximo 200 caracteres.</div>
                     <span asp-validation-for="Descripcion" class="text-danger small"></span>
                 </div>
 
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary btn-lg px-5">
+                <button type="submit" class="btn btn-warning btn-lg px-5">
                     <i class="bi bi-check-circle"></i> Guardar Cambios
                 </button>
-                <a href="/Comisiones" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
             </div>
         </form>
     </div>

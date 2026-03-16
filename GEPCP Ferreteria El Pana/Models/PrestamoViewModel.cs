@@ -32,5 +32,9 @@ namespace GEPCP_Ferreteria_El_Pana.Models
 
         [Display(Name = "Estado")]
         public string Estado { get; set; } = "Activo";
+        [Required(ErrorMessage = "La fecha del préstamo es obligatoria")]
+        [DataType(DataType.Date)]
+        [Display(Name = "Fecha del Préstamo")]
+        public DateTime FechaPrestamo { get; set; } = DateTime.Today;
     }
 }

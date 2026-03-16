@@ -1,104 +1,164 @@
 ﻿@model IEnumerable<GEPCP_Ferreteria_El_Pana.Models.EmpleadoViewModel>
-
 @{
     ViewData["Title"] = "Empleados - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container mt-4">
-    <h2 class="mb-4">Listado de Empleados</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-people"></i> Empleados</h2>
+    <a asp-action="Create" class="btn btn-success btn-lg">
+        <i class="bi bi-person-plus"></i> Nuevo Empleado
+    </a>
+</div>
 
-    <p>
-        <a asp-action="Create" class="btn btn-success btn-lg">Nuevo Empleado</a>
-    </p>
-
-    @if (Model == null || !Model.Any())
+@* Barra de búsqueda *@
+<form asp-action="Index" method="get" class="mb-4">
+    <div class="input-group input-group-lg shadow-sm">
+        <span class="input-group-text bg-white">
+            <i class="bi bi-search text-muted"></i>
+        </span>
+        <input type="text" name="busqueda" value="@ViewBag.Busqueda"
+               class="form-control border-start-0"
+               placeholder="Buscar por nombre, apellido, cédula, puesto, correo o teléfono..." />
+        <button type="submit" class="btn btn-primary px-4">Buscar</button>
+        @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string))
+        {
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Limpiar
+            </a>
+        }
+    </div>
+    @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string))
     {
-        <div class="alert alert-info text-center">
-            No hay empleados registrados aún.
-        </div>
+        <small class="text-muted ms-1 mt-1 d-block">
+            Resultados para: <strong>"@ViewBag.Busqueda"</strong>
+            — @Model.Count() empleado(s) encontrado(s)
+        </small>
     }
-    else
-    {
-        <div class="table-responsive">
-            <table class="table table-striped table-hover table-bordered">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Cédula</th>
-                        <th>Nombre Completo</th>
-                        <th>Puesto</th>
-                        <th>Salario Base</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model)
-                    {
-                        <tr>
-                            <td>@item.Cedula</td>
-                            <td>
-                                @item.Nombre @item.PrimerApellido
-                                @(string.IsNullOrEmpty(item.SegundoApellido) ? "" : item.SegundoApellido)
-                            </td>
-                            <td>@item.Puesto</td>
-                            <td>@item.SalarioBase.ToString("N0") ₡</td>
-                            <td>
-                                <span class="badge @(item.Estado == "Activo" ? "bg-success" : "bg-danger")">
-                                    @item.Estado
-                                </span>
-                            </td>
-                            <td>
-                                <a asp-action="Edit" asp-route-id="@item.EmpleadoId" class="btn btn-primary btn-sm me-1">
-                                    <i class="bi bi-pencil"></i> Editar
+</form>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info text-center py-4">
+        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+        @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string))
+        {
+            <span>No se encontraron empleados para "<strong>@ViewBag.Busqueda</strong>".</span>
+        }
+        else
+        {
+            <span>No hay empleados registrados aún.</span>
+        }
+    </div>
+}
+else
+{
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-hover align-middle mb-0">
+            <thead style="background-color: #FF7A00; color: white;">
+                <tr>
+                    <th>Cédula</th>
+                    <th>Nombre Completo</th>
+                    <th>Puesto</th>
+                    <th class="text-end">Salario Base</th>
+                    <th>Contacto</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr class="@(item.Estado == "Inactivo" ? "table-light text-muted" : "")">
+                        <td><code>@item.Cedula</code></td>
+                        <td>
+                            <strong>@item.PrimerApellido @item.SegundoApellido</strong>
+                            @item.Nombre
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">@item.Puesto</span>
+                        </td>
+                        <td class="text-end fw-bold">₡@item.SalarioBase.ToString("N0")</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(item.Telefono))
+                            {
+                                <a href="tel:@item.Telefono" class="text-decoration-none d-block small">
+                                    <i class="bi bi-phone"></i> @item.Telefono
                                 </a>
-                                <a asp-action="Details" asp-route-id="@item.EmpleadoId" class="btn btn-info btn-sm me-1">
-                                    <i class="bi bi-eye"></i> Detalles
+                            }
+                            @if (!string.IsNullOrEmpty(item.CorreoElectronico))
+                            {
+                                <a href="mailto:@item.CorreoElectronico" class="text-decoration-none d-block small">
+                                    <i class="bi bi-envelope"></i> @item.CorreoElectronico
+                                </a>
+                            }
+                            @if (string.IsNullOrEmpty(item.Telefono) && string.IsNullOrEmpty(item.CorreoElectronico))
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            @if (item.Estado == "Activo")
+                            {
+                                <span class="badge bg-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactivo</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-1 justify-content-center flex-wrap">
+
+                                <a asp-action="Details" asp-route-id="@item.EmpleadoId"
+                                   class="btn btn-sm btn-outline-info" title="Ver detalles">
+                                    <i class="bi bi-eye"></i>
                                 </a>
 
-                                <!-- Botón Desactivar (solo si está activo) -->
+                                <a asp-action="Edit" asp-route-id="@item.EmpleadoId"
+                                   class="btn btn-sm btn-warning" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+
                                 @if (item.Estado == "Activo")
                                 {
-                                    <form asp-action="Desactivar" asp-route-id="@item.EmpleadoId" method="post" style="display:inline;">
-                                        <button type="submit" class="btn btn-warning btn-sm me-1" onclick="return confirm('¿Desactivar este empleado?');">
-                                            <i class="bi bi-toggle-off"></i> Desactivar
+                                    <form asp-action="Desactivar" method="post" class="d-inline"
+                                          onsubmit="return confirm('¿Desactivar a @item.PrimerApellido @item.Nombre?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.EmpleadoId" />
+                                        <button type="submit" class="btn btn-sm btn-secondary" title="Desactivar">
+                                            <i class="bi bi-pause-circle"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Activar" method="post" class="d-inline"
+                                          onsubmit="return confirm('¿Activar a @item.PrimerApellido @item.Nombre?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.EmpleadoId" />
+                                        <button type="submit" class="btn btn-sm btn-success" title="Activar">
+                                            <i class="bi bi-play-circle"></i>
                                         </button>
                                     </form>
                                 }
 
-                                <!-- Botón Eliminar con confirmación -->
-                                <form asp-action="Delete" asp-route-id="@item.EmpleadoId" method="post" style="display:inline;">
-                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar este empleado permanentemente?');">
-                                        <i class="bi bi-trash"></i> Eliminar
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-</div>
+                                <a asp-action="Delete" asp-route-id="@item.EmpleadoId"
+                                   class="btn btn-sm btn-danger" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </a>
 
-@section Scripts {
-    <!-- Opcional: Agregar DataTables para búsqueda, paginación y ordenamiento -->
-    <!-- Descomenta si lo quieres -->
-    <!--
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('.table').DataTable({
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-                },
-                pageLength: 10,
-                lengthMenu: [10, 25, 50, 100],
-                order: [[0, "desc"]]  // orden por ID descendente por defecto
-            });
-        });
-    </script>
-    -->
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="text-muted small mt-2 text-end">
+        Total: <strong>@Model.Count()</strong> empleado(s) —
+        Activos: <strong>@Model.Count(e => e.Estado == "Activo")</strong> /
+        Inactivos: <strong>@Model.Count(e => e.Estado == "Inactivo")</strong>
+    </div>
 }

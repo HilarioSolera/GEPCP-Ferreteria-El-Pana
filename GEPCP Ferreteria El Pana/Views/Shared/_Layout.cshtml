@@ -15,13 +15,17 @@
     {
         var usuario = Context.Session.GetString("Usuario");
         var rol = Context.Session.GetString("Rol");
-        var currentPath = Context.Request.Path.ToString().ToLower();
+        var ctrl = ViewContext.RouteData.Values["controller"]?.ToString()?.ToLower() ?? "";
+        var action = ViewContext.RouteData.Values["action"]?.ToString()?.ToLower() ?? "";
 
         <nav class="navbar navbar-expand-lg navbar-dark shadow-sm" style="background-color: #FF7A00;">
             <div class="container-fluid px-4">
-                <a class="navbar-brand fw-bold" href="/Home/Dashboard">
+
+                <a class="navbar-brand fw-bold"
+                   asp-controller="Home" asp-action="Dashboard">
                     <i class="bi bi-building"></i> GEPCP — Ferretería El Pana
                 </a>
+
                 <button class="navbar-toggler" type="button"
                         data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
@@ -31,36 +35,36 @@
                     <ul class="navbar-nav me-auto">
 
                         <li class="nav-item">
-                            <a class="nav-link @(currentPath.Contains("/home/dashboard") ? "active fw-bold" : "")"
-                               href="/Home/Dashboard">
+                            <a class="nav-link @(ctrl == "home" ? "active fw-bold" : "")"
+                               asp-controller="Home" asp-action="Dashboard">
                                 <i class="bi bi-speedometer2"></i> Dashboard
                             </a>
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link @(currentPath.Contains("/empleados") ? "active fw-bold" : "")"
-                               href="/Empleados/Index">
+                            <a class="nav-link @(ctrl == "empleados" ? "active fw-bold" : "")"
+                               asp-controller="Empleados" asp-action="Index">
                                 <i class="bi bi-people"></i> Empleados
                             </a>
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link @(currentPath.Contains("/prestamos") ? "active fw-bold" : "")"
-                               href="/Prestamos/Index">
+                            <a class="nav-link @(ctrl == "prestamos" ? "active fw-bold" : "")"
+                               asp-controller="Prestamos" asp-action="Index">
                                 <i class="bi bi-cash-coin"></i> Préstamos
                             </a>
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link @(currentPath.Contains("/comisiones") ? "active fw-bold" : "")"
-                               href="/Comisiones/Index">
+                            <a class="nav-link @(ctrl == "comisiones" ? "active fw-bold" : "")"
+                               asp-controller="Comisiones" asp-action="Index">
                                 <i class="bi bi-graph-up"></i> Comisiones
                             </a>
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link @(currentPath.Contains("/planilla") ? "active fw-bold" : "")"
-                               href="/Planilla/Index">
+                            <a class="nav-link @(ctrl == "planilla" ? "active fw-bold" : "")"
+                               asp-controller="Planilla" asp-action="Index">
                                 <i class="bi bi-file-earmark-text"></i> Planilla
                             </a>
                         </li>
@@ -69,14 +73,14 @@
                         @if (rol == "RRHH")
                         {
                             <li class="nav-item">
-                                <a class="nav-link @(currentPath.Contains("/puestos") ? "active fw-bold" : "")"
-                                   href="/Puestos/Index">
+                                <a class="nav-link @(ctrl == "puestos" ? "active fw-bold" : "")"
+                                   asp-controller="Puestos" asp-action="Index">
                                     <i class="bi bi-briefcase"></i> Puestos
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link @(currentPath.Contains("/usuarios") ? "active fw-bold" : "")"
-                                   href="/Usuarios/Index">
+                                <a class="nav-link @(ctrl == "usuarios" ? "active fw-bold" : "")"
+                                   asp-controller="Usuarios" asp-action="Index">
                                     <i class="bi bi-person-gear"></i> Usuarios
                                 </a>
                             </li>
@@ -92,7 +96,8 @@
                             <span class="badge bg-dark ms-1">@rol</span>
                         </span>
 
-                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                        <form asp-controller="Account" asp-action="Logout"
+                              method="post" class="d-inline">
                             @Html.AntiForgeryToken()
                             <button type="submit" class="btn btn-outline-light btn-sm">
                                 <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
@@ -107,7 +112,6 @@
     @* Contenido principal *@
     <div class="container-fluid px-4 mt-4">
 
-        @* Mensajes globales *@
         @if (TempData["Success"] != null)
         {
             <div class="alert alert-success alert-dismissible fade show shadow-sm">
@@ -127,7 +131,6 @@
 
     </div>
 
-    @* Footer *@
     <footer class="text-center text-muted small py-4 mt-5 border-top">
         GEPCP &copy; @DateTime.Now.Year — Ferretería El Pana SRL |
         Sistema de Gestión de RR.HH.
