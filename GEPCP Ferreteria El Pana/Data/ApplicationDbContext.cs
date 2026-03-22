@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using GEPCP_Ferreteria_El_Pana.Models;
+﻿using GEPCP_Ferreteria_El_Pana.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace GEPCP_Ferreteria_El_Pana.Data
 {
@@ -8,6 +9,7 @@ namespace GEPCP_Ferreteria_El_Pana.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options) { }
 
+        // ── DbSets existentes ───────────────────────────────────────────────
         public DbSet<Empleado> Empleados { get; set; } = null!;
         public DbSet<Puesto> Puestos { get; set; } = null!;
         public DbSet<Comision> Comisiones { get; set; } = null!;
@@ -15,12 +17,23 @@ namespace GEPCP_Ferreteria_El_Pana.Data
         public DbSet<Prestamo> Prestamos { get; set; } = null!;
         public DbSet<Usuario> Usuarios { get; set; } = null!;
         public DbSet<Rol> Roles { get; set; } = null!;
+        public DbSet<Aguinaldo> Aguinaldos { get; set; }
+
+        // ── DbSets nuevos ───────────────────────────────────────────────────
+        public DbSet<PeriodoPago> PeriodosPago { get; set; } = null!;
+        public DbSet<PlanillaEmpleado> PlanillasEmpleado { get; set; } = null!;
+        public DbSet<CreditoFerreteria> CreditosFerreteria { get; set; } = null!;
+        public DbSet<Incapacidad> Incapacidades { get; set; } = null!;
+        public DbSet<HorasExtras> HorasExtras { get; set; } = null!;
+        public DbSet<Feriado> Feriados { get; set; } = null!;
+        public DbSet<PagoFeriado> PagosFeriado { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Relaciones
+            // ── RELACIONES EXISTENTES ───────────────────────────────────────
+
             modelBuilder.Entity<Comision>()
                 .HasOne(c => c.Empleado)
                 .WithMany(e => e.Comisiones)
@@ -39,29 +52,173 @@ namespace GEPCP_Ferreteria_El_Pana.Data
                 .HasForeignKey(pr => pr.EmpleadoId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Precisión decimal
-            modelBuilder.Entity<Empleado>()
-                .Property(e => e.SalarioBase)
-                .HasPrecision(18, 2);
+            // ── RELACIONES NUEVAS ───────────────────────────────────────────
 
-            // Cédula única
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .HasOne(pe => pe.Empleado)
+                .WithMany(e => e.PlanillasEmpleado)
+                .HasForeignKey(pe => pe.EmpleadoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .HasOne(pe => pe.PeriodoPago)
+                .WithMany(pp => pp.PlanillasEmpleado)
+                .HasForeignKey(pe => pe.PeriodoPagoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Evitar doble planilla para el mismo empleado en el mismo periodo
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .HasIndex(pe => new { pe.EmpleadoId, pe.PeriodoPagoId })
+                .IsUnique();
+
+            modelBuilder.Entity<CreditoFerreteria>()
+                .HasOne(cf => cf.Empleado)
+                .WithMany(e => e.CreditosFerreteria)
+                .HasForeignKey(cf => cf.EmpleadoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Incapacidad>()
+                .HasOne(i => i.Empleado)
+                .WithMany(e => e.Incapacidades)
+                .HasForeignKey(i => i.EmpleadoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<HorasExtras>()
+                .HasOne(he => he.Empleado)
+                .WithMany(e => e.HorasExtras)
+                .HasForeignKey(he => he.EmpleadoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<HorasExtras>()
+                .HasOne(he => he.PeriodoPago)
+                .WithMany(pp => pp.HorasExtras)
+                .HasForeignKey(he => he.PeriodoPagoId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<PagoFeriado>()
+                .HasOne(pf => pf.Empleado)
+                .WithMany(e => e.PagosFeriado)
+                .HasForeignKey(pf => pf.EmpleadoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PagoFeriado>()
+                .HasOne(pf => pf.Feriado)
+                .WithMany(f => f.PagosFeriado)
+                .HasForeignKey(pf => pf.FeriadoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PagoFeriado>()
+                .HasOne(pf => pf.PeriodoPago)
+                .WithMany(pp => pp.PagosFeriado)
+                .HasForeignKey(pf => pf.PeriodoPagoId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Aguinaldo>()
+    .HasIndex(a => new { a.EmpleadoId, a.Anio })
+    .IsUnique();
+
+            // ── PRECISIÓN DECIMAL ───────────────────────────────────────────
+
+            modelBuilder.Entity<Empleado>()
+                .Property(e => e.SalarioBase).HasPrecision(18, 2);
+
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.HorasOrdinarias).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.HorasExtras).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.HorasNoLaboradas).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.ValorHora).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.ValorHoraExtra).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.SalarioOrdinario).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.AumentoAplicado).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.MontoHorasExtras).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.MontoFeriados).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.TotalDevengado).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.PorcentajeCCSS).HasPrecision(5, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.DeduccionCCSS).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.DeduccionPrestamos).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.DeduccionCreditoFerreteria).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.DeduccionIncapacidad).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.DeduccionHorasNoLaboradas).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.OtrasDeducciones).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.TotalDeducciones).HasPrecision(18, 2);
+            modelBuilder.Entity<PlanillaEmpleado>()
+                .Property(pe => pe.NetoAPagar).HasPrecision(18, 2);
+
+            modelBuilder.Entity<CreditoFerreteria>()
+                .Property(cf => cf.MontoTotal).HasPrecision(18, 2);
+            modelBuilder.Entity<CreditoFerreteria>()
+                .Property(cf => cf.Saldo).HasPrecision(18, 2);
+            modelBuilder.Entity<CreditoFerreteria>()
+                .Property(cf => cf.CuotaQuincenal).HasPrecision(18, 2);
+
+            modelBuilder.Entity<Incapacidad>()
+                .Property(i => i.PorcentajePago).HasPrecision(5, 2);
+            modelBuilder.Entity<Incapacidad>()
+                .Property(i => i.MontoPorDia).HasPrecision(18, 2);
+            modelBuilder.Entity<Incapacidad>()
+                .Property(i => i.MontoTotal).HasPrecision(18, 2);
+
+            modelBuilder.Entity<HorasExtras>()
+                .Property(he => he.TotalHoras).HasPrecision(10, 2);
+            modelBuilder.Entity<HorasExtras>()
+                .Property(he => he.ValorHora).HasPrecision(18, 2);
+            modelBuilder.Entity<HorasExtras>()
+                .Property(he => he.Porcentaje).HasPrecision(5, 2);
+            modelBuilder.Entity<HorasExtras>()
+                .Property(he => he.MontoTotal).HasPrecision(18, 2);
+
+            modelBuilder.Entity<PagoFeriado>()
+                .Property(pf => pf.MontoTotal).HasPrecision(18, 2);
+
+            // ── ÍNDICE ÚNICO CÉDULA ─────────────────────────────────────────
             modelBuilder.Entity<Empleado>()
                 .HasIndex(e => e.Cedula)
                 .IsUnique();
 
-            // Seed: Puestos
+            // ── SEED: Puestos ───────────────────────────────────────────────
             modelBuilder.Entity<Puesto>().HasData(
-                new Puesto { PuestoId = 1, Nombre = "Encargada de RR.H.H.", SalarioBase = 450000, Activo = true },
-                new Puesto { PuestoId = 2, Nombre = "Vendedor", SalarioBase = 380000, Activo = true }
-            );
+    new Puesto { PuestoId = 1, Nombre = "Encargada de RR.H.H.", SalarioBase = 450000, Activo = true },
+    new Puesto { PuestoId = 2, Nombre = "Vendedor", SalarioBase = 380000, Activo = true }
 
-            // Seed: Roles
+);
+            // ── SEED: Roles ─────────────────────────────────────────────────
             modelBuilder.Entity<Rol>().HasData(
                 new Rol { RolId = 1, Nombre = "RRHH" },
                 new Rol { RolId = 2, Nombre = "Jefatura" }
             );
 
-            // Seed: Usuarios con hashes fijos (NO llamar BCrypt aquí)
+            // ── SEED: Feriados CR 2025-2026 ─────────────────────────────────
+            modelBuilder.Entity<Feriado>().HasData(
+                new Feriado { FeriadoId = 1, Fecha = new DateTime(2026, 1, 1), Nombre = "Año Nuevo", Tipo = TipoFeriado.Obligatorio },
+                new Feriado { FeriadoId = 2, Fecha = new DateTime(2026, 4, 2), Nombre = "Jueves Santo", Tipo = TipoFeriado.Obligatorio },
+                new Feriado { FeriadoId = 3, Fecha = new DateTime(2026, 4, 3), Nombre = "Viernes Santo", Tipo = TipoFeriado.Obligatorio },
+                new Feriado { FeriadoId = 4, Fecha = new DateTime(2026, 4, 11), Nombre = "Dia de Juan Santamaria", Tipo = TipoFeriado.NoObligatorio },
+                new Feriado { FeriadoId = 5, Fecha = new DateTime(2026, 5, 1), Nombre = "Dia del Trabajador", Tipo = TipoFeriado.Obligatorio },
+                new Feriado { FeriadoId = 6, Fecha = new DateTime(2026, 7, 25), Nombre = "Anexion Guanacaste", Tipo = TipoFeriado.NoObligatorio },
+                new Feriado { FeriadoId = 7, Fecha = new DateTime(2026, 8, 2), Nombre = "Virgen de los Angeles", Tipo = TipoFeriado.NoObligatorio },
+                new Feriado { FeriadoId = 8, Fecha = new DateTime(2026, 8, 15), Nombre = "Dia de la Madre", Tipo = TipoFeriado.NoObligatorio },
+                new Feriado { FeriadoId = 9, Fecha = new DateTime(2026, 9, 15), Nombre = "Dia de la Independencia", Tipo = TipoFeriado.Obligatorio },
+                new Feriado { FeriadoId = 10, Fecha = new DateTime(2026, 12, 25), Nombre = "Navidad", Tipo = TipoFeriado.Obligatorio }
+            );
+
+            // ── SEED: Usuarios ──────────────────────────────────────────────
             modelBuilder.Entity<Usuario>().HasData(
                 new Usuario
                 {

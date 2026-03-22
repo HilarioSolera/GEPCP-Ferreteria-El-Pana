@@ -16,8 +16,7 @@
 <div class="card shadow-sm border-danger" style="max-width: 600px;">
     <div class="card-header bg-danger text-white py-3">
         <h5 class="mb-0">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            ¿Confirmás la eliminación?
+            <i class="bi bi-exclamation-triangle-fill"></i> ¿Confirmás la eliminación?
         </h5>
     </div>
     <div class="card-body p-4">
@@ -31,22 +30,32 @@
         <table class="table table-borderless mb-0">
             <tbody>
                 <tr>
-                    <td class="fw-bold text-muted" style="width: 40%">Cédula</td>
+                    <td class="fw-bold text-muted" style="width:40%">Cédula</td>
                     <td><code>@Model.Cedula</code></td>
                 </tr>
                 <tr>
-                    <td class="fw-bold text-muted">Nombre completo</td>
-                    <td>
-                        <strong>@Model.PrimerApellido @Model.SegundoApellido @Model.Nombre</strong>
-                    </td>
+                    <td class="fw-bold text-muted">Nombre Completo</td>
+                    <td><strong>@Model.PrimerApellido @Model.SegundoApellido @Model.Nombre</strong></td>
+                </tr>
+                <tr>
+                    <td class="fw-bold text-muted">Departamento</td>
+                    <td>@Model.Departamento</td>
                 </tr>
                 <tr>
                     <td class="fw-bold text-muted">Puesto</td>
                     <td>@Model.Puesto</td>
                 </tr>
                 <tr>
+                    <td class="fw-bold text-muted">Jornada</td>
+                    <td>@(Model.TipoJornada == GEPCP_Ferreteria_El_Pana.Models.TipoJornada.Completa ? "Completa" : "Media Jornada")</td>
+                </tr>
+                <tr>
                     <td class="fw-bold text-muted">Salario Base</td>
                     <td>₡@Model.SalarioBase.ToString("N2")</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold text-muted">Fecha de Ingreso</td>
+                    <td>@Model.FechaIngreso.ToString("dd/MM/yyyy")</td>
                 </tr>
                 <tr>
                     <td class="fw-bold text-muted">Estado</td>
@@ -56,27 +65,11 @@
                         </span>
                     </td>
                 </tr>
-                @if (!string.IsNullOrEmpty(Model.Telefono))
-                {
-                    <tr>
-                        <td class="fw-bold text-muted">Teléfono</td>
-                        <td>@Model.Telefono</td>
-                    </tr>
-                }
-                @if (!string.IsNullOrEmpty(Model.CorreoElectronico))
-                {
-                    <tr>
-                        <td class="fw-bold text-muted">Correo</td>
-                        <td>@Model.CorreoElectronico</td>
-                    </tr>
-                }
             </tbody>
         </table>
     </div>
 
     <div class="card-footer bg-transparent d-flex gap-2 py-3">
-
-        @* Botón eliminar definitivamente *@
         <form asp-action="Delete" asp-route-id="@Model.EmpleadoId" method="post">
             @Html.AntiForgeryToken()
             <button type="submit" class="btn btn-danger btn-lg px-4">
@@ -84,7 +77,6 @@
             </button>
         </form>
 
-        @* Botón desactivar (alternativa recomendada) *@
         @if (Model.Estado == "Activo")
         {
             <form asp-action="Desactivar" method="post">

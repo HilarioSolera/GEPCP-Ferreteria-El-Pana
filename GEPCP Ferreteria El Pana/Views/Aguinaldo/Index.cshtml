@@ -1,0 +1,198 @@
+﻿@model List<GEPCP_Ferreteria_El_Pana.Models.Aguinaldo>
+@{
+    ViewData["Title"] = "Aguinaldo - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var rol = Context.Session.GetString("Rol");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-gift"></i> Aguinaldo @ViewBag.AnioActual</h2>
+    @if (rol == "RRHH")
+    {
+        <div class="d-flex gap-2">
+            @* Calcular automáticamente desde planillas *@
+            <form asp-action="CalcularTodos" method="post" class="d-inline"
+                  onsubmit="return confirm('¿Calcular aguinaldo @ViewBag.AnioActual para todos los empleados activos? Se usarán las planillas cerradas del período dic @((int)ViewBag.AnioActual - 1) - nov @ViewBag.AnioActual.')">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="anio" value="@ViewBag.AnioActual" />
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-calculator"></i> Calcular Automático
+                </button>
+            </form>
+            @* Registro manual *@
+            <a asp-action="Create" class="btn btn-success btn-lg">
+                <i class="bi bi-plus-circle"></i> Registrar Manual
+            </a>
+        </div>
+    }
+</div>
+
+@* Alerta informativa del período *@
+<div class="alert alert-info py-2 mb-3 small">
+    <i class="bi bi-info-circle"></i>
+    El cálculo automático suma los devengados de las planillas <strong>cerradas</strong>
+    del período <strong>01/12/@((int)ViewBag.AnioActual - 1)</strong> al
+    <strong>30/11/@ViewBag.AnioActual</strong> y los divide entre 12.
+</div>
+
+@* KPIs *@
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-4 fw-bold text-primary">@ViewBag.TotalEmpleados</div>
+            <div class="text-muted small">Empleados con Aguinaldo</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-4 fw-bold text-success">₡@ViewBag.TotalMonto.ToString("N0")</div>
+            <div class="text-muted small">Total a Pagar</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-4 fw-bold @(ViewBag.SinAguinaldo > 0 ? "text-warning" : "text-success")">
+                @ViewBag.SinAguinaldo
+            </div>
+            <div class="text-muted small">Empleados Pendientes</div>
+        </div>
+    </div>
+</div>
+
+@* Filtros *@
+<form asp-action="Index" method="get" class="mb-4">
+    <div class="row g-2">
+        <div class="col-md-3">
+            <select name="anio" class="form-select shadow-sm" onchange="this.form.submit()">
+                @foreach (var a in ViewBag.Anios as List<int>)
+                {
+                    <option value="@a"
+                            selected="@(a == (int)ViewBag.AnioActual ? "selected" : null)">
+                        Aguinaldo @a
+                    </option>
+                }
+            </select>
+        </div>
+        <div class="col-md-7">
+            <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" name="busqueda" value="@ViewBag.Busqueda"
+                       class="form-control border-start-0"
+                       placeholder="Buscar por nombre o cédula..." />
+            </div>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-funnel"></i>
+            </button>
+        </div>
+        <div class="col-md-1">
+            @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string))
+            {
+                <a asp-action="Index" asp-route-anio="@ViewBag.AnioActual"
+                       class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-x-circle"></i>
+                </a>
+            }
+        </div>
+    </div>
+</form>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-warning text-center py-4">
+        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+        No hay aguinaldos registrados para el año @ViewBag.AnioActual.
+        @if (rol == "RRHH")
+        {
+            <div class="mt-2 d-flex gap-2 justify-content-center">
+                <form asp-action="CalcularTodos" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="anio" value="@ViewBag.AnioActual" />
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-calculator"></i> Calcular automáticamente
+                    </button>
+                </form>
+                <a asp-action="Create" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Registrar manualmente
+                </a>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-hover align-middle mb-0">
+            <thead style="background-color: #FF7A00; color: white;">
+                <tr>
+                    <th>Empleado</th>
+                    <th>Período de Cálculo</th>
+                    <th class="text-center">Año</th>
+                    <th>Fecha Pago</th>
+                    <th class="text-end fw-bold">Monto</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model)
+                {
+                    <tr>
+                        <td>
+                            <strong>@a.Empleado.PrimerApellido @a.Empleado.Nombre</strong>
+                            <div class="small text-muted">
+                                @a.Empleado.Puesto — @a.Empleado.Departamento
+                            </div>
+                        </td>
+                        <td class="small">
+                            @a.FechaInicio.ToString("dd/MM/yyyy")
+                            <span class="text-muted">al</span>
+                            @a.FechaFin.ToString("dd/MM/yyyy")
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-primary fs-6">@a.Anio</span>
+                        </td>
+                        <td>@a.FechaPago.ToString("dd/MM/yyyy")</td>
+                        <td class="text-end fw-bold text-success">
+                            ₡@a.MontoTotal.ToString("N0")
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <a asp-action="DescargarPDF" asp-route-id="@a.AguinaldoId"
+                                       class="btn btn-sm btn-outline-danger" title="Descargar PDF">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                </a>
+                                @if (rol == "RRHH")
+                                {
+                                    <a asp-action="Edit" asp-route-id="@a.AguinaldoId"
+                                           class="btn btn-sm btn-warning" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form asp-action="Delete" method="post" class="d-inline"
+                                          onsubmit="return confirm('¿Eliminar el aguinaldo de @a.Empleado.PrimerApellido @a.Empleado.Nombre?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@a.AguinaldoId" />
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot class="table-light fw-bold">
+                <tr>
+                    <td colspan="4" class="text-end">TOTAL:</td>
+                    <td class="text-end text-success">
+                        ₡@Model.Sum(a => a.MontoTotal).ToString("N0")
+                    </td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+}

@@ -1,0 +1,168 @@
+﻿@model GEPCP_Ferreteria_El_Pana.Models.PlanillaEmpleado
+@{
+    ViewData["Title"] = "Ajustar Planilla - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+        <i class="bi bi-pencil"></i> Ajuste Manual de Planilla
+    </h2>
+    <a asp-action="Index" asp-route-periodoId="@Model.PeriodoPagoId"
+           class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
+
+<div class="row g-4">
+
+    @* Resumen del empleado *@
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header text-white py-3" style="background-color: #FF7A00;">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-person-circle"></i>
+                    @Model.Empleado.PrimerApellido @Model.Empleado.Nombre
+                </h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless small mb-0">
+                    <tr>
+                        <td class="text-muted">Período</td>
+                        <td class="fw-bold">@Model.PeriodoPago.Descripcion</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Puesto</td>
+                        <td>@Model.Empleado.Puesto</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Jornada</td>
+                        <td>@Model.HorasOrdinarias hrs quincenales</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Valor Hora</td>
+                        <td>₡@Model.ValorHora.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Sal. Ordinario</td>
+                        <td class="fw-bold text-success">₡@Model.SalarioOrdinario.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Hrs. Extras</td>
+                        <td class="fw-bold">₡@Model.MontoHorasExtras.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Feriados</td>
+                        <td>₡@Model.MontoFeriados.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">CCSS (@Model.PorcentajeCCSS%)</td>
+                        <td class="text-danger">₡@Model.DeduccionCCSS.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Préstamo</td>
+                        <td class="text-danger">₡@Model.DeduccionPrestamos.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Crédito Ferre.</td>
+                        <td class="text-danger">₡@Model.DeduccionCreditoFerreteria.ToString("N2")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Incapacidad</td>
+                        <td class="text-danger">₡@Model.DeduccionIncapacidad.ToString("N2")</td>
+                    </tr>
+                    <tr class="border-top">
+                        <td class="fw-bold">Neto Actual</td>
+                        <td class="fw-bold text-warning fs-6">₡@Model.NetoAPagar.ToString("N2")</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @* Formulario de ajuste *@
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header py-3 bg-light">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-sliders"></i> Ajustes Manuales
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Editar" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="PlanillaEmpleadoId" />
+                    <input type="hidden" asp-for="PeriodoPagoId" />
+                    <input type="hidden" asp-for="EmpleadoId" />
+
+                    <div class="row g-3">
+
+                        <div class="col-12">
+                            <div class="alert alert-info py-2 small">
+                                <i class="bi bi-info-circle"></i>
+                                Solo podés ajustar: <strong>Aumento</strong>,
+                                <strong>Horas No Laboradas</strong> y
+                                <strong>Otras Deducciones</strong>.
+                                Los demás valores se calculan automáticamente.
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="AumentoAplicado" class="form-label fw-bold">
+                                <i class="bi bi-graph-up-arrow text-success"></i>
+                                Aumento / Comisión (₡)
+                            </label>
+                            <input asp-for="AumentoAplicado" type="number"
+                                   step="0.01" min="0"
+                                   class="form-control form-control-lg" />
+                            <div class="form-text text-muted">
+                                Ingresá el aumento o comisión adicional del período.
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="HorasNoLaboradas" class="form-label fw-bold">
+                                <i class="bi bi-clock-history text-danger"></i>
+                                Horas No Laboradas
+                            </label>
+                            <input asp-for="HorasNoLaboradas" type="number"
+                                   step="0.01" min="0"
+                                   class="form-control form-control-lg" />
+                            <div class="form-text text-muted">
+                                Se deducirá: horas × ₡@Model.ValorHora.ToString("N2")/hr
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="OtrasDeducciones" class="form-label fw-bold">
+                                <i class="bi bi-dash-circle text-danger"></i>
+                                Otras Deducciones (₡)
+                            </label>
+                            <input asp-for="OtrasDeducciones" type="number"
+                                   step="0.01" min="0"
+                                   class="form-control form-control-lg" />
+                            <div class="form-text text-muted">
+                                Cualquier deducción adicional no contemplada.
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-warning btn-lg px-5">
+                            <i class="bi bi-check-circle"></i> Guardar Ajustes
+                        </button>
+                        <a asp-action="Index" asp-route-periodoId="@Model.PeriodoPagoId"
+                           class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

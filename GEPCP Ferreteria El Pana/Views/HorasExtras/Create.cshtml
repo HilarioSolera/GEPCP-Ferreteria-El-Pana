@@ -1,0 +1,132 @@
+﻿@model GEPCP_Ferreteria_El_Pana.Models.HorasExtras
+@{
+    ViewData["Title"] = "Registrar Horas Extras - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-clock-history"></i> Registrar Horas Extras</h2>
+    <a asp-action="Index" asp-route-periodoId="@Model.PeriodoPagoId"
+           class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
+
+<div class="card shadow-sm border-0" style="max-width: 700px;">
+    <div class="card-body p-4">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row g-3">
+
+                <div class="col-12">
+                    <label asp-for="PeriodoPagoId" class="form-label fw-bold">
+                        <i class="bi bi-calendar2-week"></i> Período <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="PeriodoPagoId" asp-items="ViewBag.Periodos"
+                            class="form-select form-select-lg">
+                        <option value="">— Seleccione un período —</option>
+                    </select>
+                    <span asp-validation-for="PeriodoPagoId" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="EmpleadoId" class="form-label fw-bold">
+                        <i class="bi bi-person"></i> Empleado <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="EmpleadoId" asp-items="ViewBag.Empleados"
+                            class="form-select form-select-lg" id="selectEmpleado">
+                        <option value="">— Seleccione un empleado —</option>
+                    </select>
+                    <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="TotalHoras" class="form-label fw-bold">
+                        <i class="bi bi-hourglass-split"></i> Total Horas <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="TotalHoras" type="number" step="0.01"
+                           min="0.01" max="999.99"
+                           class="form-control form-control-lg" id="inputHoras"
+                           placeholder="Ej: 15.42" />
+                    <span asp-validation-for="TotalHoras" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="Porcentaje" class="form-label fw-bold">
+                        <i class="bi bi-percent"></i> Porcentaje <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="Porcentaje" class="form-select form-select-lg"
+                            id="selectPorcentaje">
+                        <option value="1.5">150% — Hora Extra Normal</option>
+                        <option value="2.0">200% — Hora Extra Doble</option>
+                    </select>
+                    <span asp-validation-for="Porcentaje" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted">
+                        <i class="bi bi-calculator"></i> Monto Estimado
+                    </label>
+                    <div class="form-control form-control-lg bg-light text-center fw-bold text-success"
+                         id="montoRef">
+                        —
+                    </div>
+                    <div class="form-text text-muted" id="valorHoraRef"></div>
+                </div>
+
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-lg px-5">
+                    <i class="bi bi-check-circle"></i> Registrar
+                </button>
+                <a asp-action="Index" asp-route-periodoId="@Model.PeriodoPagoId"
+                   class="btn btn-secondary btn-lg px-5">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        async function calcularMonto() {
+            var empleadoId  = parseInt(document.getElementById('selectEmpleado').value) || 0;
+            var horas       = parseFloat(document.getElementById('inputHoras').value) || 0;
+            var porcentaje  = parseFloat(document.getElementById('selectPorcentaje').value) || 1.5;
+            var montoRef    = document.getElementById('montoRef');
+            var valorHoraRef = document.getElementById('valorHoraRef');
+
+            if (empleadoId <= 0 || horas <= 0) {
+                montoRef.textContent = '—';
+                valorHoraRef.textContent = '';
+                return;
+            }
+
+            try {
+                var res  = await fetch('/HorasExtras/CalcularMonto?empleadoId=' + empleadoId +
+                    '&horas=' + horas + '&porcentaje=' + porcentaje);
+                var data = await res.json();
+
+                if (data.monto > 0) {
+                    montoRef.innerHTML = '&#8353;' +
+                        data.monto.toLocaleString('es-CR', {minimumFractionDigits: 2});
+                    valorHoraRef.innerHTML =
+                        '<i class="bi bi-info-circle text-muted"></i> ' +
+                        'Valor hora: <strong>&#8353;' +
+                        data.valorHora.toLocaleString('es-CR', {minimumFractionDigits: 2}) +
+                        '</strong> &times; ' + horas + ' hrs &times; ' + (porcentaje * 100) + '%';
+                } else {
+                    montoRef.textContent = '—';
+                    valorHoraRef.textContent = '';
+                }
+            } catch (e) { console.error('Error al calcular monto:', e); }
+        }
+
+        document.getElementById('selectEmpleado').addEventListener('change', calcularMonto);
+        document.getElementById('inputHoras').addEventListener('input', calcularMonto);
+        document.getElementById('selectPorcentaje').addEventListener('change', calcularMonto);
+    </script>
+}

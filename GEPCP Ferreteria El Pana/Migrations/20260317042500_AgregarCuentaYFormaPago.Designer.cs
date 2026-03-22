@@ -4,6 +4,7 @@ using GEPCP_Ferreteria_El_Pana.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260317042500_AgregarCuentaYFormaPago")]
+    partial class AgregarCuentaYFormaPago
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,47 +24,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Aguinaldo", b =>
-                {
-                    b.Property<int>("AguinaldoId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AguinaldoId"));
-
-                    b.Property<int>("Anio")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("EmpleadoId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("FechaFin")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("FechaInicio")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("FechaPago")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("MontoTotal")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Observaciones")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.HasKey("AguinaldoId");
-
-                    b.HasIndex("EmpleadoId", "Anio")
-                        .IsUnique();
-
-                    b.ToTable("Aguinaldos");
-                });
 
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Comision", b =>
                 {
@@ -389,9 +351,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int>("TotalDias")
-                        .HasColumnType("int");
-
                     b.HasKey("IncapacidadId");
 
                     b.HasIndex("EmpleadoId");
@@ -671,6 +630,41 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                             Activo = true,
                             Nombre = "Vendedor",
                             SalarioBase = 380000m
+                        },
+                        new
+                        {
+                            PuestoId = 10,
+                            Activo = true,
+                            Nombre = "Conductor (TOSC)",
+                            SalarioBase = 436585m
+                        },
+                        new
+                        {
+                            PuestoId = 11,
+                            Activo = true,
+                            Nombre = "Bodeguero (TONCG)",
+                            SalarioBase = 447778m
+                        },
+                        new
+                        {
+                            PuestoId = 12,
+                            Activo = true,
+                            Nombre = "Cajero (TOCG)",
+                            SalarioBase = 447778m
+                        },
+                        new
+                        {
+                            PuestoId = 13,
+                            Activo = true,
+                            Nombre = "Asistente (TOCG)",
+                            SalarioBase = 410855m
+                        },
+                        new
+                        {
+                            PuestoId = 14,
+                            Activo = true,
+                            Nombre = "Proveedor (TOCG)",
+                            SalarioBase = 492556m
                         });
                 });
 
@@ -748,17 +742,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                             PasswordHash = "$2a$11$T72F0Mu8ocYejSTck6bprueMSoi5WgVtSD.hIraw5PvhnjDde6rD6",
                             Rol = "Jefatura"
                         });
-                });
-
-            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Aguinaldo", b =>
-                {
-                    b.HasOne("GEPCP_Ferreteria_El_Pana.Models.Empleado", "Empleado")
-                        .WithMany()
-                        .HasForeignKey("EmpleadoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Empleado");
                 });
 
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Comision", b =>

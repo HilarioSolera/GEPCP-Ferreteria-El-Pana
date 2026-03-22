@@ -14,13 +14,18 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<EmpleadosController> _logger;
 
+        private static readonly List<string> DepartamentosValidos = new()
+{
+    "Administrativo", "Caja", "Ventas", "Bodega", "Conductores"
+};
+
         public EmpleadosController(ApplicationDbContext context, ILogger<EmpleadosController> logger)
         {
             _context = context;
             _logger = logger;
         }
 
-        // ── HELPERS ──────────────────────────────────────────────────────────
+        // ── HELPERS ───────────────────────────────────────────────────────────
 
         private async Task<SelectList> ObtenerPuestosSelectList(string? selectedPuesto = null)
         {
@@ -36,15 +41,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         private static string SanitizarTexto(string? input)
         {
             if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-            // Eliminar caracteres peligrosos para SQL/HTML
             return Regex.Replace(input.Trim(), @"[<>""'%;()&+\-\-]", string.Empty);
         }
 
-        private static bool EsCedulaValida(string cedula)
-        {
-            // Solo dígitos, guiones y espacios, entre 8 y 20 caracteres
-            return Regex.IsMatch(cedula.Trim(), @"^[\d\- ]{8,20}$");
-        }
+        private static bool EsCedulaValida(string cedula) =>
+            Regex.IsMatch(cedula.Trim(), @"^[\d\- ]{8,20}$");
 
         private static bool EsTelefonoValido(string? telefono)
         {
@@ -52,7 +53,106 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return Regex.IsMatch(telefono.Trim(), @"^[\d\- \+\(\)]{7,20}$");
         }
 
-        // ── INDEX con búsqueda ────────────────────────────────────────────────
+        private async Task CargarViewBagPuestos(string? selected = null)
+        {
+            ViewBag.Puestos = await ObtenerPuestosSelectList(selected);
+        }
+
+        private static EmpleadoViewModel MapearAViewModel(Empleado e) => new()
+        {
+            EmpleadoId = e.EmpleadoId,
+            Cedula = e.Cedula,
+            Nombre = e.Nombre,
+            PrimerApellido = e.PrimerApellido,
+            SegundoApellido = e.SegundoApellido,
+            Puesto = e.Puesto,
+            Departamento = e.Departamento,
+            TipoJornada = e.TipoJornada,
+            FechaIngreso = e.FechaIngreso,
+            SalarioBase = e.SalarioBase,
+            Telefono = e.Telefono,
+            CorreoElectronico = e.CorreoElectronico,
+            NumeroCuenta = e.NumeroCuenta,
+            FormaPago = e.FormaPago,
+            Estado = e.Activo ? "Activo" : "Inactivo"
+        };
+
+        private void AplicarValidacionesPersonalizadas(EmpleadoViewModel model, int? idActual)
+        {
+            // Cédula
+            if (!string.IsNullOrWhiteSpace(model.Cedula))
+            {
+                if (!EsCedulaValida(model.Cedula))
+                    ModelState.AddModelError("Cedula",
+                        "La cédula solo puede contener números, guiones y espacios (8-20 caracteres).");
+                else if (_context.Empleados.Any(e =>
+                    e.Cedula == model.Cedula.Trim() &&
+                    (idActual == null || e.EmpleadoId != idActual)))
+                    ModelState.AddModelError("Cedula",
+                        "Ya existe un empleado registrado con esa cédula.");
+            }
+
+            // Nombre
+            if (!string.IsNullOrWhiteSpace(model.Nombre) &&
+                !Regex.IsMatch(model.Nombre.Trim(), @"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]{2,100}$"))
+                ModelState.AddModelError("Nombre",
+                    "El nombre solo puede contener letras, espacios, apóstrofes y guiones.");
+
+            // Primer Apellido
+            if (!string.IsNullOrWhiteSpace(model.PrimerApellido) &&
+                !Regex.IsMatch(model.PrimerApellido.Trim(), @"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]{2,50}$"))
+                ModelState.AddModelError("PrimerApellido",
+                    "El primer apellido solo puede contener letras.");
+
+            // Segundo Apellido
+            if (!string.IsNullOrWhiteSpace(model.SegundoApellido) &&
+                !Regex.IsMatch(model.SegundoApellido.Trim(), @"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]{2,50}$"))
+                ModelState.AddModelError("SegundoApellido",
+                    "El segundo apellido solo puede contener letras.");
+
+            // Departamento
+            if (string.IsNullOrWhiteSpace(model.Departamento))
+                ModelState.AddModelError("Departamento", "El departamento es obligatorio.");
+            else if (!DepartamentosValidos.Contains(model.Departamento.Trim()))
+                ModelState.AddModelError("Departamento", "Seleccioná un departamento válido.");
+
+            // Fecha de ingreso
+            if (model.FechaIngreso == default)
+                ModelState.AddModelError("FechaIngreso", "La fecha de ingreso es obligatoria.");
+            else if (model.FechaIngreso > DateTime.Today)
+                ModelState.AddModelError("FechaIngreso",
+                    "La fecha de ingreso no puede ser futura.");
+            else if (model.FechaIngreso < new DateTime(1990, 1, 1))
+                ModelState.AddModelError("FechaIngreso",
+                    "La fecha de ingreso no puede ser anterior a 1990.");
+
+            // Salario
+            if (model.SalarioBase < 0)
+                ModelState.AddModelError("SalarioBase", "El salario no puede ser negativo.");
+            else if (model.SalarioBase > 9_999_999.99m)
+                ModelState.AddModelError("SalarioBase",
+                    "El salario excede el límite máximo permitido (₡9,999,999.99).");
+
+            // Teléfono
+            if (!EsTelefonoValido(model.Telefono))
+                ModelState.AddModelError("Telefono",
+                    "El teléfono solo puede contener números, guiones, espacios y paréntesis.");
+
+            // Correo
+            if (!string.IsNullOrWhiteSpace(model.CorreoElectronico) &&
+                !Regex.IsMatch(model.CorreoElectronico.Trim(),
+                    @"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"))
+                ModelState.AddModelError("CorreoElectronico",
+                    "El formato del correo electrónico no es válido.");
+
+            // Número de cuenta
+            if (!string.IsNullOrWhiteSpace(model.NumeroCuenta) &&
+                model.NumeroCuenta.Trim().Length > 30)
+                ModelState.AddModelError("NumeroCuenta",
+                    "El número de cuenta no puede superar 30 caracteres.");
+        }
+
+        // ── INDEX ─────────────────────────────────────────────────────────────
 
         public async Task<IActionResult> Index(string? busqueda)
         {
@@ -72,6 +172,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         e.PrimerApellido.ToLower().Contains(termino) ||
                         (e.SegundoApellido != null && e.SegundoApellido.ToLower().Contains(termino)) ||
                         e.Puesto.ToLower().Contains(termino) ||
+                        e.Departamento.ToLower().Contains(termino) ||
                         (e.CorreoElectronico != null && e.CorreoElectronico.ToLower().Contains(termino)) ||
                         (e.Telefono != null && e.Telefono.Contains(termino))
                     );
@@ -90,9 +191,14 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     PrimerApellido = e.PrimerApellido,
                     SegundoApellido = e.SegundoApellido,
                     Puesto = e.Puesto,
+                    Departamento = e.Departamento,
+                    TipoJornada = e.TipoJornada,
+                    FechaIngreso = e.FechaIngreso,
                     SalarioBase = e.SalarioBase,
                     Telefono = e.Telefono,
                     CorreoElectronico = e.CorreoElectronico,
+                    NumeroCuenta = e.NumeroCuenta,
+                    FormaPago = e.FormaPago,
                     Estado = e.Activo ? "Activo" : "Inactivo"
                 }).ToList();
 
@@ -100,13 +206,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al cargar listado de empleados. Búsqueda: {Busqueda}", busqueda);
+                _logger.LogError(ex, "Error al cargar listado de empleados. Búsqueda: {B}", busqueda);
                 TempData["Error"] = "Ocurrió un error al cargar los empleados. Intentá de nuevo.";
                 return View(new List<EmpleadoViewModel>());
             }
         }
 
-        // ── DETAILS ──────────────────────────────────────────────────────────
+        // ── DETAILS ───────────────────────────────────────────────────────────
 
         public async Task<IActionResult> Details(int? id)
         {
@@ -120,8 +226,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (empleado == null) return NotFound();
 
-                var model = MapearAViewModel(empleado);
-                return View(model);
+                return View(MapearAViewModel(empleado));
             }
             catch (Exception ex)
             {
@@ -131,14 +236,14 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE ───────────────────────────────────────────────────────────
+        // ── CREATE ────────────────────────────────────────────────────────────
 
         public async Task<IActionResult> Create()
         {
             try
             {
                 await CargarViewBagPuestos();
-                return View(new EmpleadoViewModel());
+                return View(new EmpleadoViewModel { FechaIngreso = DateTime.Today });
             }
             catch (Exception ex)
             {
@@ -168,23 +273,27 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     Nombre = SanitizarTexto(model.Nombre),
                     PrimerApellido = SanitizarTexto(model.PrimerApellido),
                     SegundoApellido = string.IsNullOrWhiteSpace(model.SegundoApellido)
-                                            ? null
-                                            : SanitizarTexto(model.SegundoApellido),
+                                            ? null : SanitizarTexto(model.SegundoApellido),
                     Puesto = model.Puesto.Trim(),
+                    Departamento = model.Departamento.Trim(),
+                    TipoJornada = model.TipoJornada,
+                    FechaIngreso = model.FechaIngreso,
                     SalarioBase = Math.Round(model.SalarioBase, 2),
                     Telefono = string.IsNullOrWhiteSpace(model.Telefono)
-                                            ? null
-                                            : model.Telefono.Trim(),
+                                            ? null : model.Telefono.Trim(),
                     CorreoElectronico = string.IsNullOrWhiteSpace(model.CorreoElectronico)
-                                            ? null
-                                            : model.CorreoElectronico.Trim().ToLower(),
+                                            ? null : model.CorreoElectronico.Trim().ToLower(),
+                    NumeroCuenta = string.IsNullOrWhiteSpace(model.NumeroCuenta)
+                                            ? null : model.NumeroCuenta.Trim(),
+                    FormaPago = model.FormaPago,
                     Activo = true
                 };
 
                 _context.Add(empleado);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Empleado creado: {Cedula} - {Nombre}", empleado.Cedula, empleado.Nombre);
+                _logger.LogInformation("Empleado creado: {Cedula} - {Nombre} {Apellido}",
+                    empleado.Cedula, empleado.Nombre, empleado.PrimerApellido);
                 TempData["Success"] = $"Empleado '{empleado.PrimerApellido} {empleado.Nombre}' creado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
@@ -205,7 +314,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── EDIT ─────────────────────────────────────────────────────────────
+        // ── EDIT ──────────────────────────────────────────────────────────────
 
         public async Task<IActionResult> Edit(int? id)
         {
@@ -247,20 +356,22 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 var empleado = await _context.Empleados.FindAsync(id);
                 if (empleado == null) return NotFound();
 
-                empleado.Cedula = model.Cedula.Trim();
                 empleado.Nombre = SanitizarTexto(model.Nombre);
                 empleado.PrimerApellido = SanitizarTexto(model.PrimerApellido);
                 empleado.SegundoApellido = string.IsNullOrWhiteSpace(model.SegundoApellido)
-                                                ? null
-                                                : SanitizarTexto(model.SegundoApellido);
+                                                ? null : SanitizarTexto(model.SegundoApellido);
                 empleado.Puesto = model.Puesto.Trim();
+                empleado.Departamento = model.Departamento.Trim();
+                empleado.TipoJornada = model.TipoJornada;
+                empleado.FechaIngreso = model.FechaIngreso;
                 empleado.SalarioBase = Math.Round(model.SalarioBase, 2);
                 empleado.Telefono = string.IsNullOrWhiteSpace(model.Telefono)
-                                                ? null
-                                                : model.Telefono.Trim();
+                                                ? null : model.Telefono.Trim();
                 empleado.CorreoElectronico = string.IsNullOrWhiteSpace(model.CorreoElectronico)
-                                                ? null
-                                                : model.CorreoElectronico.Trim().ToLower();
+                                                ? null : model.CorreoElectronico.Trim().ToLower();
+                empleado.NumeroCuenta = string.IsNullOrWhiteSpace(model.NumeroCuenta)
+                                                ? null : model.NumeroCuenta.Trim();
+                empleado.FormaPago = model.FormaPago;
 
                 _context.Update(empleado);
                 await _context.SaveChangesAsync();
@@ -276,7 +387,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return NotFound();
 
                 ModelState.AddModelError(string.Empty,
-                    "El registro fue modificado por otro usuario. Recargá la página e intentá de nuevo.");
+                    "El registro fue modificado por otro usuario. Recargá e intentá de nuevo.");
                 await CargarViewBagPuestos(model.Puesto);
                 return View(model);
             }
@@ -355,7 +466,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ── DELETE ───────────────────────────────────────────────────────────
+        // ── DELETE ────────────────────────────────────────────────────────────
 
         public async Task<IActionResult> Delete(int? id)
         {
@@ -391,6 +502,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
+                if (await _context.CreditosFerreteria.AnyAsync(c => c.EmpleadoId == id && c.Activo))
+                {
+                    TempData["Error"] = "No se puede eliminar un empleado con créditos de ferretería activos. Desactivalo en su lugar.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 var empleado = await _context.Empleados.FindAsync(id);
                 if (empleado == null)
                 {
@@ -418,7 +535,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ── API: salario sugerido por puesto (para autocompletar) ─────────────
+        // ── API: salario sugerido por puesto ──────────────────────────────────
 
         [HttpGet]
         public async Task<IActionResult> ObtenerSalarioPuesto(string nombre)
@@ -439,72 +556,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 _logger.LogError(ex, "Error al obtener salario del puesto: {Nombre}", nombre);
                 return Json(new { salario = (decimal?)null });
             }
-        }
-
-        // ── MÉTODOS PRIVADOS ──────────────────────────────────────────────────
-
-        private async Task CargarViewBagPuestos(string? selected = null)
-        {
-            ViewBag.Puestos = await ObtenerPuestosSelectList(selected);
-        }
-
-        private static EmpleadoViewModel MapearAViewModel(Empleado e) => new()
-        {
-            EmpleadoId = e.EmpleadoId,
-            Cedula = e.Cedula,
-            Nombre = e.Nombre,
-            PrimerApellido = e.PrimerApellido,
-            SegundoApellido = e.SegundoApellido,
-            Puesto = e.Puesto,
-            SalarioBase = e.SalarioBase,
-            Telefono = e.Telefono,
-            CorreoElectronico = e.CorreoElectronico,
-            Estado = e.Activo ? "Activo" : "Inactivo"
-        };
-
-        private void AplicarValidacionesPersonalizadas(EmpleadoViewModel model, int? idActual)
-        {
-            // Cédula
-            if (!string.IsNullOrWhiteSpace(model.Cedula))
-            {
-                if (!EsCedulaValida(model.Cedula))
-                    ModelState.AddModelError("Cedula", "La cédula solo puede contener números, guiones y espacios (8-20 caracteres).");
-                else if (_context.Empleados.Any(e =>
-                    e.Cedula == model.Cedula.Trim() &&
-                    (idActual == null || e.EmpleadoId != idActual)))
-                    ModelState.AddModelError("Cedula", "Ya existe un empleado registrado con esa cédula.");
-            }
-
-            // Nombre
-            if (!string.IsNullOrWhiteSpace(model.Nombre) &&
-                !Regex.IsMatch(model.Nombre.Trim(), @"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]{2,100}$"))
-                ModelState.AddModelError("Nombre", "El nombre solo puede contener letras, espacios, apóstrofes y guiones.");
-
-            // Primer Apellido
-            if (!string.IsNullOrWhiteSpace(model.PrimerApellido) &&
-                !Regex.IsMatch(model.PrimerApellido.Trim(), @"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]{2,50}$"))
-                ModelState.AddModelError("PrimerApellido", "El apellido solo puede contener letras.");
-
-            // Segundo Apellido
-            if (!string.IsNullOrWhiteSpace(model.SegundoApellido) &&
-                !Regex.IsMatch(model.SegundoApellido.Trim(), @"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]{2,50}$"))
-                ModelState.AddModelError("SegundoApellido", "El segundo apellido solo puede contener letras.");
-
-            // Salario
-            if (model.SalarioBase < 0)
-                ModelState.AddModelError("SalarioBase", "El salario no puede ser negativo.");
-            else if (model.SalarioBase > 9_999_999.99m)
-                ModelState.AddModelError("SalarioBase", "El salario excede el límite máximo permitido (₡9,999,999.99).");
-
-            // Teléfono
-            if (!EsTelefonoValido(model.Telefono))
-                ModelState.AddModelError("Telefono", "El teléfono solo puede contener números, guiones, espacios y paréntesis.");
-
-            // Correo
-            if (!string.IsNullOrWhiteSpace(model.CorreoElectronico) &&
-                !Regex.IsMatch(model.CorreoElectronico.Trim(),
-                    @"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"))
-                ModelState.AddModelError("CorreoElectronico", "El formato del correo electrónico no es válido.");
         }
     }
 }

@@ -13,22 +13,16 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<HomeController> _logger;
 
-        public HomeController(ApplicationDbContext context, ILogger<HomeController> logger)
+        public HomeController(
+            ApplicationDbContext context,
+            ILogger<HomeController> logger)
         {
             _context = context;
             _logger = logger;
         }
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
+        public IActionResult Index() => RedirectToAction(nameof(Dashboard));
 
-        public IActionResult Index()
-        {
-            return RedirectToAction(nameof(Dashboard));
-        }
-
-        // ── DASHBOARD ─────────────────────────────────────────────────────────
-
-        [HttpGet]
         [HttpGet]
         public async Task<IActionResult> Dashboard()
         {
@@ -37,7 +31,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ViewBag.Usuario = HttpContext.Session.GetString("Usuario");
                 ViewBag.Rol = HttpContext.Session.GetString("Rol");
 
-                // ── Ejecutar secuencialmente (EF Core no soporta paralelo en el mismo contexto)
                 ViewBag.TotalEmpleadosActivos = await _context.Empleados
                     .CountAsync(e => e.Activo);
 
@@ -48,17 +41,53 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ViewBag.TotalComisiones = await _context.Comisiones
                     .SumAsync(c => (decimal?)c.Monto) ?? 0m;
 
-                ViewBag.TotalPlanillaEstimada = await _context.Empleados
-                    .Where(e => e.Activo)
-                    .SumAsync(e => (decimal?)e.SalarioBase) ?? 0m;
-
                 ViewBag.TotalPrestamosActivos = await _context.Prestamos
                     .CountAsync(p => p.Activo);
 
                 ViewBag.TotalPuestosActivos = await _context.Puestos
                     .CountAsync(p => p.Activo);
 
-                _logger.LogInformation("Dashboard cargado por usuario: {Usuario}",
+                var periodoActivo = await _context.PeriodosPago
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.Estado == EstadoPeriodo.Abierto);
+
+                ViewBag.PeriodoActivo = periodoActivo;
+
+                if (periodoActivo != null)
+                {
+                    ViewBag.NetoPeriodoActivo = await _context.PlanillasEmpleado
+                        .Where(pe => pe.PeriodoPagoId == periodoActivo.PeriodoPagoId)
+                        .SumAsync(pe => (decimal?)pe.NetoAPagar) ?? 0m;
+
+                    ViewBag.EmpleadosEnPlanilla = await _context.PlanillasEmpleado
+                        .CountAsync(pe => pe.PeriodoPagoId == periodoActivo.PeriodoPagoId);
+
+                    ViewBag.TotalHorasExtrasPeriodo = await _context.HorasExtras
+                        .Where(h => h.PeriodoPagoId == periodoActivo.PeriodoPagoId)
+                        .SumAsync(h => (decimal?)h.MontoTotal) ?? 0m;
+
+                    ViewBag.TotalCreditosActivos = await _context.CreditosFerreteria
+                        .Where(c => c.Activo)
+                        .SumAsync(c => (decimal?)c.Saldo) ?? 0m;
+                }
+                else
+                {
+                    ViewBag.NetoPeriodoActivo = 0m;
+                    ViewBag.EmpleadosEnPlanilla = 0;
+                    ViewBag.TotalHorasExtrasPeriodo = 0m;
+                    ViewBag.TotalCreditosActivos = 0m;
+                }
+
+                ViewBag.TotalIncapacidadesActivas = await _context.Incapacidades
+                    .CountAsync(i => i.FechaFin >= DateTime.Today);
+
+                ViewBag.TotalMontoIncapacidades = await _context.Incapacidades
+                    .Where(i =>
+                        i.FechaFin >= DateTime.Today &&
+                        i.ResponsablePago == ResponsablePago.Patrono)
+                    .SumAsync(i => (decimal?)i.MontoTotal) ?? 0m;
+
+                _logger.LogInformation("Dashboard cargado por usuario: {U}",
                     HttpContext.Session.GetString("Usuario"));
 
                 return View();
@@ -66,20 +95,24 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al cargar el Dashboard");
-                TempData["Error"] = "Ocurrió un error al cargar el Dashboard. Intentá de nuevo.";
+                TempData["Error"] = "Ocurrió un error al cargar el Dashboard.";
 
                 ViewBag.TotalEmpleadosActivos = 0;
                 ViewBag.TotalSaldoPrestamos = 0m;
                 ViewBag.TotalComisiones = 0m;
-                ViewBag.TotalPlanillaEstimada = 0m;
                 ViewBag.TotalPrestamosActivos = 0;
                 ViewBag.TotalPuestosActivos = 0;
+                ViewBag.PeriodoActivo = null;
+                ViewBag.NetoPeriodoActivo = 0m;
+                ViewBag.EmpleadosEnPlanilla = 0;
+                ViewBag.TotalHorasExtrasPeriodo = 0m;
+                ViewBag.TotalCreditosActivos = 0m;
+                ViewBag.TotalIncapacidadesActivas = 0;
+                ViewBag.TotalMontoIncapacidades = 0m;
 
                 return View();
             }
         }
-
-        // ── ERROR ─────────────────────────────────────────────────────────────
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

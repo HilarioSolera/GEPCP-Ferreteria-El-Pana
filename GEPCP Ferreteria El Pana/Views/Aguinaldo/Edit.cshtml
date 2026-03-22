@@ -1,0 +1,108 @@
+﻿@model GEPCP_Ferreteria_El_Pana.Models.Aguinaldo
+@{
+    ViewData["Title"] = "Editar Aguinaldo - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-gift"></i> Editar Aguinaldo</h2>
+    <a asp-action="Index" asp-route-anio="@Model.Anio"
+           class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
+
+<div class="card shadow-sm border-0" style="max-width: 700px;">
+    <div class="card-body p-4">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="AguinaldoId" />
+            <input type="hidden" asp-for="CreadoEn" />
+            <div class="row g-3">
+
+                <div class="col-12">
+                    <label asp-for="EmpleadoId" class="form-label fw-bold">
+                        <i class="bi bi-person"></i> Empleado
+                    </label>
+                    <select asp-for="EmpleadoId" asp-items="ViewBag.Empleados"
+                            class="form-select form-select-lg">
+                        <option value="">— Seleccione un empleado —</option>
+                    </select>
+                    <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="Anio" class="form-label fw-bold">
+                        <i class="bi bi-calendar"></i> Año
+                    </label>
+                    <input asp-for="Anio" type="number" min="2020"
+                           max="@(DateTime.Today.Year + 1)"
+                           class="form-control form-control-lg" />
+                    <span asp-validation-for="Anio" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="FechaInicio" class="form-label fw-bold">
+                        <i class="bi bi-calendar-check"></i> Período Inicio
+                    </label>
+                    <input asp-for="FechaInicio" type="date"
+                           class="form-control form-control-lg" />
+                    <span asp-validation-for="FechaInicio" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="FechaFin" class="form-label fw-bold">
+                        <i class="bi bi-calendar-x"></i> Período Fin
+                    </label>
+                    <input asp-for="FechaFin" type="date"
+                           class="form-control form-control-lg" />
+                    <span asp-validation-for="FechaFin" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="FechaPago" class="form-label fw-bold">
+                        <i class="bi bi-calendar2-check"></i> Fecha de Pago
+                    </label>
+                    <input asp-for="FechaPago" type="date"
+                           class="form-control form-control-lg" />
+                    <span asp-validation-for="FechaPago" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="MontoTotal" class="form-label fw-bold">
+                        <i class="bi bi-currency-exchange"></i> Monto Total (₡)
+                    </label>
+                    <input asp-for="MontoTotal" type="number" step="0.01" min="0.01"
+                           class="form-control form-control-lg" />
+                    <span asp-validation-for="MontoTotal" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Observaciones" class="form-label fw-bold">
+                        <i class="bi bi-chat-text"></i> Observaciones
+                        <span class="text-muted fw-normal small">(opcional)</span>
+                    </label>
+                    <input asp-for="Observaciones" class="form-control form-control-lg"
+                           maxlength="200" />
+                    <span asp-validation-for="Observaciones" class="text-danger small"></span>
+                </div>
+
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-warning btn-lg px-5">
+                    <i class="bi bi-check-circle"></i> Guardar Cambios
+                </button>
+                <a asp-action="Index" asp-route-anio="@Model.Anio"
+                   class="btn btn-secondary btn-lg px-5">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

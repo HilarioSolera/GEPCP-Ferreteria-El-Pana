@@ -1,0 +1,137 @@
+﻿@model List<GEPCP_Ferreteria_El_Pana.Models.PeriodoPago>
+@{
+    ViewData["Title"] = "Períodos de Pago - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int anio = ViewBag.AnioActual;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-calendar2-range"></i> Períodos de Pago</h2>
+    <a asp-action="Create" class="btn btn-success btn-lg">
+        <i class="bi bi-plus-circle"></i> Nuevo Período
+    </a>
+</div>
+
+@* KPIs *@
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-4 fw-bold text-primary">@ViewBag.TotalPeriodos</div>
+            <div class="text-muted small">Total Períodos @anio</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-4 fw-bold text-success">@ViewBag.TotalAbiertos</div>
+            <div class="text-muted small">Períodos Abiertos</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-4 fw-bold text-secondary">@ViewBag.TotalCerrados</div>
+            <div class="text-muted small">Períodos Cerrados</div>
+        </div>
+    </div>
+</div>
+
+@* Navegación por año *@
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a asp-action="Index" asp-route-anio="@ViewBag.AnioAnterior"
+           class="btn btn-outline-secondary">
+        <i class="bi bi-chevron-left"></i> @ViewBag.AnioAnterior
+    </a>
+    <h5 class="mb-0 fw-bold">@anio</h5>
+    <a asp-action="Index" asp-route-anio="@ViewBag.AnioSiguiente"
+           class="btn btn-outline-secondary">
+        @ViewBag.AnioSiguiente <i class="bi bi-chevron-right"></i>
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info text-center py-4">
+        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+        No hay períodos de pago registrados para @anio.
+        <div class="mt-2">
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Crear el primer período
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-hover align-middle mb-0">
+            <thead style="background-color: #FF7A00; color: white;">
+                <tr>
+                    <th>Período</th>
+                    <th>Quincena</th>
+                    <th>Fecha Inicio</th>
+                    <th>Fecha Fin</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr class="@(p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado ? "table-light text-muted" : "")">
+                        <td class="fw-bold">
+                            @p.Descripcion
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                Q@((int)p.Quincena)
+                            </span>
+                        </td>
+                        <td>@p.FechaInicio.ToString("dd/MM/yyyy")</td>
+                        <td>@p.FechaFin.ToString("dd/MM/yyyy")</td>
+                        <td class="text-center">
+                            @if (p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Abierto)
+                            {
+                                <span class="badge bg-success fs-6">
+                                    <i class="bi bi-unlock"></i> Abierto
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary fs-6">
+                                    <i class="bi bi-lock"></i> Cerrado
+                                </span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-1 justify-content-center">
+                                @if (p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Abierto)
+                                {
+                                    <form asp-action="Cerrar" method="post" class="d-inline"
+                                          onsubmit="return confirm('¿Cerrar el período @p.Descripcion? Esta acción bloqueará los registros.')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@p.PeriodoPagoId" />
+                                        <button type="submit" class="btn btn-sm btn-secondary"
+                                                title="Cerrar período">
+                                            <i class="bi bi-lock"></i> Cerrar
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Reabrir" method="post" class="d-inline"
+                                          onsubmit="return confirm('¿Reabrir el período @p.Descripcion?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@p.PeriodoPagoId" />
+                                        <button type="submit" class="btn btn-sm btn-warning"
+                                                title="Reabrir período">
+                                            <i class="bi bi-unlock"></i> Reabrir
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

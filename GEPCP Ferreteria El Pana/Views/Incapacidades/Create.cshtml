@@ -1,0 +1,271 @@
+﻿@model GEPCP_Ferreteria_El_Pana.Models.Incapacidad
+@{
+    ViewData["Title"] = "Nueva Incapacidad - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // Calcular días del lado del servidor para preservarlos al volver con error
+    var diasServidor = (Model.FechaInicio != default && Model.FechaFin != default)
+        ? (Model.FechaFin - Model.FechaInicio).Days + 1
+        : 0;
+    var fechaInicioStr = Model.FechaInicio != default
+        ? Model.FechaInicio.ToString("yyyy-MM-dd") : "";
+    var fechaFinStr = Model.FechaFin != default
+        ? Model.FechaFin.ToString("yyyy-MM-dd") : "";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-hospital"></i> Registrar Incapacidad</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
+
+<div class="card shadow-sm border-0" style="max-width: 750px;">
+    <div class="card-body p-4">
+
+        @* ── Mensaje de error global del servidor ── *@
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row g-3">
+
+                @* Empleado *@
+                <div class="col-12">
+                    <label asp-for="EmpleadoId" class="form-label fw-bold">
+                        <i class="bi bi-person"></i> Empleado <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="EmpleadoId" asp-items="ViewBag.Empleados"
+                            class="form-select form-select-lg" id="selectEmpleado">
+                        <option value="">— Seleccione un empleado —</option>
+                    </select>
+                    <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
+                </div>
+
+                @* Entidad y Tipo *@
+                <div class="col-md-4">
+                    <label asp-for="Entidad" class="form-label fw-bold">
+                        <i class="bi bi-building-check"></i> Entidad <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="Entidad" class="form-select form-select-lg"
+                            id="selectEntidad">
+                        <option value="1">CCSS</option>
+                        <option value="2">INS</option>
+                    </select>
+                    <span asp-validation-for="Entidad" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-8">
+                    <label asp-for="TipoIncapacidad" class="form-label fw-bold">
+                        <i class="bi bi-clipboard2-pulse"></i> Tipo de Incapacidad <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="TipoIncapacidad" class="form-select form-select-lg">
+                        <option value="Enfermedad común">Enfermedad común</option>
+                        <option value="Accidente de tránsito">Accidente de tránsito</option>
+                        <option value="Accidente laboral">Accidente laboral</option>
+                        <option value="Licencia de maternidad">Licencia de maternidad</option>
+                        <option value="Recuperación">Recuperación</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                    <span asp-validation-for="TipoIncapacidad" class="text-danger small"></span>
+                </div>
+
+                @* Fechas *@
+                <div class="col-md-5">
+                    <label asp-for="FechaInicio" class="form-label fw-bold">
+                        <i class="bi bi-calendar-check"></i> Fecha Inicio <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="FechaInicio" type="date"
+                           class="form-control form-control-lg" id="inputFechaInicio"
+                           value="@fechaInicioStr"
+                           max="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+                    <span asp-validation-for="FechaInicio" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-5">
+                    <label asp-for="FechaFin" class="form-label fw-bold">
+                        <i class="bi bi-calendar-x"></i> Fecha Fin <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="FechaFin" type="date"
+                           class="form-control form-control-lg" id="inputFechaFin"
+                           value="@fechaFinStr" />
+                    <span asp-validation-for="FechaFin" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-bold text-muted">
+                        <i class="bi bi-calendar2"></i> Días
+                    </label>
+                    <div class="form-control form-control-lg bg-light text-center fw-bold text-primary"
+                         id="totalDiasRef">
+                        @(diasServidor > 0 ? diasServidor.ToString() : "—")
+                    </div>
+                </div>
+
+                @* Tiquete CCSS *@
+                <div class="col-md-6" id="divTiquete">
+                    <label asp-for="TiqueteCCSS" class="form-label fw-bold">
+                        <i class="bi bi-ticket-perforated"></i> Tiquete CCSS <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="TiqueteCCSS" class="form-control form-control-lg"
+                           maxlength="50" placeholder="Ej: A00270125022436" />
+                    <span asp-validation-for="TiqueteCCSS" class="text-danger small"></span>
+                </div>
+
+                @* Porcentaje y Responsable *@
+                <div class="col-md-3">
+                    <label asp-for="PorcentajePago" class="form-label fw-bold">
+                        <i class="bi bi-percent"></i> % de Pago <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="PorcentajePago" class="form-select form-select-lg"
+                            id="selectPorcentaje">
+                        <option value="50">50%</option>
+                        <option value="60">60%</option>
+                        <option value="100">100%</option>
+                    </select>
+                    <span asp-validation-for="PorcentajePago" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="ResponsablePago" class="form-label fw-bold">
+                        <i class="bi bi-person-check"></i> Responsable <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="ResponsablePago" class="form-select form-select-lg">
+                        <option value="1">Patrono</option>
+                        <option value="2">CCSS</option>
+                        <option value="3">INS</option>
+                    </select>
+                    <span asp-validation-for="ResponsablePago" class="text-danger small"></span>
+                </div>
+
+                @* Estimado *@
+                <div class="col-12">
+                    <div class="alert alert-light border py-2" id="montoEstimado"
+                         style="display:@(diasServidor > 0 && Model.EmpleadoId > 0 ? "block" : "none");">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="text-muted small">Salario Diario</div>
+                                <div class="fw-bold" id="refSalarioDiario">—</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-muted small">Monto por Día</div>
+                                <div class="fw-bold text-warning" id="refMontoDia">—</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-muted small">Total Días</div>
+                                <div class="fw-bold text-primary" id="refTotalDias">—</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-muted small">Monto Total</div>
+                                <div class="fw-bold text-danger" id="refMontoTotal">—</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* Observaciones *@
+                <div class="col-12">
+                    <label asp-for="Observaciones" class="form-label fw-bold">
+                        <i class="bi bi-chat-text"></i> Observaciones
+                        <span class="text-muted fw-normal small">(opcional)</span>
+                    </label>
+                    <input asp-for="Observaciones" class="form-control form-control-lg"
+                           maxlength="200"
+                           placeholder="Ej: Pago directo INS, días sin incapacidad..." />
+                    <span asp-validation-for="Observaciones" class="text-danger small"></span>
+                </div>
+
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-lg px-5">
+                    <i class="bi bi-check-circle"></i> Registrar Incapacidad
+                </button>
+                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        function toggleTiquete() {
+            var entidad = parseInt(document.getElementById('selectEntidad').value);
+            document.getElementById('divTiquete').style.display =
+                entidad === 1 ? 'block' : 'none';
+        }
+
+        async function calcularMonto() {
+            var empleadoId  = parseInt(document.getElementById('selectEmpleado').value) || 0;
+            var fechaInicio = document.getElementById('inputFechaInicio').value;
+            var fechaFin    = document.getElementById('inputFechaFin').value;
+            var porcentaje  = parseFloat(document.getElementById('selectPorcentaje').value) || 50;
+            var diasRef     = document.getElementById('totalDiasRef');
+
+            if (!fechaInicio || !fechaFin) {
+                diasRef.textContent = '—';
+                document.getElementById('montoEstimado').style.display = 'none';
+                return;
+            }
+
+            // Parsear fechas sin problema de zona horaria
+            var partsI = fechaInicio.split('-');
+            var partsF = fechaFin.split('-');
+            var fi = new Date(parseInt(partsI[0]), parseInt(partsI[1]) - 1, parseInt(partsI[2]));
+            var ff = new Date(parseInt(partsF[0]), parseInt(partsF[1]) - 1, parseInt(partsF[2]));
+            var dias = Math.round((ff - fi) / (1000 * 60 * 60 * 24)) + 1;
+
+            diasRef.textContent = dias > 0 ? dias : '—';
+
+            if (empleadoId <= 0 || dias <= 0) {
+                document.getElementById('montoEstimado').style.display = 'none';
+                return;
+            }
+
+            try {
+                var url = '/Incapacidades/CalcularMonto?empleadoId=' + empleadoId +
+                    '&fechaInicio=' + encodeURIComponent(fechaInicio) +
+                    '&fechaFin='    + encodeURIComponent(fechaFin)    +
+                    '&porcentaje='  + porcentaje;
+                var res  = await fetch(url);
+                var data = await res.json();
+
+                if (data.montoTotal > 0) {
+                    document.getElementById('montoEstimado').style.display = 'block';
+                    document.getElementById('refSalarioDiario').innerHTML =
+                        '&#8353;' + data.salarioDiario.toLocaleString('es-CR',
+                            {minimumFractionDigits: 2});
+                    document.getElementById('refMontoDia').innerHTML =
+                        '&#8353;' + data.montoPorDia.toLocaleString('es-CR',
+                            {minimumFractionDigits: 2});
+                    document.getElementById('refTotalDias').textContent =
+                        data.totalDias + ' días';
+                    document.getElementById('refMontoTotal').innerHTML =
+                        '&#8353;' + data.montoTotal.toLocaleString('es-CR',
+                            {minimumFractionDigits: 2});
+                } else {
+                    document.getElementById('montoEstimado').style.display = 'none';
+                }
+            } catch (e) {
+                console.error('Error al calcular monto:', e);
+            }
+        }
+
+        document.getElementById('selectEntidad').addEventListener('change', toggleTiquete);
+        document.getElementById('selectEmpleado').addEventListener('change', calcularMonto);
+        document.getElementById('inputFechaInicio').addEventListener('change', calcularMonto);
+        document.getElementById('inputFechaFin').addEventListener('change', calcularMonto);
+        document.getElementById('selectPorcentaje').addEventListener('change', calcularMonto);
+
+        toggleTiquete();
+
+        // Si hay datos del servidor (vuelta por error), recalcular el monto estimado
+        @if (Model.EmpleadoId > 0 && diasServidor > 0)
+        {
+                <text>calcularMonto();</text>
+        }
+    </script>
+}

@@ -7,10 +7,10 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-person-badge"></i> Detalle del Empleado</h2>
     <div class="d-flex gap-2">
-        <a href="/Empleados/Edit/@Model.EmpleadoId" class="btn btn-warning">
+        <a asp-action="Edit" asp-route-id="@Model.EmpleadoId" class="btn btn-warning">
             <i class="bi bi-pencil"></i> Editar
         </a>
-        <a href="/Empleados/Index" class="btn btn-outline-secondary">
+        <a asp-action="Index" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Volver
         </a>
     </div>
@@ -23,14 +23,9 @@
             <i class="bi bi-person-circle"></i>
             @Model.PrimerApellido @Model.SegundoApellido @Model.Nombre
         </h5>
-        @if (Model.Estado == "Activo")
-        {
-            <span class="badge bg-success fs-6">Activo</span>
-        }
-        else
-        {
-            <span class="badge bg-secondary fs-6">Inactivo</span>
-        }
+        <span class="badge @(Model.Estado == "Activo" ? "bg-success" : "bg-secondary") fs-6">
+            @Model.Estado
+        </span>
     </div>
 
     <div class="card-body p-4">
@@ -40,14 +35,14 @@
             <div class="col-md-6">
                 <div class="card border-0 bg-light h-100">
                     <div class="card-body">
-                        <h6 class="text-muted mb-3">
+                        <h6 class="text-muted mb-3 fw-bold">
                             <i class="bi bi-person"></i> Información Personal
                         </h6>
                         <table class="table table-borderless mb-0">
                             <tbody>
                                 <tr>
                                     <td class="fw-bold text-muted" style="width:45%">Cédula</td>
-                                    <td>@Model.Cedula</td>
+                                    <td><code>@Model.Cedula</code></td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold text-muted">Nombre</td>
@@ -72,6 +67,7 @@
                                         }
                                         else
                                         {
+
                                             <span class="text-muted">—</span>
                                         }
                                     </td>
@@ -87,6 +83,38 @@
                                         }
                                         else
                                         {
+
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Forma de Pago</td>
+                                    <td>
+                                        @if (Model.FormaPago == GEPCP_Ferreteria_El_Pana.Models.FormaPago.Transferencia)
+                                        {
+                                            <span class="badge bg-primary">
+                                                <i class="bi bi-bank"></i> Transferencia BN
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-cash"></i> Efectivo
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Cuenta BN</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(Model.NumeroCuenta))
+                                        {
+                                            <code>@Model.NumeroCuenta</code>
+                                        }
+                                        else
+                                        {
+
                                             <span class="text-muted">—</span>
                                         }
                                     </td>
@@ -101,30 +129,53 @@
             <div class="col-md-6">
                 <div class="card border-0 bg-light h-100">
                     <div class="card-body">
-                        <h6 class="text-muted mb-3">
+                        <h6 class="text-muted mb-3 fw-bold">
                             <i class="bi bi-briefcase"></i> Información Laboral
                         </h6>
                         <table class="table table-borderless mb-0">
                             <tbody>
                                 <tr>
-                                    <td class="fw-bold text-muted" style="width:45%">Puesto</td>
+                                    <td class="fw-bold text-muted" style="width:45%">Departamento</td>
+                                    <td><span class="badge bg-secondary">@Model.Departamento</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Puesto</td>
                                     <td>@Model.Puesto</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Jornada</td>
+                                    <td>
+                                        @(Model.TipoJornada == GEPCP_Ferreteria_El_Pana.Models.TipoJornada.Completa
+                                            ? "Completa (240 hrs/mes)"
+                                            : "Media Jornada (120 hrs/mes)")
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Horas Quincenales</td>
+                                    <td>@Model.HorasQuincenales hrs</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Fecha de Ingreso</td>
+                                    <td>@Model.FechaIngreso.ToString("dd/MM/yyyy")</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold text-muted">Salario Base</td>
                                     <td class="fw-bold text-success">₡@Model.SalarioBase.ToString("N2")</td>
                                 </tr>
                                 <tr>
+                                    <td class="fw-bold text-muted">Valor Hora</td>
+                                    <td class="fw-bold text-primary">₡@Model.ValorHora.ToString("N2")</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Valor Hora Extra</td>
+                                    <td class="fw-bold text-warning">₡@Model.ValorHoraExtra.ToString("N2")</td>
+                                </tr>
+                                <tr>
                                     <td class="fw-bold text-muted">Estado</td>
                                     <td>
-                                        @if (Model.Estado == "Activo")
-                                        {
-                                            <span class="badge bg-success">Activo</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">Inactivo</span>
-                                        }
+                                        <span class="badge @(Model.Estado == "Activo" ? "bg-success" : "bg-secondary")">
+                                            @Model.Estado
+                                        </span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -132,17 +183,16 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
     <div class="card-footer bg-transparent d-flex gap-2 py-3">
-        <a href="/Empleados/Edit/@Model.EmpleadoId" class="btn btn-warning">
+        <a asp-action="Edit" asp-route-id="@Model.EmpleadoId" class="btn btn-warning">
             <i class="bi bi-pencil"></i> Editar Empleado
         </a>
         @if (Model.Estado == "Activo")
         {
-            <form asp-controller="Empleados" asp-action="Desactivar" method="post" class="d-inline"
+            <form asp-action="Desactivar" method="post" class="d-inline"
                   onsubmit="return confirm('¿Desactivar a @Model.Nombre @Model.PrimerApellido?')">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.EmpleadoId" />
@@ -151,11 +201,24 @@
                 </button>
             </form>
         }
-        <a href="/Empleados/Delete/@Model.EmpleadoId" class="btn btn-danger">
+        else
+        {
+            <form asp-action="Activar" method="post" class="d-inline"
+                  onsubmit="return confirm('¿Activar a @Model.Nombre @Model.PrimerApellido?')">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.EmpleadoId" />
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-play-circle"></i> Activar
+                </button>
+            </form>
+        }
+        <a asp-action="Delete" asp-route-id="@Model.EmpleadoId" class="btn btn-danger">
             <i class="bi bi-trash"></i> Eliminar
         </a>
-        <a href="/Empleados/Index" class="btn btn-outline-secondary ms-auto">
+        <a asp-action="Index" class="btn btn-outline-secondary ms-auto">
             <i class="bi bi-arrow-left"></i> Volver al Listado
         </a>
     </div>
 </div>
+`
+

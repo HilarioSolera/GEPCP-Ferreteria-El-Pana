@@ -19,7 +19,7 @@
         </span>
         <input type="text" name="busqueda" value="@ViewBag.Busqueda"
                class="form-control border-start-0"
-               placeholder="Buscar por nombre, apellido, cédula, puesto, correo o teléfono..." />
+               placeholder="Buscar por nombre, cédula, puesto, departamento, correo o teléfono..." />
         <button type="submit" class="btn btn-primary px-4">Buscar</button>
         @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string))
         {
@@ -31,8 +31,8 @@
     @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string))
     {
         <small class="text-muted ms-1 mt-1 d-block">
-            Resultados para: <strong>"@ViewBag.Busqueda"</strong>
-            — @Model.Count() empleado(s) encontrado(s)
+            Resultados para: <strong>"@ViewBag.Busqueda"</strong> —
+            @Model.Count() empleado(s) encontrado(s)
         </small>
     }
 </form>
@@ -59,8 +59,11 @@ else
                 <tr>
                     <th>Cédula</th>
                     <th>Nombre Completo</th>
+                    <th>Departamento</th>
                     <th>Puesto</th>
+                    <th>Jornada</th>
                     <th class="text-end">Salario Base</th>
+                    <th class="text-end">Valor Hora</th>
                     <th>Contacto</th>
                     <th class="text-center">Estado</th>
                     <th class="text-center">Acciones</th>
@@ -74,11 +77,22 @@ else
                         <td>
                             <strong>@item.PrimerApellido @item.SegundoApellido</strong>
                             @item.Nombre
+                            <div class="small text-muted">
+                                Ingresó: @item.FechaIngreso.ToString("dd/MM/yyyy")
+                            </div>
                         </td>
                         <td>
-                            <span class="badge bg-secondary">@item.Puesto</span>
+                            <span class="badge bg-secondary">@item.Departamento</span>
+                        </td>
+                        <td>@item.Puesto</td>
+                        <td>
+                            <span class="badge @(item.TipoJornada == GEPCP_Ferreteria_El_Pana.Models.TipoJornada.Completa ? "bg-primary" : "bg-info")">
+                                @(item.TipoJornada == GEPCP_Ferreteria_El_Pana.Models.TipoJornada.Completa
+                                    ? "Completa" : "Media")
+                            </span>
                         </td>
                         <td class="text-end fw-bold">₡@item.SalarioBase.ToString("N0")</td>
+                        <td class="text-end text-primary">₡@item.ValorHora.ToString("N2")</td>
                         <td>
                             @if (!string.IsNullOrEmpty(item.Telefono))
                             {
@@ -88,45 +102,40 @@ else
                             }
                             @if (!string.IsNullOrEmpty(item.CorreoElectronico))
                             {
-                                <a href="mailto:@item.CorreoElectronico" class="text-decoration-none d-block small">
+                                <a href="mailto:@item.CorreoElectronico"
+                                       class="text-decoration-none d-block small">
                                     <i class="bi bi-envelope"></i> @item.CorreoElectronico
                                 </a>
                             }
-                            @if (string.IsNullOrEmpty(item.Telefono) && string.IsNullOrEmpty(item.CorreoElectronico))
+                            @if (string.IsNullOrEmpty(item.Telefono) &&
+                                                             string.IsNullOrEmpty(item.CorreoElectronico))
                             {
                                 <span class="text-muted">—</span>
                             }
                         </td>
                         <td class="text-center">
-                            @if (item.Estado == "Activo")
-                            {
-                                <span class="badge bg-success">Activo</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">Inactivo</span>
-                            }
+                            <span class="badge @(item.Estado == "Activo" ? "bg-success" : "bg-secondary")">
+                                @item.Estado
+                            </span>
                         </td>
                         <td class="text-center">
                             <div class="d-flex gap-1 justify-content-center flex-wrap">
-
                                 <a asp-action="Details" asp-route-id="@item.EmpleadoId"
-                                   class="btn btn-sm btn-outline-info" title="Ver detalles">
+                                       class="btn btn-sm btn-outline-info" title="Ver detalles">
                                     <i class="bi bi-eye"></i>
                                 </a>
-
                                 <a asp-action="Edit" asp-route-id="@item.EmpleadoId"
-                                   class="btn btn-sm btn-warning" title="Editar">
+                                       class="btn btn-sm btn-warning" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-
                                 @if (item.Estado == "Activo")
                                 {
                                     <form asp-action="Desactivar" method="post" class="d-inline"
                                           onsubmit="return confirm('¿Desactivar a @item.PrimerApellido @item.Nombre?')">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@item.EmpleadoId" />
-                                        <button type="submit" class="btn btn-sm btn-secondary" title="Desactivar">
+                                        <button type="submit" class="btn btn-sm btn-secondary"
+                                                title="Desactivar">
                                             <i class="bi bi-pause-circle"></i>
                                         </button>
                                     </form>
@@ -137,17 +146,16 @@ else
                                           onsubmit="return confirm('¿Activar a @item.PrimerApellido @item.Nombre?')">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@item.EmpleadoId" />
-                                        <button type="submit" class="btn btn-sm btn-success" title="Activar">
+                                        <button type="submit" class="btn btn-sm btn-success"
+                                                title="Activar">
                                             <i class="bi bi-play-circle"></i>
                                         </button>
                                     </form>
                                 }
-
                                 <a asp-action="Delete" asp-route-id="@item.EmpleadoId"
-                                   class="btn btn-sm btn-danger" title="Eliminar">
+                                       class="btn btn-sm btn-danger" title="Eliminar">
                                     <i class="bi bi-trash"></i>
                                 </a>
-
                             </div>
                         </td>
                     </tr>

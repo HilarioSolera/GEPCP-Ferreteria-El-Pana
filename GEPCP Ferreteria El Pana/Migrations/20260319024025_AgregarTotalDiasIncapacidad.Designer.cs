@@ -4,6 +4,7 @@ using GEPCP_Ferreteria_El_Pana.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260319024025_AgregarTotalDiasIncapacidad")]
+    partial class AgregarTotalDiasIncapacidad
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,47 +24,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Aguinaldo", b =>
-                {
-                    b.Property<int>("AguinaldoId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AguinaldoId"));
-
-                    b.Property<int>("Anio")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("EmpleadoId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("FechaFin")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("FechaInicio")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("FechaPago")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("MontoTotal")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Observaciones")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.HasKey("AguinaldoId");
-
-                    b.HasIndex("EmpleadoId", "Anio")
-                        .IsUnique();
-
-                    b.ToTable("Aguinaldos");
-                });
 
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Comision", b =>
                 {
@@ -748,17 +710,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                             PasswordHash = "$2a$11$T72F0Mu8ocYejSTck6bprueMSoi5WgVtSD.hIraw5PvhnjDde6rD6",
                             Rol = "Jefatura"
                         });
-                });
-
-            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Aguinaldo", b =>
-                {
-                    b.HasOne("GEPCP_Ferreteria_El_Pana.Models.Empleado", "Empleado")
-                        .WithMany()
-                        .HasForeignKey("EmpleadoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Empleado");
                 });
 
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Comision", b =>
