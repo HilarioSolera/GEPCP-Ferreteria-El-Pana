@@ -14,15 +14,18 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<AguinaldoController> _logger;
         private readonly ComprobantePlanillaService _servicioPDF;
+        private readonly AuditoriaService _auditoria;
 
         public AguinaldoController(
             ApplicationDbContext context,
             ILogger<AguinaldoController> logger,
-            ComprobantePlanillaService servicioPDF)
+            ComprobantePlanillaService servicioPDF,
+            AuditoriaService auditoria)
         {
             _context = context;
             _logger = logger;
             _servicioPDF = servicioPDF;
+            _auditoria = auditoria;
         }
 
         // ── INDEX ─────────────────────────────────────────────────────────────
@@ -36,13 +39,19 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ViewBag.Busqueda = busqueda;
 
                 var anios = await _context.Aguinaldos
-                    .Select(a => a.Anio)
-                    .Distinct()
-                    .OrderByDescending(a => a)
-                    .ToListAsync();
-                if (!anios.Contains(anioActual))
-                    anios.Insert(0, anioActual);
+                    .Select(a => a.Anio).Distinct()
+                    .OrderByDescending(a => a).ToListAsync();
+
+                if (!anios.Contains(anioActual)) anios.Insert(0, anioActual);
                 ViewBag.Anios = anios;
+
+                if (anio == null && string.IsNullOrWhiteSpace(busqueda))
+                {
+                    ViewBag.TotalEmpleados = 0;
+                    ViewBag.TotalMonto = 0m;
+                    ViewBag.SinAguinaldo = 0;
+                    return View(new List<Aguinaldo>());
+                }
 
                 var query = _context.Aguinaldos
                     .Include(a => a.Empleado)
@@ -68,73 +77,63 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 var idsConAguinaldo = registros.Select(a => a.EmpleadoId).ToHashSet();
                 ViewBag.SinAguinaldo = await _context.Empleados
+                    .AsNoTracking()
                     .CountAsync(e => e.Activo && !idsConAguinaldo.Contains(e.EmpleadoId));
 
                 return View(registros);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al cargar aguinaldos. Año: {A}", anio);
-                TempData["Error"] = "Ocurrió un error al cargar los aguinaldos.";
-
-                // Siempre asignar ViewBag mínimos para que la vista no reviente
-                ViewBag.AnioActual = anio ?? DateTime.Today.Year;
-                ViewBag.Busqueda = busqueda;
-                ViewBag.Anios = new List<int> { anio ?? DateTime.Today.Year };
+                _logger.LogError(ex, "Error al cargar aguinaldos");
+                TempData["Error"] = "Error al cargar los aguinaldos.";
                 ViewBag.TotalEmpleados = 0;
                 ViewBag.TotalMonto = 0m;
                 ViewBag.SinAguinaldo = 0;
-
+                ViewBag.AnioActual = DateTime.Today.Year;
+                ViewBag.Anios = new List<int> { DateTime.Today.Year };
                 return View(new List<Aguinaldo>());
             }
         }
 
-        // ── CALCULAR AGUINALDO (automático desde planillas) ───────────────────
+        // ── CALCULAR AGUINALDO ────────────────────────────────────────────────
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [CustomAuthorize("RRHH")]
+        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> CalcularTodos(int anio)
         {
             try
             {
-                // Período legal: 1 dic año anterior al 30 nov año actual
                 var fechaInicio = new DateTime(anio - 1, 12, 1);
                 var fechaFin = new DateTime(anio, 11, 30);
 
                 var empleados = await _context.Empleados
-                    .Where(e => e.Activo)
-                    .ToListAsync();
+                    .Where(e => e.Activo).ToListAsync();
 
                 int calculados = 0;
                 int actualizados = 0;
 
                 foreach (var empleado in empleados)
                 {
-                    // Sumar TotalDevengado de planillas CERRADAS en el período
-                    var sumaDevengados = await _context.PlanillasEmpleado
-                        .Include(pe => pe.PeriodoPago)
-                        .Where(pe =>
-                            pe.EmpleadoId == empleado.EmpleadoId &&
-                            pe.PeriodoPago.Estado == EstadoPeriodo.Cerrado &&
-                            pe.PeriodoPago.FechaInicio >= fechaInicio &&
-                            pe.PeriodoPago.FechaFin <= fechaFin)
-                        .SumAsync(pe => pe.TotalDevengado);
+                    var sumaDevengados = (await _context.PlanillasEmpleado
+                    .Include(pe => pe.PeriodoPago)
+                    .Where(pe =>
+                        pe.EmpleadoId == empleado.EmpleadoId &&
+                        pe.PeriodoPago.Estado == EstadoPeriodo.Cerrado &&
+                        pe.PeriodoPago.FechaInicio >= fechaInicio &&
+                        pe.PeriodoPago.FechaFin <= fechaFin)
+                    .Select(pe => pe.TotalDevengado)
+                    .ToListAsync()).Sum();
 
                     if (sumaDevengados <= 0) continue;
 
-                    // Aguinaldo = suma devengados ÷ 12
                     var montoAguinaldo = Math.Round(sumaDevengados / 12m, 2);
-
-                    // Verificar si ya existe
                     var existente = await _context.Aguinaldos
                         .FirstOrDefaultAsync(a =>
-                            a.EmpleadoId == empleado.EmpleadoId &&
-                            a.Anio == anio);
+                            a.EmpleadoId == empleado.EmpleadoId && a.Anio == anio);
 
                     if (existente != null)
                     {
-                        // Actualizar si ya existe
                         existente.MontoTotal = montoAguinaldo;
                         existente.FechaInicio = fechaInicio;
                         existente.FechaFin = fechaFin;
@@ -142,7 +141,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     }
                     else
                     {
-                        // Crear nuevo
                         _context.Aguinaldos.Add(new Aguinaldo
                         {
                             EmpleadoId = empleado.EmpleadoId,
@@ -159,8 +157,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation(
-                    "Aguinaldo calculado: Año {A} Nuevos {N} Actualizados {U}",
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Calcular aguinaldo", "Aguinaldo",
+                    $"Año: {anio} — Nuevos: {calculados} Actualizados: {actualizados}");
+
+                _logger.LogInformation("Aguinaldo calculado: Año {A} Nuevos {N} Actualizados {U}",
                     anio, calculados, actualizados);
 
                 TempData["Success"] = $"Aguinaldo {anio} calculado: " +
@@ -176,9 +178,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE (manual si necesario) ──────────────────────────────────────
+        // ── CREATE ────────────────────────────────────────────────────────────
 
-        [CustomAuthorize("RRHH")]
+        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> Create()
         {
             try
@@ -202,7 +204,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [CustomAuthorize("RRHH")]
+        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> Create(Aguinaldo model)
         {
             try
@@ -217,9 +219,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 }
 
                 var existe = await _context.Aguinaldos
-                    .AnyAsync(a =>
-                        a.EmpleadoId == model.EmpleadoId &&
-                        a.Anio == model.Anio);
+                    .AnyAsync(a => a.EmpleadoId == model.EmpleadoId && a.Anio == model.Anio);
+
                 if (existe)
                 {
                     ModelState.AddModelError(string.Empty,
@@ -230,12 +231,17 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 model.MontoTotal = Math.Round(model.MontoTotal, 2);
                 model.CreadoEn = DateTime.Now;
-
                 _context.Add(model);
                 await _context.SaveChangesAsync();
 
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Crear aguinaldo manual", "Aguinaldo",
+                    $"EmpleadoId: {model.EmpleadoId} — Año: {model.Anio} — Monto: ₡{model.MontoTotal:N0}");
+
                 _logger.LogInformation("Aguinaldo creado manualmente: EmpleadoId {E} Año {A}",
                     model.EmpleadoId, model.Anio);
+
                 TempData["Success"] = $"Aguinaldo de ₡{model.MontoTotal:N0} registrado.";
                 return RedirectToAction(nameof(Index), new { anio = model.Anio });
             }
@@ -258,7 +264,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
         // ── EDIT ──────────────────────────────────────────────────────────────
 
-        [CustomAuthorize("RRHH")]
+        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> Edit(int? id)
         {
             try
@@ -279,7 +285,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [CustomAuthorize("RRHH")]
+        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> Edit(int id, Aguinaldo model)
         {
             try
@@ -300,6 +306,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         a.EmpleadoId == model.EmpleadoId &&
                         a.Anio == model.Anio &&
                         a.AguinaldoId != model.AguinaldoId);
+
                 if (existe)
                 {
                     ModelState.AddModelError(string.Empty,
@@ -311,6 +318,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 model.MontoTotal = Math.Round(model.MontoTotal, 2);
                 _context.Update(model);
                 await _context.SaveChangesAsync();
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Editar aguinaldo", "Aguinaldo",
+                    $"ID: {id} — EmpleadoId: {model.EmpleadoId} — Año: {model.Anio}");
 
                 _logger.LogInformation("Aguinaldo editado: ID {Id}", id);
                 TempData["Success"] = "Aguinaldo actualizado correctamente.";
@@ -339,7 +351,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [CustomAuthorize("RRHH")]
+        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> Delete(int id)
         {
             try
@@ -356,6 +368,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 _context.Aguinaldos.Remove(aguinaldo);
                 await _context.SaveChangesAsync();
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Eliminar aguinaldo", "Aguinaldo",
+                    $"{aguinaldo.Empleado.PrimerApellido} {aguinaldo.Empleado.Nombre} — Año: {aguinaldo.Anio}");
 
                 _logger.LogInformation("Aguinaldo eliminado: ID {Id}", id);
                 TempData["Success"] = $"Aguinaldo de {aguinaldo.Empleado.PrimerApellido} " +
@@ -384,8 +401,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (aguinaldo == null) return NotFound();
 
                 var pdfBytes = _servicioPDF.GenerarPDFAguinaldo(aguinaldo);
-                var nombreArchivo = $"Aguinaldo_{aguinaldo.Empleado.PrimerApellido}_" +
-                    $"{aguinaldo.Anio}.pdf";
+                var nombreArchivo = $"Aguinaldo_{aguinaldo.Empleado.PrimerApellido}_{aguinaldo.Anio}.pdf";
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Descargar PDF aguinaldo", "Aguinaldo",
+                    $"{aguinaldo.Empleado.PrimerApellido} {aguinaldo.Empleado.Nombre} — Año: {aguinaldo.Anio}");
 
                 return File(pdfBytes, "application/pdf", nombreArchivo);
             }
@@ -403,8 +424,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         {
             ViewBag.Empleados = await _context.Empleados
                 .Where(e => e.Activo)
-                .OrderBy(e => e.PrimerApellido)
-                .ThenBy(e => e.Nombre)
+                .OrderBy(e => e.PrimerApellido).ThenBy(e => e.Nombre)
                 .Select(e => new SelectListItem
                 {
                     Value = e.EmpleadoId.ToString(),

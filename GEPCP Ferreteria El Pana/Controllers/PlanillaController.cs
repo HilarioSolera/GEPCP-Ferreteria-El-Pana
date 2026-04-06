@@ -13,17 +13,20 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<PlanillaController> _logger;
         private readonly ComprobantePlanillaService _servicioPDF;
+        private readonly AuditoriaService _auditoria;
 
         private const decimal PorcentajeCCSS = 10.83m;
 
         public PlanillaController(
             ApplicationDbContext context,
             ILogger<PlanillaController> logger,
-            ComprobantePlanillaService servicioPDF)
+            ComprobantePlanillaService servicioPDF,
+            AuditoriaService auditoria)
         {
             _context = context;
             _logger = logger;
             _servicioPDF = servicioPDF;
+            _auditoria = auditoria;
         }
 
         // ── INDEX ─────────────────────────────────────────────────────────────
@@ -80,11 +83,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CALCULAR PLANILLA ─────────────────────────────────────────────────
+        // ── CALCULAR ──────────────────────────────────────────────────────────
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [CustomAuthorize("RRHH")]
+        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> Calcular(int periodoId)
         {
             try
@@ -102,23 +105,20 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return RedirectToAction(nameof(Index), new { periodoId });
                 }
 
+                // Limpiar planillas existentes
                 var existentes = await _context.PlanillasEmpleado
-                    .Where(pe => pe.PeriodoPagoId == periodoId)
-                    .ToListAsync();
+                    .Where(pe => pe.PeriodoPagoId == periodoId).ToListAsync();
                 _context.PlanillasEmpleado.RemoveRange(existentes);
                 await _context.SaveChangesAsync();
 
-                var empleados = await _context.Empleados
-                    .Where(e => e.Activo)
-                    .ToListAsync();
+                var empleados = await _context.Empleados.Where(e => e.Activo).ToListAsync();
 
                 foreach (var empleado in empleados)
                 {
-                    // ── DEVENGADOS ─────────────────────────────────────────
-
                     var salarioOrdinario = Math.Round(
                         empleado.ValorHora * empleado.HorasQuincenales, 2);
 
+                    // Horas extras
                     var horasExtrasReg = await _context.HorasExtras
                         .FirstOrDefaultAsync(h =>
                             h.EmpleadoId == empleado.EmpleadoId &&
@@ -126,70 +126,80 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     var montoHorasExtras = horasExtrasReg?.MontoTotal ?? 0m;
                     var totalHorasExtras = horasExtrasReg?.TotalHoras ?? 0m;
 
-                    var montoComisiones = await _context.Comisiones
+                    // Comisiones
+                    var montoComisiones = (await _context.Comisiones
                         .Where(c =>
                             c.EmpleadoId == empleado.EmpleadoId &&
                             c.Fecha >= periodo.FechaInicio &&
                             c.Fecha <= periodo.FechaFin)
-                        .SumAsync(c => c.Monto);
+                        .Select(c => c.Monto)
+                        .ToListAsync()).Sum();
 
-                    var montoFeriados = await _context.PagosFeriado
+                    // Feriados
+                    var montoFeriados = (await _context.PagosFeriado
                         .Where(pf =>
                             pf.EmpleadoId == empleado.EmpleadoId &&
                             pf.PeriodoPagoId == periodoId)
-                        .SumAsync(pf => pf.MontoTotal);
+                        .Select(pf => pf.MontoTotal)
+                        .ToListAsync()).Sum();
 
                     var totalDevengado = Math.Round(
-                        salarioOrdinario +
-                        montoHorasExtras +
-                        montoComisiones +
-                        montoFeriados, 2);
+                        salarioOrdinario + montoHorasExtras + montoComisiones + montoFeriados, 2);
 
-                    // ── DEDUCCIONES ────────────────────────────────────────
+                    // CCSS
+                    var deduccionCCSS = Math.Round(totalDevengado * (PorcentajeCCSS / 100m), 2);
 
-                    var deduccionCCSS = Math.Round(
-                        totalDevengado * (PorcentajeCCSS / 100m), 2);
-
+                    // Préstamos
                     var prestamo = await _context.Prestamos
-                        .FirstOrDefaultAsync(p =>
-                            p.EmpleadoId == empleado.EmpleadoId &&
-                            p.Activo);
-
+                        .FirstOrDefaultAsync(p => p.EmpleadoId == empleado.EmpleadoId && p.Activo);
                     decimal deduccionPrestamo = 0m;
                     if (prestamo != null)
                     {
                         var cuotaQuincenal = Math.Round(prestamo.CuotaMensual / 2m, 2);
-                        deduccionPrestamo = Math.Min(cuotaQuincenal, prestamo.Monto);
-                        deduccionPrestamo = Math.Round(deduccionPrestamo, 2);
+                        deduccionPrestamo = Math.Round(Math.Min(cuotaQuincenal, prestamo.Monto), 2);
                     }
 
+                    // Créditos
                     var creditosActivos = await _context.CreditosFerreteria
-                        .Where(c =>
-                            c.EmpleadoId == empleado.EmpleadoId &&
-                            c.Activo)
+                        .Where(c => c.EmpleadoId == empleado.EmpleadoId && c.Activo)
                         .ToListAsync();
                     var deduccionCredito = Math.Round(
                         creditosActivos.Sum(c => Math.Min(c.CuotaQuincenal, c.Saldo)), 2);
 
-                    var deduccionIncapacidad = await _context.Incapacidades
+                    // Incapacidades
+                    var deduccionIncapacidad = Math.Round((await _context.Incapacidades
                         .Where(i =>
                             i.EmpleadoId == empleado.EmpleadoId &&
-                            i.ResponsablePago == ResponsablePago.Patrono &&
+                            i.MontoTotal > 0 &&
                             i.FechaInicio <= periodo.FechaFin &&
                             i.FechaFin >= periodo.FechaInicio)
-                        .SumAsync(i => i.MontoTotal);
-                    deduccionIncapacidad = Math.Round(deduccionIncapacidad, 2);
+                        .Select(i => i.MontoTotal)
+                        .ToListAsync()).Sum(), 2);
+
+                    // ── Vacaciones sin pago ───────────────────────────────────
+                    // Solo descuenta vacaciones SinPago aprobadas que caigan
+                    // dentro del período actual
+                    var deduccionVacaciones = Math.Round((await _context.Vacaciones
+                        .Where(v =>
+                            v.EmpleadoId == empleado.EmpleadoId &&
+                            v.Tipo == TipoVacacion.SinPago &&
+                            v.Estado == EstadoVacacion.Aprobada &&
+                            v.FechaInicio <= periodo.FechaFin &&
+                            v.FechaFin >= periodo.FechaInicio)
+                        .Select(v => v.MontoDeducido)
+                        .ToListAsync()).Sum(), 2);
 
                     var totalDeducciones = Math.Round(
                         deduccionCCSS +
                         deduccionPrestamo +
                         deduccionCredito +
-                        deduccionIncapacidad, 2);
+                        deduccionIncapacidad +
+                        deduccionVacaciones, 2);
 
                     var netoAPagar = Math.Max(0,
                         Math.Round(totalDevengado - totalDeducciones, 2));
 
-                    var planilla = new PlanillaEmpleado
+                    _context.PlanillasEmpleado.Add(new PlanillaEmpleado
                     {
                         PeriodoPagoId = periodoId,
                         EmpleadoId = empleado.EmpleadoId,
@@ -208,19 +218,24 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         DeduccionPrestamos = deduccionPrestamo,
                         DeduccionCreditoFerreteria = deduccionCredito,
                         DeduccionIncapacidad = deduccionIncapacidad,
+                        DeduccionVacaciones = deduccionVacaciones,
                         DeduccionHorasNoLaboradas = 0m,
                         OtrasDeducciones = 0m,
                         TotalDeducciones = totalDeducciones,
                         NetoAPagar = netoAPagar
-                    };
-
-                    _context.PlanillasEmpleado.Add(planilla);
+                    });
                 }
 
                 await _context.SaveChangesAsync();
 
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Calcular planilla", "Planilla",
+                    $"PeriodoId: {periodoId} — {periodo.Descripcion} — Empleados: {empleados.Count}");
+
                 _logger.LogInformation("Planilla calculada: PeriodoId {P} Empleados {E}",
                     periodoId, empleados.Count);
+
                 TempData["Success"] = $"Planilla calculada para {empleados.Count} empleado(s).";
                 return RedirectToAction(nameof(Index), new { periodoId });
             }
@@ -232,7 +247,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── EDITAR LÍNEA DE PLANILLA ──────────────────────────────────────────
+        // ── EDITAR LÍNEA ──────────────────────────────────────────────────────
 
         public async Task<IActionResult> Editar(int? id)
         {
@@ -266,7 +281,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [CustomAuthorize("RRHH")]
+        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> Editar(int id, PlanillaEmpleado model)
         {
             try
@@ -290,15 +305,14 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 registro.AumentoAplicado = Math.Round(model.AumentoAplicado, 2);
                 registro.HorasNoLaboradas = Math.Round(model.HorasNoLaboradas, 2);
                 registro.OtrasDeducciones = Math.Round(model.OtrasDeducciones, 2);
+                registro.DeduccionVacaciones = Math.Round(model.DeduccionVacaciones, 2);
 
                 registro.DeduccionHorasNoLaboradas = Math.Round(
                     registro.HorasNoLaboradas * registro.ValorHora, 2);
 
                 registro.TotalDevengado = Math.Round(
-                    registro.SalarioOrdinario +
-                    registro.AumentoAplicado +
-                    registro.MontoHorasExtras +
-                    registro.MontoFeriados, 2);
+                    registro.SalarioOrdinario + registro.AumentoAplicado +
+                    registro.MontoHorasExtras + registro.MontoFeriados, 2);
 
                 registro.DeduccionCCSS = Math.Round(
                     registro.TotalDevengado * (PorcentajeCCSS / 100m), 2);
@@ -308,6 +322,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     registro.DeduccionPrestamos +
                     registro.DeduccionCreditoFerreteria +
                     registro.DeduccionIncapacidad +
+                    registro.DeduccionVacaciones +
                     registro.DeduccionHorasNoLaboradas +
                     registro.OtrasDeducciones, 2);
 
@@ -317,9 +332,15 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 _context.Update(registro);
                 await _context.SaveChangesAsync();
 
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Editar línea planilla", "Planilla",
+                    $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre} — Neto: ₡{registro.NetoAPagar:N0}");
+
                 _logger.LogInformation("Línea planilla editada: ID {Id}", id);
                 TempData["Success"] = $"Planilla de {registro.Empleado.PrimerApellido} " +
                     $"{registro.Empleado.Nombre} actualizada. Neto: ₡{registro.NetoAPagar:N0}";
+
                 return RedirectToAction(nameof(Index),
                     new { periodoId = registro.PeriodoPagoId });
             }
@@ -335,7 +356,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [CustomAuthorize("RRHH")]
+        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> CerrarPeriodo(int periodoId)
         {
             try
@@ -363,9 +384,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 }
 
                 var planillas = await _context.PlanillasEmpleado
-                    .Where(pe => pe.PeriodoPagoId == periodoId)
-                    .ToListAsync();
+                    .Where(pe => pe.PeriodoPagoId == periodoId).ToListAsync();
 
+                // ── Deducciones de préstamos + historial ──────────────────────
                 foreach (var planilla in planillas.Where(p => p.DeduccionPrestamos > 0))
                 {
                     var prestamo = await _context.Prestamos
@@ -374,38 +395,62 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                     if (prestamo != null)
                     {
+                        var saldoAnterior = prestamo.Monto;
                         prestamo.Monto = Math.Max(0,
                             Math.Round(prestamo.Monto - planilla.DeduccionPrestamos, 2));
-                        if (prestamo.Monto <= 0)
-                            prestamo.Activo = false;
+                        if (prestamo.Monto <= 0) prestamo.Activo = false;
+
+                        _context.AbonosPrestamo.Add(new AbonoPrestamo
+                        {
+                            PrestamoId = prestamo.PrestamoId,
+                            Monto = planilla.DeduccionPrestamos,
+                            FechaAbono = DateTime.Now,
+                            Observaciones = $"Deducción planilla — {periodo.Descripcion} " +
+                                            $"— Saldo anterior: ₡{saldoAnterior:N0}"
+                        });
                     }
                 }
 
+                // ── Deducciones de créditos + historial ───────────────────────
                 foreach (var planilla in planillas.Where(p => p.DeduccionCreditoFerreteria > 0))
                 {
                     var creditos = await _context.CreditosFerreteria
                         .Where(c => c.EmpleadoId == planilla.EmpleadoId && c.Activo)
                         .ToListAsync();
-
                     var montoRestante = planilla.DeduccionCreditoFerreteria;
+
                     foreach (var credito in creditos)
                     {
                         if (montoRestante <= 0) break;
-                        var abono = Math.Min(credito.CuotaQuincenal, credito.Saldo);
-                        abono = Math.Min(abono, montoRestante);
+                        var abono = Math.Min(Math.Min(credito.CuotaQuincenal, credito.Saldo), montoRestante);
+                        var saldoAnterior = credito.Saldo;
                         credito.Saldo = Math.Max(0, Math.Round(credito.Saldo - abono, 2));
                         montoRestante -= abono;
-                        if (credito.Saldo <= 0)
-                            credito.Activo = false;
+                        if (credito.Saldo <= 0) credito.Activo = false;
+
+                        _context.AbonosCreditoFerreteria.Add(new AbonoCreditoFerreteria
+                        {
+                            CreditoFerreteriaId = credito.CreditoFerreteriaId,
+                            Monto = abono,
+                            FechaAbono = DateTime.Now,
+                            Observaciones = $"Deducción planilla — {periodo.Descripcion} " +
+                                                  $"— Saldo anterior: ₡{saldoAnterior:N0}"
+                        });
                     }
                 }
 
                 periodo.Estado = EstadoPeriodo.Cerrado;
                 await _context.SaveChangesAsync();
 
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Cerrar período con planilla", "Planilla",
+                    $"PeriodoId: {periodoId} — {periodo.Descripcion} — Empleados: {planillas.Count}");
+
                 _logger.LogInformation("Período cerrado con planilla: ID {P}", periodoId);
                 TempData["Success"] = $"Período {periodo.Descripcion} cerrado. " +
                     "Saldos de préstamos y créditos actualizados correctamente.";
+
                 return RedirectToAction(nameof(Index), new { periodoId });
             }
             catch (Exception ex)
@@ -420,7 +465,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [CustomAuthorize("RRHH")]
+        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> ReabrirPeriodo(int periodoId)
         {
             try
@@ -441,9 +486,14 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 periodo.Estado = EstadoPeriodo.Abierto;
                 await _context.SaveChangesAsync();
 
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Reabrir período desde planilla", "Planilla",
+                    $"PeriodoId: {periodoId} — {periodo.Descripcion}");
+
                 _logger.LogInformation("Período reabierto desde planilla: ID {P}", periodoId);
-                TempData["Success"] = $"Período {periodo.Descripcion} reabierto. " +
-                    "Podés recalcular la planilla.";
+                TempData["Success"] = $"Período {periodo.Descripcion} reabierto. Podés recalcular la planilla.";
+
                 return RedirectToAction(nameof(Index), new { periodoId });
             }
             catch (Exception ex)
@@ -454,7 +504,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── DESCARGAR PDF ─────────────────────────────────────────────────────
+        // ── DESCARGAR PDF INDIVIDUAL ──────────────────────────────────────────
 
         [HttpGet]
         public async Task<IActionResult> DescargarPDF(int id)
@@ -471,6 +521,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 var pdfBytes = _servicioPDF.GenerarPDF(planilla);
                 var nombreArchivo = $"Comprobante_{planilla.Empleado.PrimerApellido}_" +
                     $"{planilla.PeriodoPago.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Descargar PDF planilla", "Planilla",
+                    $"{planilla.Empleado.PrimerApellido} {planilla.Empleado.Nombre}");
 
                 return File(pdfBytes, "application/pdf", nombreArchivo);
             }
@@ -504,36 +559,35 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 using var workbook = new ClosedXML.Excel.XLWorkbook();
                 var ws = workbook.Worksheets.Add("Planilla");
 
-                // ── Título ────────────────────────────────────────────────────
+                // Encabezados
                 ws.Cell(1, 1).Value = "FERRETERÍA EL PANA SRL";
-                ws.Range(1, 1, 1, 16).Merge().Style
+                ws.Range(1, 1, 1, 17).Merge().Style
                     .Font.SetBold(true).Font.SetFontSize(14)
                     .Alignment.SetHorizontal(ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
 
                 ws.Cell(2, 1).Value = "DEPARTAMENTO DE RECURSOS HUMANOS";
-                ws.Range(2, 1, 2, 16).Merge().Style
+                ws.Range(2, 1, 2, 17).Merge().Style
                     .Font.SetBold(true).Font.SetFontSize(12)
                     .Alignment.SetHorizontal(ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
 
                 ws.Cell(3, 1).Value = $"PLANILLA QUINCENAL — {periodo.Descripcion}";
-                ws.Range(3, 1, 3, 16).Merge().Style
+                ws.Range(3, 1, 3, 17).Merge().Style
                     .Font.SetBold(true).Font.SetFontSize(11)
                     .Alignment.SetHorizontal(ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
 
                 ws.Cell(4, 1).Value = $"PERÍODO: {periodo.FechaInicio:dd/MM/yyyy} AL {periodo.FechaFin:dd/MM/yyyy}";
-                ws.Range(4, 1, 4, 16).Merge().Style
+                ws.Range(4, 1, 4, 17).Merge().Style
                     .Font.SetItalic(true)
                     .Alignment.SetHorizontal(ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
 
-                // ── Encabezados ───────────────────────────────────────────────
-                var headers = new[]
-                {
-            "Nombre y Apellidos", "Cédula", "Departamento", "Puesto",
-            "Sal. Ordinario", "Hrs. Extras", "Comisión", "Feriados",
-            "Total Devengado", "CCSS 10.83%", "Préstamo",
-            "Cré. Ferretería", "Incapacidad", "Hrs. No Lab.",
-            "Total Deducciones", "Neto a Pagar"
-        };
+                // Columnas — ahora 17 (agregamos Vacaciones)
+                var headers = new[] {
+                    "Nombre y Apellidos", "Cédula", "Departamento", "Puesto",
+                    "Sal. Ordinario", "Hrs. Extras", "Comisión", "Feriados",
+                    "Total Devengado", "CCSS 10.83%", "Préstamo",
+                    "Cré. Ferretería", "Incapacidad", "Vac. Sin Pago",
+                    "Hrs. No Lab.", "Total Deducciones", "Neto a Pagar"
+                };
 
                 int fila = 6;
                 for (int col = 1; col <= headers.Length; col++)
@@ -548,15 +602,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         .Border.SetOutsideBorder(ClosedXML.Excel.XLBorderStyleValues.Thin);
                 }
 
-                // ── Datos agrupados por departamento ──────────────────────────
                 fila = 7;
                 var grupos = planillas.GroupBy(p => p.Empleado.Departamento);
 
                 foreach (var grupo in grupos)
                 {
-                    // Fila de departamento
                     ws.Cell(fila, 1).Value = grupo.Key.ToUpper();
-                    ws.Range(fila, 1, fila, 16).Merge().Style
+                    ws.Range(fila, 1, fila, 17).Merge().Style
                         .Font.SetBold(true)
                         .Font.SetFontColor(ClosedXML.Excel.XLColor.White)
                         .Fill.SetBackgroundColor(ClosedXML.Excel.XLColor.FromHtml("#333333"))
@@ -578,56 +630,51 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         ws.Cell(fila, 11).Value = p.DeduccionPrestamos;
                         ws.Cell(fila, 12).Value = p.DeduccionCreditoFerreteria;
                         ws.Cell(fila, 13).Value = p.DeduccionIncapacidad;
-                        ws.Cell(fila, 14).Value = p.DeduccionHorasNoLaboradas;
-                        ws.Cell(fila, 15).Value = p.TotalDeducciones;
-                        ws.Cell(fila, 16).Value = p.NetoAPagar;
+                        ws.Cell(fila, 14).Value = p.DeduccionVacaciones;
+                        ws.Cell(fila, 15).Value = p.DeduccionHorasNoLaboradas;
+                        ws.Cell(fila, 16).Value = p.TotalDeducciones;
+                        ws.Cell(fila, 17).Value = p.NetoAPagar;
 
-                        // Formato moneda columnas 5-16
-                        for (int col = 5; col <= 16; col++)
+                        for (int col = 5; col <= 17; col++)
                             ws.Cell(fila, col).Style.NumberFormat.Format = "₡#,##0.00";
 
-                        // Color alterno
                         if (fila % 2 == 0)
-                            ws.Range(fila, 1, fila, 16).Style
+                            ws.Range(fila, 1, fila, 17).Style
                                 .Fill.SetBackgroundColor(ClosedXML.Excel.XLColor.FromHtml("#FFF3E0"));
 
-                        // Bordes
-                        ws.Range(fila, 1, fila, 16).Style
+                        ws.Range(fila, 1, fila, 17).Style
                             .Border.SetOutsideBorder(ClosedXML.Excel.XLBorderStyleValues.Thin)
                             .Border.SetInsideBorder(ClosedXML.Excel.XLBorderStyleValues.Hair);
-
                         fila++;
                     }
 
-                    // Subtotales por departamento
-                    var subtotalFila = fila;
-                    ws.Cell(subtotalFila, 1).Value = $"Subtotal {grupo.Key}";
-                    ws.Range(subtotalFila, 1, subtotalFila, 4).Merge();
-                    ws.Cell(subtotalFila, 5).Value = grupo.Sum(p => p.SalarioOrdinario);
-                    ws.Cell(subtotalFila, 6).Value = grupo.Sum(p => p.MontoHorasExtras);
-                    ws.Cell(subtotalFila, 7).Value = grupo.Sum(p => p.AumentoAplicado);
-                    ws.Cell(subtotalFila, 8).Value = grupo.Sum(p => p.MontoFeriados);
-                    ws.Cell(subtotalFila, 9).Value = grupo.Sum(p => p.TotalDevengado);
-                    ws.Cell(subtotalFila, 10).Value = grupo.Sum(p => p.DeduccionCCSS);
-                    ws.Cell(subtotalFila, 11).Value = grupo.Sum(p => p.DeduccionPrestamos);
-                    ws.Cell(subtotalFila, 12).Value = grupo.Sum(p => p.DeduccionCreditoFerreteria);
-                    ws.Cell(subtotalFila, 13).Value = grupo.Sum(p => p.DeduccionIncapacidad);
-                    ws.Cell(subtotalFila, 14).Value = grupo.Sum(p => p.DeduccionHorasNoLaboradas);
-                    ws.Cell(subtotalFila, 15).Value = grupo.Sum(p => p.TotalDeducciones);
-                    ws.Cell(subtotalFila, 16).Value = grupo.Sum(p => p.NetoAPagar);
+                    // Subtotal por departamento
+                    ws.Cell(fila, 1).Value = $"Subtotal {grupo.Key}";
+                    ws.Range(fila, 1, fila, 4).Merge();
+                    ws.Cell(fila, 5).Value = grupo.Sum(p => p.SalarioOrdinario);
+                    ws.Cell(fila, 6).Value = grupo.Sum(p => p.MontoHorasExtras);
+                    ws.Cell(fila, 7).Value = grupo.Sum(p => p.AumentoAplicado);
+                    ws.Cell(fila, 8).Value = grupo.Sum(p => p.MontoFeriados);
+                    ws.Cell(fila, 9).Value = grupo.Sum(p => p.TotalDevengado);
+                    ws.Cell(fila, 10).Value = grupo.Sum(p => p.DeduccionCCSS);
+                    ws.Cell(fila, 11).Value = grupo.Sum(p => p.DeduccionPrestamos);
+                    ws.Cell(fila, 12).Value = grupo.Sum(p => p.DeduccionCreditoFerreteria);
+                    ws.Cell(fila, 13).Value = grupo.Sum(p => p.DeduccionIncapacidad);
+                    ws.Cell(fila, 14).Value = grupo.Sum(p => p.DeduccionVacaciones);
+                    ws.Cell(fila, 15).Value = grupo.Sum(p => p.DeduccionHorasNoLaboradas);
+                    ws.Cell(fila, 16).Value = grupo.Sum(p => p.TotalDeducciones);
+                    ws.Cell(fila, 17).Value = grupo.Sum(p => p.NetoAPagar);
 
-                    ws.Range(subtotalFila, 1, subtotalFila, 16).Style
+                    ws.Range(fila, 1, fila, 17).Style
                         .Font.SetBold(true)
                         .Fill.SetBackgroundColor(ClosedXML.Excel.XLColor.FromHtml("#FFE0B2"))
                         .Border.SetOutsideBorder(ClosedXML.Excel.XLBorderStyleValues.Medium);
-
-                    for (int col = 5; col <= 16; col++)
-                        ws.Cell(subtotalFila, col).Style.NumberFormat.Format = "₡#,##0.00";
-
+                    for (int col = 5; col <= 17; col++)
+                        ws.Cell(fila, col).Style.NumberFormat.Format = "₡#,##0.00";
                     fila++;
                 }
 
-                // ── Totales generales ─────────────────────────────────────────
+                // Total general
                 ws.Cell(fila, 1).Value = "TOTAL GENERAL";
                 ws.Range(fila, 1, fila, 4).Merge();
                 ws.Cell(fila, 5).Value = planillas.Sum(p => p.SalarioOrdinario);
@@ -639,29 +686,30 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ws.Cell(fila, 11).Value = planillas.Sum(p => p.DeduccionPrestamos);
                 ws.Cell(fila, 12).Value = planillas.Sum(p => p.DeduccionCreditoFerreteria);
                 ws.Cell(fila, 13).Value = planillas.Sum(p => p.DeduccionIncapacidad);
-                ws.Cell(fila, 14).Value = planillas.Sum(p => p.DeduccionHorasNoLaboradas);
-                ws.Cell(fila, 15).Value = planillas.Sum(p => p.TotalDeducciones);
-                ws.Cell(fila, 16).Value = planillas.Sum(p => p.NetoAPagar);
+                ws.Cell(fila, 14).Value = planillas.Sum(p => p.DeduccionVacaciones);
+                ws.Cell(fila, 15).Value = planillas.Sum(p => p.DeduccionHorasNoLaboradas);
+                ws.Cell(fila, 16).Value = planillas.Sum(p => p.TotalDeducciones);
+                ws.Cell(fila, 17).Value = planillas.Sum(p => p.NetoAPagar);
 
-                ws.Range(fila, 1, fila, 16).Style
+                ws.Range(fila, 1, fila, 17).Style
                     .Font.SetBold(true).Font.SetFontSize(11)
                     .Font.SetFontColor(ClosedXML.Excel.XLColor.White)
                     .Fill.SetBackgroundColor(ClosedXML.Excel.XLColor.FromHtml("#FF7A00"))
                     .Border.SetOutsideBorder(ClosedXML.Excel.XLBorderStyleValues.Medium);
-
-                for (int col = 5; col <= 16; col++)
+                for (int col = 5; col <= 17; col++)
                     ws.Cell(fila, col).Style.NumberFormat.Format = "₡#,##0.00";
 
-                // ── Ajustar columnas ──────────────────────────────────────────
-                ws.Column(1).Width = 30; // Nombre
-                ws.Column(2).Width = 14; // Cédula
-                ws.Column(3).Width = 14; // Departamento
-                ws.Column(4).Width = 20; // Puesto
-                for (int col = 5; col <= 16; col++)
-                    ws.Column(col).Width = 16;
-
-                // Congelar encabezados
+                ws.Column(1).Width = 30;
+                ws.Column(2).Width = 14;
+                ws.Column(3).Width = 14;
+                ws.Column(4).Width = 20;
+                for (int col = 5; col <= 17; col++) ws.Column(col).Width = 16;
                 ws.SheetView.FreezeRows(6);
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Exportar Excel planilla", "Planilla",
+                    $"PeriodoId: {periodoId} — {periodo.Descripcion}");
 
                 using var stream = new MemoryStream();
                 workbook.SaveAs(stream);
@@ -701,6 +749,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 var pdfBytes = _servicioPDF.GenerarPDFPlanillaGeneral(planillas, periodo);
                 var nombreArchivo = $"Planilla_{periodo.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Exportar PDF planilla general", "Planilla",
+                    $"PeriodoId: {periodoId} — {periodo.Descripcion}");
 
                 return File(pdfBytes, "application/pdf", nombreArchivo);
             }

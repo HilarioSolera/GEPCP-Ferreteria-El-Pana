@@ -5,9 +5,14 @@
     var rol = Context.Session.GetString("Rol");
     var periodo = ViewBag.Periodo as GEPCP_Ferreteria_El_Pana.Models.PeriodoPago;
     var periodoCerrado = periodo?.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado;
+    var totalEmpleados = (int)(ViewBag.TotalEmpleados ?? 0);
+    var totalDevengado = (decimal)(ViewBag.TotalDevengado ?? 0m);
+    var totalDeducciones = (decimal)(ViewBag.TotalDeducciones ?? 0m);
+    var totalNeto = (decimal)(ViewBag.TotalNeto ?? 0m);
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+@* ── Encabezado + botones ── *@
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h2 class="mb-0"><i class="bi bi-file-earmark-text"></i> Planilla Quincenal</h2>
 
     @if (rol == "RRHH" && periodo != null)
@@ -19,7 +24,7 @@
                       onsubmit="return confirm('¿Recalcular la planilla? Se reemplazarán los datos actuales.')">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="periodoId" value="@periodo.PeriodoPagoId" />
-                    <button type="submit" class="btn btn-primary btn-lg">
+                    <button type="submit" class="btn btn-primary btn-sm">
                         <i class="bi bi-calculator"></i> Calcular Planilla
                     </button>
                 </form>
@@ -27,10 +32,10 @@
                 @if (Model.Any())
                 {
                     <form asp-action="CerrarPeriodo" method="post" class="d-inline"
-                          onsubmit="return confirm('¿Cerrar el período @periodo.Descripcion? Esta acción aplicará los descuentos a préstamos y créditos.')">
+                          onsubmit="return confirm('¿Cerrar el período @periodo.Descripcion?\n\nEsta acción aplicará los descuentos a préstamos y créditos.')">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="periodoId" value="@periodo.PeriodoPagoId" />
-                        <button type="submit" class="btn btn-danger btn-lg">
+                        <button type="submit" class="btn btn-danger btn-sm">
                             <i class="bi bi-lock"></i> Cerrar Período
                         </button>
                     </form>
@@ -40,10 +45,10 @@
             @if (periodoCerrado)
             {
                 <form asp-action="ReabrirPeriodo" method="post" class="d-inline"
-                      onsubmit="return confirm('¿Reabrir el período @periodo.Descripcion? Los saldos ya aplicados NO se revierten automáticamente.')">
+                      onsubmit="return confirm('¿Reabrir el período @periodo.Descripcion?\n\nLos saldos ya aplicados NO se revierten.')">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="periodoId" value="@periodo.PeriodoPagoId" />
-                    <button type="submit" class="btn btn-warning btn-lg">
+                    <button type="submit" class="btn btn-warning btn-sm">
                         <i class="bi bi-unlock"></i> Reabrir Período
                     </button>
                 </form>
@@ -52,108 +57,129 @@
     }
 </div>
 
-@* Selector de período *@
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-body py-3">
-        <form asp-action="Index" method="get" class="d-flex align-items-center gap-3 flex-wrap">
-            <label class="fw-bold mb-0">
+@* ── Selector de período ── *@
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 px-3">
+        <form asp-action="Index" method="get"
+              class="d-flex align-items-center gap-2 flex-wrap">
+            <label class="fw-bold mb-0 text-nowrap" style="font-size:0.82rem;">
                 <i class="bi bi-calendar2-range"></i> Período:
             </label>
-            <select name="periodoId" class="form-select"
-                    style="max-width:400px;" onchange="this.form.submit()">
+            <select name="periodoId"
+                    class="form-select form-select-sm"
+                    style="min-width:260px;max-width:100%;flex:1 1 260px;"
+                    onchange="this.form.submit()">
                 @foreach (var p in ViewBag.Periodos as List<GEPCP_Ferreteria_El_Pana.Models.PeriodoPago>)
                 {
+                    var estadoTexto = p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Abierto
+                        ? "Abierto" : "Cerrado";
                     <option value="@p.PeriodoPagoId"
                             selected="@(p.PeriodoPagoId == (int)(ViewBag.PeriodoId ?? 0)
                                                                                             ? "selected" : null)">
-                        @p.Descripcion —
-                        @(p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Abierto
-                            ? "Abierto" : "Cerrado")
+                        @p.Descripcion — @estadoTexto
                     </option>
                 }
             </select>
+
             @if (periodo != null)
             {
-                <span class="badge @(periodoCerrado ? "bg-secondary" : "bg-success") fs-6">
-                    <i class="bi @(periodoCerrado ? "bi-lock" : "bi-unlock")"></i>
-                    @(periodoCerrado ? "Cerrado" : "Abierto")
-                </span>
+                <div class="d-flex align-items-center gap-2 text-nowrap">
+                    <span class="badge @(periodoCerrado ? "bg-secondary" : "bg-success")"
+                          style="font-size:0.72rem;">
+                        <i class="bi @(periodoCerrado ? "bi-lock" : "bi-unlock")"></i>
+                        @(periodoCerrado ? "Cerrado" : "Abierto")
+                    </span>
+                    <span class="text-muted" style="font-size:0.73rem;">
+                        @periodo.FechaInicio.ToString("dd/MM/yy") al @periodo.FechaFin.ToString("dd/MM/yy")
+                    </span>
+                </div>
             }
         </form>
     </div>
 </div>
 
-@* Alerta período cerrado *@
+@* ── Alerta período cerrado ── *@
 @if (periodoCerrado)
 {
-    <div class="alert alert-secondary d-flex align-items-center mb-3">
-        <i class="bi bi-lock-fill me-2"></i>
-        <span>
-            Este período está <strong>cerrado</strong>. Los datos son de solo lectura.
+    <div class="alert alert-secondary d-flex align-items-center mb-3 py-2">
+        <i class="bi bi-lock-fill me-2 flex-shrink-0"></i>
+        <span style="font-size:0.82rem;">
+            Período <strong>cerrado</strong> — solo lectura.
             @if (rol == "RRHH")
             {
-                <span>Usá el botón <strong>Reabrir Período</strong> si necesitás hacer correcciones.</span>
+                <span> Usá <strong>Reabrir Período</strong> para hacer correcciones.</span>
             }
         </span>
     </div>
 }
 
-@* KPIs *@
+@* ── KPIs ── *@
 @if (Model.Any())
 {
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center py-3">
-                <div class="fs-4 fw-bold text-primary">@ViewBag.TotalEmpleados</div>
-                <div class="text-muted small">Empleados</div>
+    <div class="row g-2 mb-2">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-2 px-1">
+                <div class="fw-bold" style="font-size:1.4rem;color:#111;">@totalEmpleados</div>
+                <div class="text-muted" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;">
+                    Empleados
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center py-3">
-                <div class="fs-4 fw-bold text-success">₡@ViewBag.TotalDevengado.ToString("N0")</div>
-                <div class="text-muted small">Total Devengado</div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-2 px-1"
+                 style="border-left:3px solid #1a4a1a !important;">
+                <div class="fw-bold" style="font-size:0.88rem;color:#1a4a1a;">
+                    ₡@totalDevengado.ToString("N0")
+                </div>
+                <div class="text-muted" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;">
+                    Devengado
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center py-3">
-                <div class="fs-4 fw-bold text-danger">₡@ViewBag.TotalDeducciones.ToString("N0")</div>
-                <div class="text-muted small">Total Deducciones</div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-2 px-1"
+                 style="border-left:3px solid #4a1a1a !important;">
+                <div class="fw-bold" style="font-size:0.88rem;color:#4a1a1a;">
+                    ₡@totalDeducciones.ToString("N0")
+                </div>
+                <div class="text-muted" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;">
+                    Deducciones
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center py-3">
-                <div class="fs-4 fw-bold text-warning">₡@ViewBag.TotalNeto.ToString("N0")</div>
-                <div class="text-muted small">Total Neto a Pagar</div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-2 px-1"
+                 style="border-left:3px solid #FF7A00 !important;">
+                <div class="fw-bold" style="font-size:0.88rem;color:#FF7A00;">
+                    ₡@totalNeto.ToString("N0")
+                </div>
+                <div class="text-muted" style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;">
+                    Neto a Pagar
+                </div>
             </div>
         </div>
     </div>
 
-    @* Botones de exportación *@
-    @if (Model.Any() && periodo != null)
-    {
-        <div class="d-flex gap-2 mb-3">
-            <a asp-action="ExportarExcel"
-                   asp-route-periodoId="@periodo.PeriodoPagoId"
-                   class="btn btn-success">
-                <i class="bi bi-file-earmark-excel"></i> Exportar Excel
-            </a>
-            <a asp-action="ExportarPDF"
-                   asp-route-periodoId="@periodo.PeriodoPagoId"
-                   class="btn btn-danger">
-                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF General
-            </a>
-        </div>
-    }
+    <div class="d-flex gap-2 mb-3">
+        <a asp-action="ExportarExcel" asp-route-periodoId="@periodo!.PeriodoPagoId"
+               class="btn btn-success btn-sm">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+        </a>
+        <a asp-action="ExportarPDF" asp-route-periodoId="@periodo!.PeriodoPagoId"
+               class="btn btn-danger btn-sm">
+            <i class="bi bi-file-earmark-pdf"></i> PDF General
+        </a>
+    </div>
 }
 
-@* Estados vacíos *@
+@* ── Estados vacíos ── *@
 @if (periodo == null)
 {
     <div class="alert alert-warning text-center py-4">
         <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
         No hay períodos de pago creados.
         <div class="mt-2">
-            <a asp-controller="PeriodosPago" asp-action="Create" class="btn btn-primary">
+            <a asp-controller="PeriodosPago" asp-action="Create" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-circle"></i> Crear Período
             </a>
         </div>
@@ -170,7 +196,7 @@ else if (!Model.Any())
                 <form asp-action="Calcular" method="post" class="d-inline">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="periodoId" value="@periodo.PeriodoPagoId" />
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary btn-sm">
                         <i class="bi bi-calculator"></i> Calcular ahora
                     </button>
                 </form>
@@ -180,110 +206,334 @@ else if (!Model.Any())
 }
 else
 {
-    <div class="table-responsive shadow-sm rounded">
-        <table class="table table-hover align-middle mb-0 small">
-            <thead style="background-color: #FF7A00; color: white;">
-                <tr>
-                    <th>Empleado</th>
-                    <th class="text-end">Sal. Ordinario</th>
-                    <th class="text-end">Hrs. Extras</th>
-                    <th class="text-end">Comisión</th>
-                    <th class="text-end">Feriados</th>
-                    <th class="text-end fw-bold">Total Dev.</th>
-                    <th class="text-end">CCSS 10.83%</th>
-                    <th class="text-end">Préstamo</th>
-                    <th class="text-end">Cré. Ferre.</th>
-                    <th class="text-end">Incap.</th>
-                    <th class="text-end">Hrs. No Lab.</th>
-                    <th class="text-end fw-bold">Total Ded.</th>
-                    <th class="text-end fw-bold">Neto</th>
-                    <th class="text-center">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var p in Model)
-                {
-                    <tr>
-                        <td>
-                            <strong>@p.Empleado.PrimerApellido @p.Empleado.Nombre</strong>
-                            <div class="text-muted" style="font-size:0.75rem;">
-                                @p.Empleado.Puesto
-                                @if (p.Empleado.FormaPago == GEPCP_Ferreteria_El_Pana.Models.FormaPago.Efectivo)
-                                {
-                                    <span class="badge bg-warning text-dark ms-1">
-                                        <i class="bi bi-cash"></i> Efectivo
-                                    </span>
-                                }
-                                else if (!string.IsNullOrEmpty(p.Empleado.NumeroCuenta))
-                                {
-                                    <span class="badge bg-info ms-1">
-                                        <i class="bi bi-bank"></i> @p.Empleado.NumeroCuenta
-                                    </span>
-                                }
-                            </div>
-                        </td>
-                        <td class="text-end">₡@p.SalarioOrdinario.ToString("N0")</td>
-                        <td class="text-end @(p.MontoHorasExtras > 0 ? "text-success" : "text-muted")">
-                            @(p.MontoHorasExtras > 0 ? "₡" + p.MontoHorasExtras.ToString("N0") : "—")
-                        </td>
-                        <td class="text-end @(p.AumentoAplicado > 0 ? "text-success" : "text-muted")">
-                            @(p.AumentoAplicado > 0 ? "₡" + p.AumentoAplicado.ToString("N0") : "—")
-                        </td>
-                        <td class="text-end @(p.MontoFeriados > 0 ? "text-success" : "text-muted")">
-                            @(p.MontoFeriados > 0 ? "₡" + p.MontoFeriados.ToString("N0") : "—")
-                        </td>
-                        <td class="text-end fw-bold">₡@p.TotalDevengado.ToString("N0")</td>
-                        <td class="text-end text-danger">₡@p.DeduccionCCSS.ToString("N0")</td>
-                        <td class="text-end @(p.DeduccionPrestamos > 0 ? "text-danger" : "text-muted")">
-                            @(p.DeduccionPrestamos > 0 ? "₡" + p.DeduccionPrestamos.ToString("N0") : "—")
-                        </td>
-                        <td class="text-end @(p.DeduccionCreditoFerreteria > 0 ? "text-danger" : "text-muted")">
-                            @(p.DeduccionCreditoFerreteria > 0 ? "₡" + p.DeduccionCreditoFerreteria.ToString("N0") : "—")
-                        </td>
-                        <td class="text-end @(p.DeduccionIncapacidad > 0 ? "text-danger" : "text-muted")">
-                            @(p.DeduccionIncapacidad > 0 ? "₡" + p.DeduccionIncapacidad.ToString("N0") : "—")
-                        </td>
-                        <td class="text-end @(p.DeduccionHorasNoLaboradas > 0 ? "text-danger" : "text-muted")">
-                            @(p.DeduccionHorasNoLaboradas > 0 ? "₡" + p.DeduccionHorasNoLaboradas.ToString("N0") : "—")
-                        </td>
-                        <td class="text-end fw-bold text-danger">₡@p.TotalDeducciones.ToString("N0")</td>
-                        <td class="text-end fw-bold text-success">₡@p.NetoAPagar.ToString("N0")</td>
-                        <td class="text-center">
-                            <div class="d-flex gap-1 justify-content-center">
-                                @if (rol == "RRHH" && !periodoCerrado)
-                                {
-                                    <a asp-action="Editar" asp-route-id="@p.PlanillaEmpleadoId"
-                                           class="btn btn-sm btn-warning" title="Ajustar manualmente">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                }
-                                <a asp-action="DescargarPDF" asp-route-id="@p.PlanillaEmpleadoId"
-                                       class="btn btn-sm btn-outline-danger" title="Descargar PDF">
-                                    <i class="bi bi-file-earmark-pdf"></i>
-                                </a>
-                            </div>
-                        </td>
+    var grupos = Model.GroupBy(p => p.Empleado.Departamento).OrderBy(g => g.Key);
+
+    foreach (var grupo in grupos)
+    {
+        @* ── Header departamento ── *@
+        <div class="d-flex align-items-center gap-2 mb-1 mt-2">
+            <div class="fw-bold text-white px-2 py-1 rounded"
+                 style="background:#333;font-size:0.65rem;
+                letter-spacing:1.2px;text-transform:uppercase;">
+                <i class="bi bi-building"></i> @grupo.Key
+            </div>
+            <span class="text-muted" style="font-size:0.68rem;">
+                @grupo.Count() empleado(s)
+            </span>
+        </div>
+
+        <div class="mb-3 rounded shadow-sm" style="overflow-x:auto;border:1px solid #ddd;">
+            <table style="font-size:0.65rem;white-space:nowrap;border-collapse:collapse;
+                width:100%;min-width:900px;">
+
+                @* ── THEAD fila 1: grupos ── *@
+                <thead>
+                    <tr style="background:#1e1e1e;color:#fff;">
+                        <th rowspan="2"
+                            style="padding:6px 8px;text-align:left;
+                            min-width:130px;max-width:150px;
+                            white-space:normal;
+                            border-right:2px solid #444;
+                            vertical-align:middle;">
+                            Empleado
+                        </th>
+
+                        @* Devengados *@
+                        <th colspan="5"
+                            style="padding:4px 6px;text-align:center;
+                            background:#1a4a1a;
+                            border-right:2px solid #333;
+                            font-size:0.6rem;letter-spacing:1px;">
+                            ▲ DEVENGADOS
+                        </th>
+
+                        @* Deducciones *@
+                        <th colspan="7"
+                            style="padding:4px 6px;text-align:center;
+                            background:#4a1a1a;
+                            border-right:2px solid #333;
+                            font-size:0.6rem;letter-spacing:1px;">
+                            ▼ DEDUCCIONES
+                        </th>
+
+                        <th rowspan="2"
+                            style="padding:6px 8px;text-align:right;
+                            background:#e56e00;color:#fff;
+                            min-width:78px;
+                            border-right:2px solid #c55000;
+                            vertical-align:middle;">
+                            Neto
+                        </th>
+                        <th rowspan="2"
+                            style="padding:6px 4px;text-align:center;
+                            background:#1e1e1e;
+                            min-width:60px;
+                            vertical-align:middle;">
+                            Acc.
+                        </th>
                     </tr>
-                }
-            </tbody>
-            <tfoot class="fw-bold table-light">
-                <tr>
-                    <td>TOTALES</td>
-                    <td class="text-end">₡@Model.Sum(p => p.SalarioOrdinario).ToString("N0")</td>
-                    <td class="text-end">₡@Model.Sum(p => p.MontoHorasExtras).ToString("N0")</td>
-                    <td class="text-end">₡@Model.Sum(p => p.AumentoAplicado).ToString("N0")</td>
-                    <td class="text-end">₡@Model.Sum(p => p.MontoFeriados).ToString("N0")</td>
-                    <td class="text-end">₡@Model.Sum(p => p.TotalDevengado).ToString("N0")</td>
-                    <td class="text-end text-danger">₡@Model.Sum(p => p.DeduccionCCSS).ToString("N0")</td>
-                    <td class="text-end text-danger">₡@Model.Sum(p => p.DeduccionPrestamos).ToString("N0")</td>
-                    <td class="text-end text-danger">₡@Model.Sum(p => p.DeduccionCreditoFerreteria).ToString("N0")</td>
-                    <td class="text-end text-danger">₡@Model.Sum(p => p.DeduccionIncapacidad).ToString("N0")</td>
-                    <td class="text-end text-danger">₡@Model.Sum(p => p.DeduccionHorasNoLaboradas).ToString("N0")</td>
-                    <td class="text-end text-danger">₡@Model.Sum(p => p.TotalDeducciones).ToString("N0")</td>
-                    <td class="text-end text-success">₡@Model.Sum(p => p.NetoAPagar).ToString("N0")</td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
+
+                    @* ── THEAD fila 2: sub-headers ── *@
+                    <tr>
+                        @* Devengados sub *@
+                        <th style="padding:3px 6px;text-align:right;background:#1d5c1d;
+                        color:#c8ffc8;min-width:70px;">Sal.Ord.</th>
+                        <th style="padding:3px 6px;text-align:right;background:#1d5c1d;
+                        color:#c8ffc8;min-width:62px;">H.Extra</th>
+                        <th style="padding:3px 6px;text-align:right;background:#1d5c1d;
+                        color:#c8ffc8;min-width:62px;">Comis.</th>
+                        <th style="padding:3px 6px;text-align:right;background:#1d5c1d;
+                        color:#c8ffc8;min-width:58px;">Feriad.</th>
+                        <th style="padding:3px 6px;text-align:right;background:#155215;
+                        color:#fff;min-width:72px;font-weight:700;
+                        border-right:2px solid #333;">T.Dev.</th>
+
+                        @* Deducciones sub *@
+                        <th style="padding:3px 6px;text-align:right;background:#5c1d1d;
+                        color:#ffc8c8;min-width:58px;">CCSS</th>
+                        <th style="padding:3px 6px;text-align:right;background:#5c1d1d;
+                        color:#ffc8c8;min-width:60px;">Prést.</th>
+                        <th style="padding:3px 6px;text-align:right;background:#5c1d1d;
+                        color:#ffc8c8;min-width:58px;">Créd.</th>
+                        <th style="padding:3px 6px;text-align:right;background:#5c1d1d;
+                        color:#ffc8c8;min-width:52px;">Incap.</th>
+                        <th style="padding:3px 6px;text-align:right;background:#5c1d1d;
+                        color:#ffc8c8;min-width:50px;">Vac.</th>
+                        <th style="padding:3px 6px;text-align:right;background:#5c1d1d;
+                        color:#ffc8c8;min-width:50px;">H.N/L</th>
+                        <th style="padding:3px 6px;text-align:right;background:#521515;
+                        color:#fff;min-width:72px;font-weight:700;
+                        border-right:2px solid #333;">T.Ded.</th>
+                    </tr>
+                </thead>
+
+                @* ── TBODY ── *@
+                <tbody>
+                    @foreach (var p in grupo.OrderBy(x => x.Empleado.PrimerApellido))
+                    {
+                        <tr style="border-bottom:1px solid #eee;">
+                            @* Empleado *@
+                            <td style="padding:5px 8px;border-right:2px solid #e0e0e0;
+                                white-space:normal;min-width:130px;max-width:150px;
+                                vertical-align:middle;">
+                                <div style="font-weight:700;font-size:0.7rem;line-height:1.2;">
+                                    @p.Empleado.PrimerApellido @p.Empleado.Nombre
+                                </div>
+                                <div style="color:#888;font-size:0.62rem;">
+                                    @p.Empleado.Puesto
+                                    @if (p.Empleado.FormaPago == GEPCP_Ferreteria_El_Pana.Models.FormaPago.Efectivo)
+                                    {
+                                        <span style="background:#ffc107;color:#000;border-radius:3px;
+                                            padding:0 4px;font-size:0.55rem;font-weight:700;
+                                            margin-left:3px;">
+                                            Efect.
+                                        </span>
+                                    }
+                                </div>
+                            </td>
+
+                            @* Devengados *@
+                            <td style="padding:5px 6px;text-align:right;background:#f6fff6;">
+                                ₡@p.SalarioOrdinario.ToString("N0")
+                            </td>
+                            <td style="padding:5px 6px;text-align:right;background:#f6fff6;
+                                color:@(p.MontoHorasExtras > 0 ? "#1a4a1a" : "#bbb");
+                                font-weight:@(p.MontoHorasExtras > 0 ? "700" : "400");">
+                                @(p.MontoHorasExtras > 0 ? "₡" + p.MontoHorasExtras.ToString("N0") : "—")
+                            </td>
+                            <td style="padding:5px 6px;text-align:right;background:#f6fff6;
+                                color:@(p.AumentoAplicado > 0 ? "#1a4a1a" : "#bbb");
+                                font-weight:@(p.AumentoAplicado > 0 ? "700" : "400");">
+                                @(p.AumentoAplicado > 0 ? "₡" + p.AumentoAplicado.ToString("N0") : "—")
+                            </td>
+                            <td style="padding:5px 6px;text-align:right;background:#f6fff6;
+                                color:@(p.MontoFeriados > 0 ? "#1a4a1a" : "#bbb");
+                                font-weight:@(p.MontoFeriados > 0 ? "700" : "400");">
+                                @(p.MontoFeriados > 0 ? "₡" + p.MontoFeriados.ToString("N0") : "—")
+                            </td>
+                            <td style="padding:5px 6px;text-align:right;background:#e8f5e9;
+                                color:#1a4a1a;font-weight:700;
+                                border-right:2px solid #c8e6c9;">
+                                ₡@p.TotalDevengado.ToString("N0")
+                            </td>
+
+                            @* Deducciones *@
+                            <td style="padding:5px 6px;text-align:right;background:#fff6f6;
+                                color:#4a1a1a;">
+                                ₡@p.DeduccionCCSS.ToString("N0")
+                            </td>
+                            <td style="padding:5px 6px;text-align:right;background:#fff6f6;
+                                color:@(p.DeduccionPrestamos > 0 ? "#4a1a1a" : "#bbb");
+                                font-weight:@(p.DeduccionPrestamos > 0 ? "700" : "400");">
+                                @(p.DeduccionPrestamos > 0 ? "₡" + p.DeduccionPrestamos.ToString("N0") : "—")
+                            </td>
+                            <td style="padding:5px 6px;text-align:right;background:#fff6f6;
+                                color:@(p.DeduccionCreditoFerreteria > 0 ? "#4a1a1a" : "#bbb");
+                                font-weight:@(p.DeduccionCreditoFerreteria > 0 ? "700" : "400");">
+                                @(p.DeduccionCreditoFerreteria > 0 ? "₡" + p.DeduccionCreditoFerreteria.ToString("N0") : "—")
+                            </td>
+                            <td style="padding:5px 6px;text-align:right;background:#fff6f6;
+                                color:@(p.DeduccionIncapacidad > 0 ? "#4a1a1a" : "#bbb");
+                                font-weight:@(p.DeduccionIncapacidad > 0 ? "700" : "400");">
+                                @(p.DeduccionIncapacidad > 0 ? "₡" + p.DeduccionIncapacidad.ToString("N0") : "—")
+                            </td>
+                            <td style="padding:5px 6px;text-align:right;background:#fff6f6;
+                                color:@(p.DeduccionVacaciones > 0 ? "#4a1a1a" : "#bbb");
+                                font-weight:@(p.DeduccionVacaciones > 0 ? "700" : "400");">
+                                @(p.DeduccionVacaciones > 0 ? "₡" + p.DeduccionVacaciones.ToString("N0") : "—")
+                            </td>
+                            <td style="padding:5px 6px;text-align:right;background:#fff6f6;
+                                color:@(p.DeduccionHorasNoLaboradas > 0 ? "#4a1a1a" : "#bbb");
+                                font-weight:@(p.DeduccionHorasNoLaboradas > 0 ? "700" : "400");">
+                                @(p.DeduccionHorasNoLaboradas > 0 ? "₡" + p.DeduccionHorasNoLaboradas.ToString("N0") : "—")
+                            </td>
+                            <td style="padding:5px 6px;text-align:right;background:#fce8e8;
+                                color:#4a1a1a;font-weight:700;
+                                border-right:2px solid #f5c6cb;">
+                                ₡@p.TotalDeducciones.ToString("N0")
+                            </td>
+
+                            @* Neto *@
+                            <td style="padding:5px 6px;text-align:right;background:#fff9f0;
+                                color:#FF7A00;font-weight:700;
+                                border-right:1px solid #ffe0b2;">
+                                ₡@p.NetoAPagar.ToString("N0")
+                            </td>
+
+                            @* Acciones *@
+                            <td style="padding:4px 4px;text-align:center;vertical-align:middle;">
+                                <div style="display:flex;gap:3px;justify-content:center;">
+                                    @if (rol == "RRHH" && !periodoCerrado)
+                                    {
+                                        <a asp-action="Editar" asp-route-id="@p.PlanillaEmpleadoId"
+                                               title="Editar"
+                                               style="display:inline-flex;align-items:center;
+                                            padding:2px 6px;font-size:0.65rem;
+                                            border:1px solid #111;border-radius:4px;
+                                            background:#fff;color:#111;text-decoration:none;">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    }
+                                    <a asp-action="DescargarPDF" asp-route-id="@p.PlanillaEmpleadoId"
+                                           title="PDF"
+                                           style="display:inline-flex;align-items:center;
+                                        padding:2px 6px;font-size:0.65rem;
+                                        border:1px solid #444;border-radius:4px;
+                                        background:#fff;color:#444;text-decoration:none;">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+
+                @* ── TFOOT subtotal ── *@
+                <tfoot>
+                    <tr style="background:#ececec;font-weight:700;font-size:0.63rem;
+                        border-top:2px solid #ccc;">
+                        <td style="padding:5px 8px;border-right:2px solid #ddd;">
+                            Subtotal (@grupo.Count())
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#e8f5e9;">
+                            ₡@grupo.Sum(p => p.SalarioOrdinario).ToString("N0")
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#e8f5e9;">
+                            ₡@grupo.Sum(p => p.MontoHorasExtras).ToString("N0")
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#e8f5e9;">
+                            ₡@grupo.Sum(p => p.AumentoAplicado).ToString("N0")
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#e8f5e9;">
+                            ₡@grupo.Sum(p => p.MontoFeriados).ToString("N0")
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#c8e6c9;
+                            color:#1a4a1a;border-right:2px solid #a5d6a7;">
+                            ₡@grupo.Sum(p => p.TotalDevengado).ToString("N0")
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#fdecea;color:#4a1a1a;">
+                            ₡@grupo.Sum(p => p.DeduccionCCSS).ToString("N0")
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#fdecea;color:#4a1a1a;">
+                            ₡@grupo.Sum(p => p.DeduccionPrestamos).ToString("N0")
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#fdecea;color:#4a1a1a;">
+                            ₡@grupo.Sum(p => p.DeduccionCreditoFerreteria).ToString("N0")
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#fdecea;color:#4a1a1a;">
+                            ₡@grupo.Sum(p => p.DeduccionIncapacidad).ToString("N0")
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#fdecea;color:#4a1a1a;">
+                            ₡@grupo.Sum(p => p.DeduccionVacaciones).ToString("N0")
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#fdecea;color:#4a1a1a;">
+                            ₡@grupo.Sum(p => p.DeduccionHorasNoLaboradas).ToString("N0")
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#f5c6cb;
+                            color:#4a1a1a;border-right:2px solid #ef9a9a;">
+                            ₡@grupo.Sum(p => p.TotalDeducciones).ToString("N0")
+                        </td>
+                        <td style="padding:5px 6px;text-align:right;background:#fff3e0;
+                            color:#FF7A00;border-right:1px solid #ffe0b2;">
+                            ₡@grupo.Sum(p => p.NetoAPagar).ToString("N0")
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+
+    @* ── Total general ── *@
+    <div class="card border-0 shadow-sm mt-2"
+         style="border-left:3px solid #FF7A00 !important;">
+        <div class="card-body py-2 px-3">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <div>
+                    <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;
+                        letter-spacing:1px;color:#333;">
+                        <i class="bi bi-sigma"></i> Total General
+                    </div>
+                    <div style="font-size:0.62rem;color:#888;">@Model.Count empleado(s)</div>
+                </div>
+
+                <div class="px-3 py-1 rounded"
+                     style="background:#e8f5e9;border-left:2px solid #1a4a1a;">
+                    <div style="font-size:0.58rem;color:#555;text-transform:uppercase;
+                        letter-spacing:0.5px;">
+                        Devengado
+                    </div>
+                    <div style="font-weight:700;color:#1a4a1a;font-size:0.85rem;">
+                        ₡@Model.Sum(p => p.TotalDevengado).ToString("N0")
+                    </div>
+                </div>
+
+                <div style="font-weight:700;color:#aaa;font-size:1rem;">−</div>
+
+                <div class="px-3 py-1 rounded"
+                     style="background:#fce8e8;border-left:2px solid #4a1a1a;">
+                    <div style="font-size:0.58rem;color:#555;text-transform:uppercase;
+                        letter-spacing:0.5px;">
+                        Deducciones
+                    </div>
+                    <div style="font-weight:700;color:#4a1a1a;font-size:0.85rem;">
+                        ₡@Model.Sum(p => p.TotalDeducciones).ToString("N0")
+                    </div>
+                </div>
+
+                <div style="font-weight:700;color:#aaa;font-size:1rem;">=</div>
+
+                <div class="px-3 py-1 rounded"
+                     style="background:#fff3e0;border-left:2px solid #FF7A00;">
+                    <div style="font-size:0.58rem;color:#555;text-transform:uppercase;
+                        letter-spacing:0.5px;">
+                        Neto a Pagar
+                    </div>
+                    <div style="font-weight:700;color:#FF7A00;font-size:1rem;">
+                        ₡@Model.Sum(p => p.NetoAPagar).ToString("N0")
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 }

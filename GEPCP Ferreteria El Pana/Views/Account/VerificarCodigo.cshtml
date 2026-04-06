@@ -1,0 +1,51 @@
+﻿@{
+    ViewData["Title"] = "Verificar código";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="login-page">
+    <div class="container" style="position:relative;z-index:2;">
+        <div class="row justify-content-center">
+            <div class="col-md-4">
+                <div class="login-card card">
+                    <div class="card-header">
+                        <h4><i class="bi bi-shield-check"></i> Verificar código</h4>
+                        <p>Revisá tu correo electrónico</p>
+                    </div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(TempData["Info"] as string))
+                        {
+                            <div class="alert alert-info small">
+                                <i class="bi bi-info-circle"></i> @TempData["Info"]
+                            </div>
+                        }
+                        <form asp-action="VerificarCodigo" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="usuario" value="@ViewBag.Usuario" />
+                            <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-123"></i> Código de 6 dígitos
+                                </label>
+                                <input type="text" name="codigo" class="form-control"
+                                       maxlength="6" placeholder="000000"
+                                       style="letter-spacing:6px;font-size:1.4rem;
+                                text-align:center;font-weight:700;"
+                                       autofocus />
+                            </div>
+                            <button type="submit" class="btn-login btn btn-lg w-100">
+                                <i class="bi bi-check-circle"></i> Verificar
+                            </button>
+                        </form>
+                        <div class="text-center mt-3">
+                            <a asp-action="OlvidePassword"
+                                   style="color:rgba(255,255,255,0.7);font-size:0.85rem;">
+                                ← Solicitar nuevo código
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

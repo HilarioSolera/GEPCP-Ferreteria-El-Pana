@@ -2,6 +2,9 @@
 @{
     ViewData["Title"] = "Registrar Horas Extras - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var periodoFechaInicio = ViewBag.PeriodoFechaInicio as string ?? "";
+    var periodoFechaFin = ViewBag.PeriodoFechaFin as string ?? "";
+    var periodoDescripcion = ViewBag.PeriodoDescripcion as string ?? "";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -12,79 +15,174 @@
     </a>
 </div>
 
-<div class="card shadow-sm border-0" style="max-width: 700px;">
+<div class="card shadow-sm border-0">
     <div class="card-body p-4">
-        <form asp-action="Create" method="post">
+        <form asp-action="Create" method="post" id="formHorasExtras">
             @Html.AntiForgeryToken()
+
+            @* Errores del servidor *@
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>No se pudo registrar:</strong>
+                    <ul class="mb-0 mt-1">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@error.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
             <div class="row g-3">
 
-                <div class="col-12">
+                @* ── Período ── *@
+                <div class="col-md-6">
                     <label asp-for="PeriodoPagoId" class="form-label fw-bold">
                         <i class="bi bi-calendar2-week"></i> Período <span class="text-danger">*</span>
                     </label>
                     <select asp-for="PeriodoPagoId" asp-items="ViewBag.Periodos"
-                            class="form-select form-select-lg">
+                            class="form-select form-select-lg" id="selectPeriodo">
                         <option value="">— Seleccione un período —</option>
                     </select>
+                    <div class="form-text text-muted">Solo se muestran períodos abiertos de los últimos 2 meses.</div>
                     <span asp-validation-for="PeriodoPagoId" class="text-danger small"></span>
                 </div>
 
-                <div class="col-12">
-                    <label asp-for="EmpleadoId" class="form-label fw-bold">
-                        <i class="bi bi-person"></i> Empleado <span class="text-danger">*</span>
+                @* ── Fecha ── *@
+                <div class="col-md-6">
+                    <label asp-for="Fecha" class="form-label fw-bold">
+                        <i class="bi bi-calendar-date"></i> Fecha <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="EmpleadoId" asp-items="ViewBag.Empleados"
-                            class="form-select form-select-lg" id="selectEmpleado">
-                        <option value="">— Seleccione un empleado —</option>
-                    </select>
-                    <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
+                    <input asp-for="Fecha" type="date"
+                           class="form-control form-control-lg"
+                           id="inputFecha"
+                           min="@periodoFechaInicio"
+                           max="@periodoFechaFin" />
+                    <div class="form-text" id="infoRangoFecha">
+                        @if (!string.IsNullOrEmpty(periodoDescripcion))
+                        {
+                            <span class="text-success">
+                                <i class="bi bi-calendar-check"></i>
+                                Rango permitido: <strong>
+                                @(string.IsNullOrEmpty(periodoFechaInicio) ? "" :
+                                    DateTime.Parse(periodoFechaInicio).ToString("dd/MM/yyyy"))
+                                al
+                                @(string.IsNullOrEmpty(periodoFechaFin) ? "" :
+                                    DateTime.Parse(periodoFechaFin).ToString("dd/MM/yyyy"))
+                            </strong>
+                        </span>
+                    }
+                        else
+                    {
+                        <span class="text-muted">Seleccioná un período primero.</span>
+                    }
+                </div>
+                <span asp-validation-for="Fecha" class="text-danger small"></span>
+            </div>
+
+            @* ── Buscador de empleado ── *@
+            <div class="col-12">
+                <label class="form-label fw-bold">
+                    <i class="bi bi-person-search"></i> Empleado <span class="text-danger">*</span>
+                </label>
+
+                <input type="hidden" asp-for="EmpleadoId" id="EmpleadoId" />
+
+                <div class="input-group mb-1">
+                    <span class="input-group-text bg-white">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" id="buscarEmpleado"
+                           class="form-control form-control-lg border-start-0"
+                           placeholder="Buscar por nombre, apellido o cédula..."
+                           autocomplete="off" />
+                    <button type="button" class="btn btn-outline-secondary"
+                            id="btnMostrarTodos" title="Mostrar todos los empleados">
+                        <i class="bi bi-list-ul"></i> Todos
+                    </button>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="TotalHoras" class="form-label fw-bold">
-                        <i class="bi bi-hourglass-split"></i> Total Horas <span class="text-danger">*</span>
-                    </label>
-                    <input asp-for="TotalHoras" type="number" step="0.01"
-                           min="0.01" max="999.99"
-                           class="form-control form-control-lg" id="inputHoras"
-                           placeholder="Ej: 15.42" />
-                    <span asp-validation-for="TotalHoras" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-4">
-                    <label asp-for="Porcentaje" class="form-label fw-bold">
-                        <i class="bi bi-percent"></i> Porcentaje <span class="text-danger">*</span>
-                    </label>
-                    <select asp-for="Porcentaje" class="form-select form-select-lg"
-                            id="selectPorcentaje">
-                        <option value="1.5">150% — Hora Extra Normal</option>
-                        <option value="2.0">200% — Hora Extra Doble</option>
-                    </select>
-                    <span asp-validation-for="Porcentaje" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label fw-bold text-muted">
-                        <i class="bi bi-calculator"></i> Monto Estimado
-                    </label>
-                    <div class="form-control form-control-lg bg-light text-center fw-bold text-success"
-                         id="montoRef">
-                        —
+                @* Card del empleado seleccionado *@
+                <div id="empleadoSeleccionado" class="d-none">
+                    <div class="alert alert-success py-2 d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-person-check-fill"></i>
+                            <strong id="empNombre"></strong>
+                            <span class="text-muted ms-2 small" id="empCedula"></span>
+                            <span class="badge bg-secondary ms-1" id="empPuesto"></span>
+                        </div>
+                        <div class="text-end d-flex align-items-center gap-2">
+                            <div class="fw-bold" id="empValorHora"></div>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    id="btnLimpiarEmpleado">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="form-text text-muted" id="valorHoraRef"></div>
                 </div>
 
+                @* Resultados de búsqueda *@
+                <div id="resultadosBusqueda" class="border rounded shadow-sm"
+                     style="display:none;max-height:280px;overflow-y:auto;
+                    background:#fff;z-index:100;position:relative;">
+                </div>
+
+                <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn-lg px-5">
-                    <i class="bi bi-check-circle"></i> Registrar
-                </button>
-                <a asp-action="Index" asp-route-periodoId="@Model.PeriodoPagoId"
-                   class="btn btn-secondary btn-lg px-5">Cancelar</a>
+            @* ── Tipo, Horas y Monto ── *@
+            <div class="col-md-4">
+                <label asp-for="Porcentaje" class="form-label fw-bold">
+                    <i class="bi bi-percent"></i> Tipo de Hora Extra <span class="text-danger">*</span>
+                </label>
+                <select asp-for="Porcentaje" class="form-select form-select-lg"
+                        id="selectPorcentaje">
+                    <option value="1.5">150% — Hora Extra Normal</option>
+                    <option value="2.0">200% — Hora Extra Doble</option>
+                </select>
+                <span asp-validation-for="Porcentaje" class="text-danger small"></span>
             </div>
-        </form>
-    </div>
+
+            <div class="col-md-4">
+                <label asp-for="TotalHoras" class="form-label fw-bold">
+                    <i class="bi bi-hourglass-split"></i> Total Horas <span class="text-danger">*</span>
+                </label>
+                <input asp-for="TotalHoras" type="number" step="0.5"
+                       min="0.5" max="999.99"
+                       class="form-control form-control-lg" id="inputHoras"
+                       placeholder="Ej: 12" />
+                <div id="advertenciaHoras" class="form-text text-warning d-none">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Supera el límite recomendado de 48 hrs quincenales.
+                </div>
+                <span asp-validation-for="TotalHoras" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold text-muted">
+                    <i class="bi bi-calculator"></i> Monto Estimado
+                </label>
+                <div class="form-control form-control-lg bg-light text-center fw-bold text-success"
+                     id="montoRef">
+                    —
+                </div>
+                <div class="form-text text-muted" id="valorHoraRef"></div>
+            </div>
+
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-success btn-lg px-5"
+                    id="btnGuardar" disabled>
+                <i class="bi bi-check-circle"></i> Registrar
+            </button>
+            <a asp-action="Index" asp-route-periodoId="@Model.PeriodoPagoId"
+               class="btn btn-secondary btn-lg px-5">Cancelar</a>
+        </div>
+    </form>
+</div>
 </div>
 
 @section Scripts {
@@ -92,41 +190,180 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
-        async function calcularMonto() {
-            var empleadoId  = parseInt(document.getElementById('selectEmpleado').value) || 0;
-            var horas       = parseFloat(document.getElementById('inputHoras').value) || 0;
-            var porcentaje  = parseFloat(document.getElementById('selectPorcentaje').value) || 1.5;
-            var montoRef    = document.getElementById('montoRef');
-            var valorHoraRef = document.getElementById('valorHoraRef');
+        var empleadoActual = null;
 
-            if (empleadoId <= 0 || horas <= 0) {
-                montoRef.textContent = '—';
-                valorHoraRef.textContent = '';
+        // ── Actualizar rango de fecha cuando cambia el período ────────────────
+        document.getElementById('selectPeriodo').addEventListener('change', async function() {
+            var pid = this.value;
+            var inputFecha = document.getElementById('inputFecha');
+            var infoRango = document.getElementById('infoRangoFecha');
+
+            if (!pid) {
+                inputFecha.min = '';
+                inputFecha.max = '@DateTime.Today.ToString("yyyy-MM-dd")';
+                inputFecha.value = '';
+                infoRango.innerHTML = '<span class="text-muted">Seleccioná un período primero.</span>';
                 return;
             }
 
             try {
-                var res  = await fetch('/HorasExtras/CalcularMonto?empleadoId=' + empleadoId +
-                    '&horas=' + horas + '&porcentaje=' + porcentaje);
+                var res = await fetch('/HorasExtras/ObtenerRangoPeriodo?periodoId=' + pid);
+                var data = await res.json();
+                if (data.ok) {
+                    inputFecha.min = data.fechaInicio;
+                    inputFecha.max = data.fechaFin;
+                    inputFecha.value = data.fechaInicio;
+
+                    var fi = data.fechaInicio.split('-').reverse().join('/');
+                    var ff = data.fechaFin.split('-').reverse().join('/');
+                    infoRango.innerHTML =
+                        `<span class="text-success">
+                                    <i class="bi bi-calendar-check"></i>
+                                    Rango permitido: <strong>${fi} al ${ff}</strong>
+                                 </span>`;
+                }
+            } catch (e) { console.error('Error al obtener rango:', e); }
+        });
+
+        // Aplicar rango inicial si hay período pre-seleccionado al cargar
+        (function() {
+            var fi = '@periodoFechaInicio';
+            var ff = '@periodoFechaFin';
+            if (fi && ff) {
+                var inputFecha = document.getElementById('inputFecha');
+                inputFecha.min = fi;
+                inputFecha.max = ff;
+            }
+        })();
+
+        // ── Buscador de empleados ─────────────────────────────────────────────
+        async function buscarEmpleados(termino, mostrarTodos = false) {
+            var url = mostrarTodos
+                ? '/HorasExtras/TodosLosEmpleados'
+                : '/HorasExtras/BuscarEmpleados?termino=' + encodeURIComponent(termino);
+
+            var res = await fetch(url);
+            var empleados = await res.json();
+            var div = document.getElementById('resultadosBusqueda');
+
+            if (!empleados.length) {
+                div.innerHTML = '<div class="p-3 text-muted small text-center">No se encontraron empleados.</div>';
+                div.style.display = 'block';
+                return;
+            }
+
+            div.innerHTML = empleados.map(e =>
+                `<div class="p-2 border-bottom"
+                              style="cursor:pointer;"
+                              onmouseover="this.style.background='#f8f8f8'"
+                              onmouseout="this.style.background='#fff'"
+                              onclick="seleccionarEmpleado(${e.id},
+                                       '${e.nombre.replace(/'/g, "\\'")}',
+                                       '${e.cedula}',
+                                       '${e.puesto.replace(/'/g, "\\'")}',
+                                       ${e.valorHora.toFixed(2)})">
+                            <div class="fw-bold small">${e.nombre}</div>
+                            <div class="text-muted" style="font-size:0.78rem;">
+                                ${e.cedula} — ${e.puesto}
+                                <span class="float-end fw-bold">
+                                    ₡${e.valorHora.toLocaleString('es-CR', { minimumFractionDigits: 2 })}/hr
+                                </span>
+                            </div>
+                         </div>`
+            ).join('');
+            div.style.display = 'block';
+        }
+
+        function seleccionarEmpleado(id, nombre, cedula, puesto, valorHora) {
+            empleadoActual = { id, nombre, cedula, puesto, valorHora };
+
+            document.getElementById('EmpleadoId').value = id;
+            document.getElementById('empNombre').textContent = nombre;
+            document.getElementById('empCedula').textContent = cedula;
+            document.getElementById('empPuesto').textContent = puesto;
+            document.getElementById('empValorHora').textContent =
+                '₡' + valorHora.toLocaleString('es-CR', { minimumFractionDigits: 2 }) + '/hr';
+
+            document.getElementById('empleadoSeleccionado').classList.remove('d-none');
+            document.getElementById('resultadosBusqueda').style.display = 'none';
+            document.getElementById('buscarEmpleado').value = '';
+            document.getElementById('btnGuardar').disabled = false;
+
+            calcularMonto();
+        }
+
+        document.getElementById('btnLimpiarEmpleado').addEventListener('click', function() {
+            empleadoActual = null;
+            document.getElementById('EmpleadoId').value = '';
+            document.getElementById('empleadoSeleccionado').classList.add('d-none');
+            document.getElementById('buscarEmpleado').value = '';
+            document.getElementById('montoRef').textContent = '—';
+            document.getElementById('valorHoraRef').textContent = '';
+            document.getElementById('btnGuardar').disabled = true;
+        });
+
+        var timerBusqueda;
+        document.getElementById('buscarEmpleado').addEventListener('input', function() {
+            clearTimeout(timerBusqueda);
+            var val = this.value.trim();
+            if (val.length < 2) {
+                document.getElementById('resultadosBusqueda').style.display = 'none';
+                return;
+            }
+            timerBusqueda = setTimeout(() => buscarEmpleados(val), 300);
+        });
+
+        document.getElementById('btnMostrarTodos').addEventListener('click', function() {
+            buscarEmpleados('', true);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#resultadosBusqueda') &&
+                !e.target.closest('#buscarEmpleado') &&
+                !e.target.closest('#btnMostrarTodos'))
+                document.getElementById('resultadosBusqueda').style.display = 'none';
+        });
+
+        // ── Calcular monto ────────────────────────────────────────────────────
+        async function calcularMonto() {
+            var empleadoId = parseInt(document.getElementById('EmpleadoId').value) || 0;
+            var horas = parseFloat(document.getElementById('inputHoras').value) || 0;
+            var porcentaje = parseFloat(document.getElementById('selectPorcentaje').value) || 1.5;
+            var montoRef = document.getElementById('montoRef');
+            var vhRef = document.getElementById('valorHoraRef');
+            var advHoras = document.getElementById('advertenciaHoras');
+
+            if (empleadoId <= 0 || horas <= 0) {
+                montoRef.textContent = '—';
+                vhRef.textContent = '';
+                return;
+            }
+
+            try {
+                var res = await fetch(
+                    `/HorasExtras/CalcularMonto?empleadoId=${empleadoId}&horas=${horas}&porcentaje=${porcentaje}`);
                 var data = await res.json();
 
                 if (data.monto > 0) {
-                    montoRef.innerHTML = '&#8353;' +
-                        data.monto.toLocaleString('es-CR', {minimumFractionDigits: 2});
-                    valorHoraRef.innerHTML =
-                        '<i class="bi bi-info-circle text-muted"></i> ' +
-                        'Valor hora: <strong>&#8353;' +
-                        data.valorHora.toLocaleString('es-CR', {minimumFractionDigits: 2}) +
-                        '</strong> &times; ' + horas + ' hrs &times; ' + (porcentaje * 100) + '%';
+                    montoRef.textContent = '₡' +
+                        data.monto.toLocaleString('es-CR', { minimumFractionDigits: 2 });
+                    vhRef.innerHTML =
+                        `<i class="bi bi-info-circle text-muted"></i> ` +
+                        `Valor hora: <strong>₡${data.valorHora.toLocaleString('es-CR', { minimumFractionDigits: 2 })}</strong>` +
+                        ` × ${horas} hrs × ${(porcentaje * 100).toFixed(0)}%`;
+                    advHoras.classList.toggle('d-none', !data.advertencia);
                 } else {
                     montoRef.textContent = '—';
-                    valorHoraRef.textContent = '';
+                    vhRef.textContent = '';
                 }
             } catch (e) { console.error('Error al calcular monto:', e); }
         }
 
-        document.getElementById('selectEmpleado').addEventListener('change', calcularMonto);
         document.getElementById('inputHoras').addEventListener('input', calcularMonto);
         document.getElementById('selectPorcentaje').addEventListener('change', calcularMonto);
+
+        // Si hay EmpleadoId pre-seleccionado (validación fallida), habilitar botón
+        if (parseInt(document.getElementById('EmpleadoId').value) > 0)
+            document.getElementById('btnGuardar').disabled = false;
     </script>
 }

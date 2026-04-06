@@ -1,0 +1,157 @@
+﻿@model List<GEPCP_Ferreteria_El_Pana.Models.RegistroAuditoria>
+@{
+    ViewData["Title"] = "Auditoría - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var modulos = ViewBag.Modulos as List<string> ?? new List<string>();
+    var totalRegistros = (int)(ViewBag.TotalRegistros ?? 0);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-shield-check"></i> Auditoría del Sistema</h2>
+</div>
+
+@* Filtros *@
+<form asp-action="Index" method="get" class="mb-4">
+    <div class="row g-2">
+        <div class="col-md-3">
+            <input type="text" name="usuario" value="@ViewBag.Usuario"
+                   class="form-control"
+                   placeholder="Buscar por usuario..." />
+        </div>
+        <div class="col-md-2">
+            <select name="modulo" class="form-select">
+                <option value="">— Todos los módulos —</option>
+                @foreach (var m in modulos)
+                {
+                    <option value="@m" selected="@(m == ViewBag.Modulo as string ? "selected" : null)">
+                        @m
+                    </option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="date" name="desde" value="@ViewBag.Desde"
+                   class="form-control" />
+        </div>
+        <div class="col-md-2">
+            <input type="date" name="hasta" value="@ViewBag.Hasta"
+                   class="form-control" />
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-funnel"></i>
+            </button>
+        </div>
+        <div class="col-md-1">
+            <a asp-action="Index" class="btn btn-outline-secondary w-100">
+                <i class="bi bi-x-circle"></i>
+            </a>
+        </div>
+    </div>
+</form>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info text-center py-4">
+        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+        Usá los filtros para buscar registros de auditoría.
+    </div>
+}
+else
+{
+    <div class="text-muted small mb-2">
+        Mostrando <strong>@totalRegistros</strong> registro(s)
+    </div>
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-hover align-middle mb-0">
+            <thead style="background-color:#FF7A00;color:white;">
+                <tr>
+                    <th>Fecha y Hora</th>
+                    <th>Usuario</th>
+                    <th>Módulo</th>
+                    <th>Acción</th>
+                    <th>Detalle</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td style="white-space:nowrap;font-size:0.82rem;">
+                            @r.FechaHora.ToString("dd/MM/yyyy HH:mm:ss")
+                        </td>
+                        <td>
+                            <strong>@r.Usuario</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">@r.Modulo</span>
+                        </td>
+                        <td>@r.Accion</td>
+                        <td class="text-muted" style="font-size:0.82rem;">
+                            @(r.Detalle ?? "—")
+                        </td>
+                        <td class="text-muted" style="font-size:0.78rem;">
+                            @(r.IpAddress ?? "—")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if ((int)(ViewBag.TotalPaginas ?? 0) > 1)
+        {
+            var pagina = (int)(ViewBag.Pagina ?? 1);
+            var totalPaginas = (int)ViewBag.TotalPaginas;
+
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center">
+
+                    <li class="page-item @(pagina <= 1 ? "disabled" : "")">
+                        <a class="page-link"
+                               asp-action="Index"
+                               asp-route-usuario="@ViewBag.Usuario"
+                               asp-route-modulo="@ViewBag.Modulo"
+                               asp-route-desde="@ViewBag.Desde"
+                               asp-route-hasta="@ViewBag.Hasta"
+                               asp-route-pagina="@(pagina - 1)">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+
+                    @for (int i = Math.Max(1, pagina - 2);
+                                          i <= Math.Min(totalPaginas, pagina + 2); i++)
+                    {
+                        <li class="page-item @(i == pagina ? "active" : "")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-usuario="@ViewBag.Usuario"
+                               asp-route-modulo="@ViewBag.Modulo"
+                               asp-route-desde="@ViewBag.Desde"
+                               asp-route-hasta="@ViewBag.Hasta"
+                               asp-route-pagina="@i">@i</a>
+                        </li>
+                    }
+
+                    <li class="page-item @(pagina >= totalPaginas ? "disabled" : "")">
+                        <a class="page-link"
+                               asp-action="Index"
+                               asp-route-usuario="@ViewBag.Usuario"
+                               asp-route-modulo="@ViewBag.Modulo"
+                               asp-route-desde="@ViewBag.Desde"
+                               asp-route-hasta="@ViewBag.Hasta"
+                               asp-route-pagina="@(pagina + 1)">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+
+                </ul>
+            </nav>
+
+            <div class="text-muted small text-center">
+                Página @pagina de @totalPaginas —
+                <strong>@ViewBag.TotalRegistros</strong> registro(s) total
+            </div>
+        }
+    </div>
+}

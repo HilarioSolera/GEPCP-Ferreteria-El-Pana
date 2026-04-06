@@ -29,5 +29,9 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Required(ErrorMessage = "Seleccioná un rol")]
         [Display(Name = "Rol")]
         public string Rol { get; set; } = "RRHH";
+
+        [EmailAddress(ErrorMessage = "El formato del correo no es válido.")]
+        [Display(Name = "Correo Electrónico")]
+        public string? CorreoElectronico { get; set; }
     }
 }

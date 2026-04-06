@@ -23,5 +23,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
 
         [StringLength(200)]
         public string Descripcion { get; set; } = string.Empty;
+        public int? PeriodoPagoId { get; set; }
+        public PeriodoPago? PeriodoPago { get; set; }
     }
 }

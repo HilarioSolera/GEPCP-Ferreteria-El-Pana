@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Empleados - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var busqueda = ViewBag.Busqueda as string ?? "";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -12,42 +13,52 @@
 </div>
 
 @* Barra de búsqueda *@
-<form asp-action="Index" method="get" class="mb-4">
+<form asp-action="Index" method="get" class="mb-3" id="formBusqueda">
     <div class="input-group input-group-lg shadow-sm">
         <span class="input-group-text bg-white">
             <i class="bi bi-search text-muted"></i>
         </span>
-        <input type="text" name="busqueda" value="@ViewBag.Busqueda"
+        <input type="text" name="busqueda" id="inputBusqueda"
+               value="@busqueda"
                class="form-control border-start-0"
-               placeholder="Buscar por nombre, cédula, puesto, departamento, correo o teléfono..." />
-        <button type="submit" class="btn btn-primary px-4">Buscar</button>
-        @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string))
+               placeholder="Buscar por nombre, cédula, puesto, departamento..." />
+        <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-search"></i> Buscar
+        </button>
+        @if (!string.IsNullOrEmpty(busqueda))
         {
-            <a asp-action="Index" class="btn btn-outline-secondary">
+            <a asp-action="Index" class="btn btn-outline-secondary" title="Limpiar búsqueda">
                 <i class="bi bi-x-circle"></i> Limpiar
             </a>
         }
     </div>
-    @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string))
+</form>
+
+@* Botón mostrar todos *@
+<div class="d-flex align-items-center gap-3 mb-3">
+    <a asp-action="Index" asp-route-mostrarTodos="true" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-list-ul"></i> Mostrar todos
+    </a>
+    @if (!string.IsNullOrEmpty(busqueda))
     {
-        <small class="text-muted ms-1 mt-1 d-block">
-            Resultados para: <strong>"@ViewBag.Busqueda"</strong> —
+        <small class="text-muted">
+            Resultados para: <strong>"@busqueda"</strong> —
             @Model.Count() empleado(s) encontrado(s)
         </small>
     }
-</form>
+</div>
 
 @if (!Model.Any())
 {
     <div class="alert alert-info text-center py-4">
         <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-        @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string))
+        @if (!string.IsNullOrEmpty(busqueda))
         {
-            <span>No se encontraron empleados para "<strong>@ViewBag.Busqueda</strong>".</span>
+            <span>No se encontraron empleados para "<strong>@busqueda</strong>".</span>
         }
         else
         {
-            <span>No hay empleados registrados aún.</span>
+            <span>Usá la barra de búsqueda para encontrar empleados, o presioná <strong>Mostrar todos</strong>.</span>
         }
     </div>
 }
@@ -87,8 +98,7 @@ else
                         <td>@item.Puesto</td>
                         <td>
                             <span class="badge @(item.TipoJornada == GEPCP_Ferreteria_El_Pana.Models.TipoJornada.Completa ? "bg-primary" : "bg-info")">
-                                @(item.TipoJornada == GEPCP_Ferreteria_El_Pana.Models.TipoJornada.Completa
-                                    ? "Completa" : "Media")
+                                @(item.TipoJornada == GEPCP_Ferreteria_El_Pana.Models.TipoJornada.Completa ? "Completa" : "Media")
                             </span>
                         </td>
                         <td class="text-end fw-bold">₡@item.SalarioBase.ToString("N0")</td>
@@ -102,13 +112,11 @@ else
                             }
                             @if (!string.IsNullOrEmpty(item.CorreoElectronico))
                             {
-                                <a href="mailto:@item.CorreoElectronico"
-                                       class="text-decoration-none d-block small">
+                                <a href="mailto:@item.CorreoElectronico" class="text-decoration-none d-block small">
                                     <i class="bi bi-envelope"></i> @item.CorreoElectronico
                                 </a>
                             }
-                            @if (string.IsNullOrEmpty(item.Telefono) &&
-                                                             string.IsNullOrEmpty(item.CorreoElectronico))
+                            @if (string.IsNullOrEmpty(item.Telefono) && string.IsNullOrEmpty(item.CorreoElectronico))
                             {
                                 <span class="text-muted">—</span>
                             }
@@ -121,6 +129,7 @@ else
                         <td class="text-center">
                             <div class="d-flex gap-1 justify-content-center flex-wrap">
                                 <a asp-action="Details" asp-route-id="@item.EmpleadoId"
+                                       asp-route-busqueda="@busqueda"
                                        class="btn btn-sm btn-outline-info" title="Ver detalles">
                                     <i class="bi bi-eye"></i>
                                 </a>
@@ -134,8 +143,8 @@ else
                                           onsubmit="return confirm('¿Desactivar a @item.PrimerApellido @item.Nombre?')">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@item.EmpleadoId" />
-                                        <button type="submit" class="btn btn-sm btn-secondary"
-                                                title="Desactivar">
+                                        <input type="hidden" name="busqueda" value="@busqueda" />
+                                        <button type="submit" class="btn btn-sm btn-secondary" title="Desactivar">
                                             <i class="bi bi-pause-circle"></i>
                                         </button>
                                     </form>
@@ -146,8 +155,8 @@ else
                                           onsubmit="return confirm('¿Activar a @item.PrimerApellido @item.Nombre?')">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@item.EmpleadoId" />
-                                        <button type="submit" class="btn btn-sm btn-success"
-                                                title="Activar">
+                                        <input type="hidden" name="busqueda" value="@busqueda" />
+                                        <button type="submit" class="btn btn-sm btn-success" title="Activar">
                                             <i class="bi bi-play-circle"></i>
                                         </button>
                                     </form>
@@ -169,4 +178,40 @@ else
         Activos: <strong>@Model.Count(e => e.Estado == "Activo")</strong> /
         Inactivos: <strong>@Model.Count(e => e.Estado == "Inactivo")</strong>
     </div>
+}
+
+@section Scripts {
+    <script>
+        // Preservar búsqueda en sessionStorage
+        var input = document.getElementById('inputBusqueda');
+        var key = 'empleados_busqueda';
+
+        // Al cargar: si no hay valor en el input pero hay uno guardado, restaurarlo
+        if (input && !input.value) {
+            var guardado = sessionStorage.getItem(key);
+            if (guardado) {
+                input.value = guardado;
+            }
+        }
+
+        // Al hacer submit: guardar el valor
+        var form = document.getElementById('formBusqueda');
+        if (form) {
+            form.addEventListener('submit', function() {
+                sessionStorage.setItem(key, input.value);
+            });
+        }
+
+        // Si hay valor en la URL, guardarlo también
+        if (input && input.value) {
+            sessionStorage.setItem(key, input.value);
+        }
+
+        // Limpiar sessionStorage si se presiona Limpiar o Mostrar todos
+        document.querySelectorAll('a[href*="busqueda"]').forEach(function(a) {
+            a.addEventListener('click', function() {
+                sessionStorage.removeItem(key);
+            });
+        });
+    </script>
 }

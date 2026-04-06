@@ -2,6 +2,8 @@
 @{
     ViewData["Title"] = "Nueva Comisión - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var periodosSelect = ViewBag.PeriodosSelect as List<dynamic>
+                         ?? new List<dynamic>();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,62 +13,137 @@
     </a>
 </div>
 
-<div class="card shadow-sm border-0" style="max-width: 700px;">
+<div class="card shadow-sm border-0">
     <div class="card-body p-4">
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>No se pudo registrar:</strong>
+                    <ul class="mb-0 mt-1">
+                        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@e.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
             <div class="row g-3">
 
+                @* ── Período ── *@
                 <div class="col-12">
-                    <label asp-for="EmpleadoId" class="form-label fw-bold">
-                        <i class="bi bi-person"></i> Empleado <span class="text-danger">*</span>
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-calendar2-range"></i> Período de Pago
+                        <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="EmpleadoId" asp-items="ViewBag.Empleados"
+                    <select name="PeriodoPagoId" id="selectPeriodo"
                             class="form-select form-select-lg">
-                        <option value="">— Seleccione un empleado —</option>
+                        <option value="">— Seleccione un período —</option>
+                        @foreach (var p in ViewBag.PeriodosSelect as IEnumerable<dynamic>
+                                                                    ?? Enumerable.Empty<dynamic>())
+                        {
+                            <option value="@p.PeriodoPagoId"
+                                    data-inicio="@p.FechaInicio.ToString("yyyy-MM-dd")"
+                                    data-fin="@p.FechaFin.ToString("yyyy-MM-dd")"
+                                    selected="@(p.Seleccionado ? "selected" : null)">
+                                @p.Descripcion
+                            </option>
+                        }
                     </select>
+                    <div class="form-text text-muted" id="rangoPeriodo">
+                        Seleccioná un período para restringir la fecha.
+                    </div>
+                    <span asp-validation-for="PeriodoPagoId" class="text-danger small"></span>
+                </div>
+
+                @* ── Empleado buscador ── *@
+                <div class="col-12">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-person-search"></i> Empleado
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input type="hidden" asp-for="EmpleadoId" id="EmpleadoId" />
+                    <div class="input-group mb-1">
+                        <span class="input-group-text bg-white">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" id="buscarEmpleado"
+                               class="form-control form-control-lg border-start-0"
+                               placeholder="Buscar por nombre, apellido o cédula..."
+                               autocomplete="off" />
+                        <button type="button" class="btn btn-outline-secondary"
+                                id="btnTodos">
+                            <i class="bi bi-list-ul"></i> Todos
+                        </button>
+                    </div>
+                    <div id="empleadoSeleccionado" class="d-none">
+                        <div class="alert alert-success py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-person-check-fill"></i>
+                                <strong id="empNombre"></strong>
+                                <span class="text-muted ms-2 small" id="empCedula"></span>
+                                <span class="badge bg-secondary ms-1" id="empPuesto"></span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    id="btnLimpiar">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="resultados" class="border rounded shadow-sm"
+                         style="display:none;max-height:260px;overflow-y:auto;
+                        background:#fff;z-index:100;position:relative;">
+                    </div>
                     <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6">
+                @* ── Fecha ── *@
+                <div class="col-md-4">
+                    <label asp-for="Fecha" class="form-label fw-bold">
+                        <i class="bi bi-calendar"></i> Fecha <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="Fecha" type="date" id="inputFecha"
+                           class="form-control form-control-lg" />
+                    <span asp-validation-for="Fecha" class="text-danger small"></span>
+                </div>
+
+                @* ── Monto ── *@
+                <div class="col-md-4">
                     <label asp-for="Monto" class="form-label fw-bold">
                         <i class="bi bi-cash"></i> Monto (₡) <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Monto" type="number" min="1" step="0.01"
-                           max="9999999.99"
-                           class="form-control form-control-lg"
+                           max="9999999.99" class="form-control form-control-lg"
                            placeholder="Ej: 25000" />
                     <span asp-validation-for="Monto" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="Fecha" class="form-label fw-bold">
-                        <i class="bi bi-calendar"></i> Fecha <span class="text-danger">*</span>
-                    </label>
-                    <input asp-for="Fecha" type="date"
-                           class="form-control form-control-lg"
-                           max="@DateTime.Today.ToString("yyyy-MM-dd")" />
-                    <span asp-validation-for="Fecha" class="text-danger small"></span>
-                </div>
-
-                <div class="col-12">
+                @* ── Descripción ── *@
+                <div class="col-md-4">
                     <label asp-for="Descripcion" class="form-label fw-bold">
-                        <i class="bi bi-chat-text"></i> Descripción <span class="text-danger">*</span>
+                        <i class="bi bi-chat-text"></i> Descripción
+                        <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Descripcion" class="form-control form-control-lg"
                            maxlength="200"
-                           placeholder="Ej: Comisión por entregas semana del 01 al 07 de marzo" />
-                    <div class="form-text text-muted">Máximo 200 caracteres.</div>
+                           placeholder="Ej: Comisión por entregas semana 01-07 marzo" />
                     <span asp-validation-for="Descripcion" class="text-danger small"></span>
                 </div>
 
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn-lg px-5">
+                <button type="submit" class="btn btn-success btn-lg px-5"
+                        id="btnGuardar" disabled>
                     <i class="bi bi-check-circle"></i> Registrar Comisión
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">
+                    Cancelar
+                </a>
             </div>
         </form>
     </div>
@@ -76,4 +153,108 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        // ── Período → restringir fecha ────────────────────────────────────────
+        var selectPeriodo = document.getElementById('selectPeriodo');
+        var inputFecha = document.getElementById('inputFecha');
+        var rangoInfo = document.getElementById('rangoPeriodo');
+
+        function actualizarRango() {
+            var opt = selectPeriodo.options[selectPeriodo.selectedIndex];
+            var ini = opt?.dataset?.inicio;
+            var fin = opt?.dataset?.fin;
+            if (ini && fin) {
+                inputFecha.min = ini;
+                inputFecha.max = fin;
+                rangoInfo.textContent =
+                    'Fecha debe estar entre ' +
+                    new Date(ini + 'T00:00:00').toLocaleDateString('es-CR') +
+                    ' y ' +
+                    new Date(fin + 'T00:00:00').toLocaleDateString('es-CR');
+                // Si la fecha actual queda fuera del rango, limpiarla
+                if (inputFecha.value && (inputFecha.value < ini || inputFecha.value > fin))
+                    inputFecha.value = '';
+            } else {
+                inputFecha.min = '';
+                inputFecha.max = '';
+                rangoInfo.textContent = 'Seleccioná un período para restringir la fecha.';
+            }
+        }
+        selectPeriodo.addEventListener('change', actualizarRango);
+        actualizarRango();
+
+        // ── Buscador de empleados ─────────────────────────────────────────────
+        async function buscar(termino, todos = false) {
+            var url = todos
+                ? '/Comisiones/TodosLosEmpleados'
+                : '/Comisiones/BuscarEmpleados?termino=' + encodeURIComponent(termino);
+            var res = await fetch(url);
+            var data = await res.json();
+            var div = document.getElementById('resultados');
+
+            if (!data.length) {
+                div.innerHTML = '<div class="p-3 text-muted text-center small">Sin resultados.</div>';
+                div.style.display = 'block';
+                return;
+            }
+            div.innerHTML = data.map(e =>
+                `<div class="p-2 border-bottom"
+                              style="cursor:pointer;"
+                              onmouseover="this.style.background='#f8f8f8'"
+                              onmouseout="this.style.background='#fff'"
+                              onclick="seleccionar(${e.id},
+                                       '${e.nombre.replace(/'/g, "\\'")}',
+                                       '${e.cedula}',
+                                       '${e.puesto.replace(/'/g, "\\'")}')">
+                            <div class="fw-bold small">${e.nombre}</div>
+                            <div class="text-muted" style="font-size:0.78rem;">
+                                ${e.cedula} — ${e.puesto}
+                            </div>
+                         </div>`
+            ).join('');
+            div.style.display = 'block';
+        }
+
+        function seleccionar(id, nombre, cedula, puesto) {
+            document.getElementById('EmpleadoId').value = id;
+            document.getElementById('empNombre').textContent = nombre;
+            document.getElementById('empCedula').textContent = cedula;
+            document.getElementById('empPuesto').textContent = puesto;
+            document.getElementById('empleadoSeleccionado').classList.remove('d-none');
+            document.getElementById('resultados').style.display = 'none';
+            document.getElementById('buscarEmpleado').value = '';
+            document.getElementById('btnGuardar').disabled = false;
+        }
+
+        document.getElementById('btnLimpiar').addEventListener('click', function() {
+            document.getElementById('EmpleadoId').value = '';
+            document.getElementById('empleadoSeleccionado').classList.add('d-none');
+            document.getElementById('buscarEmpleado').value = '';
+            document.getElementById('btnGuardar').disabled = true;
+        });
+
+        var timer;
+        document.getElementById('buscarEmpleado').addEventListener('input', function() {
+            clearTimeout(timer);
+            var val = this.value.trim();
+            if (val.length < 2) {
+                document.getElementById('resultados').style.display = 'none';
+                return;
+            }
+            timer = setTimeout(() => buscar(val), 300);
+        });
+
+        document.getElementById('btnTodos').addEventListener('click', () => buscar('', true));
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#resultados') &&
+                !e.target.closest('#buscarEmpleado') &&
+                !e.target.closest('#btnTodos'))
+                document.getElementById('resultados').style.display = 'none';
+        });
+
+        // Si ya hay empleado seleccionado al cargar (error de validación)
+        if (parseInt(document.getElementById('EmpleadoId').value) > 0)
+            document.getElementById('btnGuardar').disabled = false;
+    </script>
 }

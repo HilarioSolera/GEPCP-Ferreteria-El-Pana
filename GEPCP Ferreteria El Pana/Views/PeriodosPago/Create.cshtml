@@ -11,8 +11,25 @@
     </a>
 </div>
 
-<div class="card shadow-sm border-0" style="max-width: 600px;">
+<div class="card shadow-sm border-0" style="max-width:620px;">
     <div class="card-body p-4">
+
+        @* Errores del servidor *@
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger mb-3">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <strong>No se pudo crear el período:</strong>
+                <ul class="mb-0 mt-1">
+                    @foreach (var error in ViewData.ModelState.Values
+                                            .SelectMany(v => v.Errors))
+                    {
+                        <li>@error.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        }
+
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
             <div class="row g-3">
@@ -22,7 +39,7 @@
                         <i class="bi bi-calendar"></i> Año <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Anio" type="number" min="2020" max="2099"
-                           class="form-control form-control-lg" />
+                           class="form-control form-control-lg" id="inputAnio" />
                     <span asp-validation-for="Anio" class="text-danger small"></span>
                 </div>
 
@@ -30,8 +47,7 @@
                     <label asp-for="Mes" class="form-label fw-bold">
                         <i class="bi bi-calendar2"></i> Mes <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Mes" class="form-select form-select-lg"
-                            id="selectMes">
+                    <select asp-for="Mes" class="form-select form-select-lg" id="selectMes">
                         <option value="1">Enero</option>
                         <option value="2">Febrero</option>
                         <option value="3">Marzo</option>
@@ -52,10 +68,9 @@
                     <label asp-for="Quincena" class="form-label fw-bold">
                         <i class="bi bi-calendar2-week"></i> Quincena <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Quincena" class="form-select form-select-lg"
-                            id="selectQuincena">
-                        <option value="1">Primera (1-15)</option>
-                        <option value="2">Segunda (16-fin)</option>
+                    <select asp-for="Quincena" class="form-select form-select-lg" id="selectQuincena">
+                        <option value="1">Primera (1–15)</option>
+                        <option value="2">Segunda (16–fin)</option>
                     </select>
                     <span asp-validation-for="Quincena" class="text-danger small"></span>
                 </div>
@@ -102,42 +117,44 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
+        var meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
         function actualizarFechas() {
-            var anio     = parseInt(document.getElementById('Anio').value) || new Date().getFullYear();
-            var mes      = parseInt(document.getElementById('selectMes').value);
+            var anio = parseInt(document.getElementById('inputAnio').value)
+                || new Date().getFullYear();
+            var mes = parseInt(document.getElementById('selectMes').value);
             var quincena = parseInt(document.getElementById('selectQuincena').value);
 
             var fechaInicio, fechaFin;
-
             if (quincena === 1) {
                 fechaInicio = new Date(anio, mes - 1, 1);
-                fechaFin    = new Date(anio, mes - 1, 15);
+                fechaFin = new Date(anio, mes - 1, 15);
             } else {
                 fechaInicio = new Date(anio, mes - 1, 16);
-                fechaFin    = new Date(anio, mes, 0); // último día del mes
+                fechaFin = new Date(anio, mes, 0); // último día del mes
             }
 
             var fmt = function(d) {
-                var y = d.getFullYear();
-                var m = String(d.getMonth() + 1).padStart(2, '0');
-                var dd = String(d.getDate()).padStart(2, '0');
-                return y + '-' + m + '-' + dd;
+                return d.getFullYear() + '-' +
+                    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(d.getDate()).padStart(2, '0');
             };
 
             document.getElementById('inputFechaInicio').value = fmt(fechaInicio);
-            document.getElementById('inputFechaFin').value    = fmt(fechaFin);
+            document.getElementById('inputFechaFin').value = fmt(fechaFin);
 
-            var meses = ['', 'Enero','Febrero','Marzo','Abril','Mayo','Junio',
-                         'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
             var preview = document.getElementById('previewPeriodo');
+            preview.className = 'alert alert-success py-2 small mb-0';
             preview.innerHTML =
-                '<i class="bi bi-calendar2-check text-success"></i> ' +
-                'Período: <strong>Quincena ' + quincena + ' — ' + meses[mes] + ' ' + anio + '</strong>' +
-                ' (' + fechaInicio.getDate() + '/' + (mes) + '/' + anio +
-                ' al ' + fechaFin.getDate() + '/' + (mes) + '/' + anio + ')';
+                '<i class="bi bi-calendar2-check"></i> ' +
+                'Período: <strong>Quincena ' + quincena + ' — ' +
+                meses[mes] + ' ' + anio + '</strong>' +
+                ' (' + fechaInicio.getDate() + '/' + mes + '/' + anio +
+                ' al ' + fechaFin.getDate() + '/' + mes + '/' + anio + ')';
         }
 
-        document.getElementById('Anio').addEventListener('input', actualizarFechas);
+        document.getElementById('inputAnio').addEventListener('input', actualizarFechas);
         document.getElementById('selectMes').addEventListener('change', actualizarFechas);
         document.getElementById('selectQuincena').addEventListener('change', actualizarFechas);
         actualizarFechas();

@@ -62,7 +62,10 @@ namespace GEPCP_Ferreteria_El_Pana.Models
 
         [StringLength(200)]
         [Display(Name = "Observaciones")]
+
         public string? Observaciones { get; set; }
+        [Display(Name = "Días a cargo del Patrono")]
+        public int DiasPagadosPatrono { get; set; }
 
         // ── Navegación ─────────────────────────────────
         public Empleado Empleado { get; set; } = null!;

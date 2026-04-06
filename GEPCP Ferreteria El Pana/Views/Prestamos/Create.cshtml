@@ -5,44 +5,134 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="bi bi-plus-circle"></i> Nuevo Préstamo</h2>
-    <a asp-action="Index" class="btn btn-outline-secondary">
+    <h2 class="mb-0"><i class="bi bi-cash-coin"></i> Nuevo Préstamo</h2>
+    <a asp-action="Index" asp-route-verTodos="true" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
-<div class="card shadow-sm border-0" style="max-width: 700px;">
+<div class="card shadow-sm border-0">
     <div class="card-body p-4">
-        <form asp-action="Create" method="post" id="formPrestamo">
+        <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>No se pudo registrar:</strong>
+                    <ul class="mb-0 mt-1">
+                        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@e.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
             <div class="row g-3">
 
+                @* ── Empleado buscador ── *@
                 <div class="col-12">
-                    <label asp-for="EmpleadoId" class="form-label fw-bold">
-                        <i class="bi bi-person"></i> Empleado <span class="text-danger">*</span>
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-person-search"></i> Empleado
+                        <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="EmpleadoId" class="form-select form-select-lg"
-                            asp-items="ViewBag.Empleados">
-                        <option value="">-- Seleccione un empleado --</option>
-                    </select>
+                    <input type="hidden" asp-for="EmpleadoId" id="EmpleadoId" />
+                    <div class="input-group mb-1">
+                        <span class="input-group-text bg-white">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" id="buscarEmpleado"
+                               class="form-control form-control-lg border-start-0"
+                               placeholder="Buscar por nombre, apellido o cédula..."
+                               autocomplete="off" />
+                        <button type="button" class="btn btn-outline-secondary"
+                                id="btnTodos">
+                            <i class="bi bi-list-ul"></i> Todos
+                        </button>
+                    </div>
+                    <div id="empleadoSeleccionado" class="d-none">
+                        <div class="alert py-2 d-flex justify-content-between align-items-center"
+                             id="empAlerta">
+                            <div>
+                                <i class="bi bi-person-check-fill"></i>
+                                <strong id="empNombre"></strong>
+                                <span class="text-muted ms-2 small" id="empCedula"></span>
+                                <span class="badge bg-secondary ms-1" id="empPuesto"></span>
+                            </div>
+                            <div class="text-end small me-3">
+                                <div>
+                                    Salario mensual:
+                                    <strong id="empSalarioBase"></strong>
+                                </div>
+                                <div>
+                                    Salario quincenal:
+                                    <strong id="empSalarioQuincenal"></strong>
+                                </div>
+                                <div id="empActivoWarn" class="text-danger d-none fw-bold">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    Ya tiene un préstamo activo
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    id="btnLimpiar">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="resultados" class="border rounded shadow-sm"
+                         style="display:none;max-height:260px;overflow-y:auto;
+                        background:#fff;z-index:100;position:relative;">
+                    </div>
                     <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6">
+                @* ── Monto ── *@
+                <div class="col-md-4">
                     <label asp-for="MontoPrincipal" class="form-label fw-bold">
-                        <i class="bi bi-currency-dollar"></i> Monto del Préstamo (₡) <span class="text-danger">*</span>
+                        <i class="bi bi-currency-dollar"></i> Monto del Préstamo (₡)
+                        <span class="text-danger">*</span>
                     </label>
                     <input asp-for="MontoPrincipal" type="number" step="0.01"
-                           min="1" max="9999999.99"
+                           min="1" max="9999999.99" id="inputMonto"
                            class="form-control form-control-lg"
-                           id="inputMonto"
-                           placeholder="Ej: 500000.00" />
+                           placeholder="Ej: 500000" />
                     <span asp-validation-for="MontoPrincipal" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6">
+                @* ── Cuotas ── *@
+                <div class="col-md-4">
+                    <label asp-for="CuotasTotal" class="form-label fw-bold">
+                        <i class="bi bi-calendar-range"></i> Número de Cuotas
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="CuotasTotal" type="number"
+                           min="1" max="120" id="inputCuotas"
+                           class="form-control form-control-lg"
+                           placeholder="Ej: 12" />
+                    <span asp-validation-for="CuotasTotal" class="text-danger small"></span>
+                </div>
+
+                @* ── Cuota mensual ── *@
+                <div class="col-md-4">
+                    <label asp-for="CuotaMensual" class="form-label fw-bold">
+                        <i class="bi bi-cash"></i> Cuota Quincenal (₡)
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="CuotaMensual" type="number" step="0.01"
+                           min="1" max="9999999.99" id="inputCuota"
+                           class="form-control form-control-lg"
+                           placeholder="Se calcula automáticamente" />
+                    <div class="form-text" id="cuotaHint"></div>
+                    <span asp-validation-for="CuotaMensual" class="text-danger small"></span>
+                </div>
+
+                @* ── Fecha ── *@
+                <div class="col-md-4">
                     <label asp-for="FechaPrestamo" class="form-label fw-bold">
-                        <i class="bi bi-calendar"></i> Fecha del Préstamo <span class="text-danger">*</span>
+                        <i class="bi bi-calendar"></i> Fecha del Préstamo
+                        <span class="text-danger">*</span>
                     </label>
                     <input asp-for="FechaPrestamo" type="date"
                            class="form-control form-control-lg"
@@ -50,38 +140,54 @@
                     <span asp-validation-for="FechaPrestamo" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="CuotasTotal" class="form-label fw-bold">
-                        <i class="bi bi-calendar-range"></i> Número de Cuotas <span class="text-danger">*</span>
-                    </label>
-                    <input asp-for="CuotasTotal" type="number"
-                           min="1" max="120"
-                           class="form-control form-control-lg"
-                           id="inputCuotas"
-                           placeholder="Ej: 12" />
-                    <span asp-validation-for="CuotasTotal" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6">
-                    <label asp-for="CuotaMensual" class="form-label fw-bold">
-                        <i class="bi bi-cash"></i> Cuota Mensual (₡) <span class="text-danger">*</span>
-                    </label>
-                    <input asp-for="CuotaMensual" type="number" step="0.01"
-                           min="1" max="9999999.99"
-                           class="form-control form-control-lg"
-                           id="inputCuotaMensual"
-                           placeholder="Se calcula automáticamente" />
-                    <div class="form-text text-muted" id="cuotaHint"></div>
-                    <span asp-validation-for="CuotaMensual" class="text-danger small"></span>
+                @* ── Resumen ── *@
+                <div class="col-12">
+                    <div id="resumenPrestamo" class="d-none">
+                        <div class="card border-0"
+                             style="background:#fff9f0;border-left:3px solid #FF7A00 !important;">
+                            <div class="card-body py-2 px-3">
+                                <div class="row g-2 text-center">
+                                    <div class="col-md-3">
+                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
+                                            Monto préstamo
+                                        </div>
+                                        <div class="fw-bold" style="color:#FF7A00;" id="resumenMonto">—</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
+                                            Cuota quincenal
+                                        </div>
+                                        <div class="fw-bold" id="resumenCuota">—</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
+                                            Cuotas
+                                        </div>
+                                        <div class="fw-bold" id="resumenCuotas">—</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
+                                            % del salario quincenal
+                                        </div>
+                                        <div class="fw-bold" id="resumenPct">—</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn-lg px-5">
+                <button type="submit" class="btn btn-success btn-lg px-5"
+                        id="btnGuardar" disabled>
                     <i class="bi bi-check-circle"></i> Registrar Préstamo
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" asp-route-verTodos="true"
+                       class="btn btn-secondary btn-lg px-5">
+                    Cancelar
+                </a>
             </div>
         </form>
     </div>
@@ -92,21 +198,157 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
-        // Auto-calcular cuota mensual
+        var empData = null;
+
+        // ── Buscador ──────────────────────────────────────────────────────────
+        async function buscar(termino, todos = false) {
+            var url = todos
+                ? '/Prestamos/TodosLosEmpleados'
+                : '/Prestamos/BuscarEmpleados?termino=' + encodeURIComponent(termino);
+            var res = await fetch(url);
+            var data = await res.json();
+            var div = document.getElementById('resultados');
+
+            if (!data.length) {
+                div.innerHTML = '<div class="p-3 text-muted text-center small">Sin resultados.</div>';
+                div.style.display = 'block';
+                return;
+            }
+            div.innerHTML = data.map(e =>
+                `<div class="p-2 border-bottom"
+                              style="cursor:pointer;background:${e.tieneActivo ? '#fff9f0' : '#fff'}"
+                              onmouseover="this.style.background='#f0f0f0'"
+                              onmouseout="this.style.background='${e.tieneActivo ? '#fff9f0' : '#fff'}'"
+                              onclick="seleccionar(${JSON.stringify(e)})">
+                            <div class="fw-bold small">
+                                ${e.nombre}
+                                ${e.tieneActivo
+                    ? '<span class="badge bg-warning text-dark ms-1" style="font-size:0.6rem;">Tiene préstamo activo</span>'
+                    : ''}
+                            </div>
+                            <div class="text-muted" style="font-size:0.78rem;">
+                                ${e.cedula} — ${e.puesto}
+                                <span class="float-end">
+                                    Quinc: ₡${e.salarioQuincenal.toLocaleString('es-CR',
+                        { minimumFractionDigits: 0 })}
+                                </span>
+                            </div>
+                         </div>`
+            ).join('');
+            div.style.display = 'block';
+        }
+
+        function seleccionar(e) {
+            empData = e;
+            document.getElementById('EmpleadoId').value = e.id;
+            document.getElementById('empNombre').textContent = e.nombre;
+            document.getElementById('empCedula').textContent = e.cedula;
+            document.getElementById('empPuesto').textContent = e.puesto;
+            document.getElementById('empSalarioBase').textContent =
+                '₡' + e.salarioBase.toLocaleString('es-CR', { minimumFractionDigits: 0 });
+            document.getElementById('empSalarioQuincenal').textContent =
+                '₡' + e.salarioQuincenal.toLocaleString('es-CR', { minimumFractionDigits: 0 });
+
+            var alerta = document.getElementById('empAlerta');
+            var warn = document.getElementById('empActivoWarn');
+            if (e.tieneActivo) {
+                alerta.className = 'alert alert-warning py-2 d-flex justify-content-between align-items-center';
+                warn.classList.remove('d-none');
+            } else {
+                alerta.className = 'alert alert-success py-2 d-flex justify-content-between align-items-center';
+                warn.classList.add('d-none');
+            }
+
+            document.getElementById('empleadoSeleccionado').classList.remove('d-none');
+            document.getElementById('resultados').style.display = 'none';
+            document.getElementById('buscarEmpleado').value = '';
+            document.getElementById('btnGuardar').disabled = e.tieneActivo;
+
+            actualizarResumen();
+        }
+
+        document.getElementById('btnLimpiar').addEventListener('click', function() {
+            empData = null;
+            document.getElementById('EmpleadoId').value = '';
+            document.getElementById('empleadoSeleccionado').classList.add('d-none');
+            document.getElementById('buscarEmpleado').value = '';
+            document.getElementById('btnGuardar').disabled = true;
+            document.getElementById('resumenPrestamo').classList.add('d-none');
+        });
+
+        var timer;
+        document.getElementById('buscarEmpleado').addEventListener('input', function() {
+            clearTimeout(timer);
+            var val = this.value.trim();
+            if (val.length < 2) {
+                document.getElementById('resultados').style.display = 'none';
+                return;
+            }
+            timer = setTimeout(() => buscar(val), 300);
+        });
+
+        document.getElementById('btnTodos').addEventListener('click', () => buscar('', true));
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#resultados') &&
+                !e.target.closest('#buscarEmpleado') &&
+                !e.target.closest('#btnTodos'))
+                document.getElementById('resultados').style.display = 'none';
+        });
+
+        // ── Calcular cuota y resumen ──────────────────────────────────────────
         function calcularCuota() {
-            const monto  = parseFloat(document.getElementById('inputMonto').value);
-            const cuotas = parseInt(document.getElementById('inputCuotas').value);
-            const hint   = document.getElementById('cuotaHint');
+            var monto = parseFloat(document.getElementById('inputMonto').value) || 0;
+            var cuotas = parseInt(document.getElementById('inputCuotas').value) || 0;
+            var hint = document.getElementById('cuotaHint');
 
             if (monto > 0 && cuotas > 0) {
-                const cuota = (monto / cuotas).toFixed(2);
-                document.getElementById('inputCuotaMensual').value = cuota;
-                hint.innerHTML = `<i class="bi bi-calculator"></i> Cuota calculada: <strong>₡${Number(cuota).toLocaleString('es-CR', { minimumFractionDigits: 2 })}</strong>. Podés ajustarla.`;
+                var cuota = Math.round((monto / cuotas) * 100) / 100;
+                document.getElementById('inputCuota').value = cuota.toFixed(2);
+                hint.innerHTML =
+                    `<i class="bi bi-calculator"></i> Calculado: ` +
+                    `<strong>₡${cuota.toLocaleString('es-CR', { minimumFractionDigits: 2 })}</strong>. ` +
+                    `Podés ajustarla.`;
                 hint.className = 'form-text text-success';
+            }
+            actualizarResumen();
+        }
+
+        function actualizarResumen() {
+            var monto = parseFloat(document.getElementById('inputMonto').value) || 0;
+            var cuotas = parseInt(document.getElementById('inputCuotas').value) || 0;
+            var cuota = parseFloat(document.getElementById('inputCuota').value) || 0;
+            var res = document.getElementById('resumenPrestamo');
+
+            if (monto > 0 || cuota > 0) {
+                res.classList.remove('d-none');
+                document.getElementById('resumenMonto').textContent =
+                    '₡' + monto.toLocaleString('es-CR', { minimumFractionDigits: 0 });
+                document.getElementById('resumenCuota').textContent =
+                    cuota > 0
+                        ? '₡' + cuota.toLocaleString('es-CR', { minimumFractionDigits: 2 })
+                        : '—';
+                document.getElementById('resumenCuotas').textContent =
+                    cuotas > 0 ? cuotas + ' quincena(s)' : '—';
+
+                if (empData && empData.salarioQuincenal > 0 && cuota > 0) {
+                    var pct = Math.round((cuota / empData.salarioQuincenal) * 100);
+                    var pctEl = document.getElementById('resumenPct');
+                    pctEl.textContent = pct + '%';
+                    pctEl.style.color = pct > 100 ? '#B71C1C' : pct > 70 ? '#E65100' : '#1B5E20';
+                } else {
+                    document.getElementById('resumenPct').textContent = '—';
+                }
+            } else {
+                res.classList.add('d-none');
             }
         }
 
         document.getElementById('inputMonto').addEventListener('input', calcularCuota);
         document.getElementById('inputCuotas').addEventListener('input', calcularCuota);
+        document.getElementById('inputCuota').addEventListener('input', actualizarResumen);
+
+        if (parseInt(document.getElementById('EmpleadoId').value) > 0)
+            document.getElementById('btnGuardar').disabled = false;
     </script>
 }

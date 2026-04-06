@@ -21,7 +21,6 @@
 
                     <div class="card-body p-5">
 
-                        @* Mensaje de error *@
                         @if (!ViewData.ModelState.IsValid)
                         {
                             foreach (var error in ViewData.ModelState[""]?.Errors
@@ -52,18 +51,32 @@
                                 <label asp-for="Password" class="form-label fw-bold">
                                     <i class="bi bi-lock"></i> Contraseña
                                 </label>
-                                <input asp-for="Password"
-                                       type="password"
-                                       class="form-control form-control-lg"
-                                       placeholder="••••••••"
-                                       autocomplete="current-password" />
+                                <div class="input-group">
+                                    <input asp-for="Password"
+                                           type="password"
+                                           class="form-control form-control-lg"
+                                           placeholder="••••••••"
+                                           autocomplete="current-password"
+                                           id="inputLoginPassword" />
+                                    <button type="button"
+                                            class="btn btn-outline-secondary"
+                                            onclick="togglePassword('inputLoginPassword', this)"
+                                            tabindex="-1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
                                 <span asp-validation-for="Password" class="text-danger small"></span>
                             </div>
 
-                            <button type="submit" class="btn btn-orange btn-lg w-100 py-3">
+                            <button type="submit" class="btn-login btn btn-lg w-100">
                                 <i class="bi bi-box-arrow-in-right"></i> Ingresar al Sistema
                             </button>
-
+                            <div class="text-center mt-3">
+                                <a asp-action="OlvidePassword"
+                                       style="color:black;">
+                                    ¿Olvidaste tu contraseña?
+                                </a>
+                            </div>
                         </form>
                     </div>
 
@@ -81,4 +94,17 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        function togglePassword(inputId, btn) {
+            var input = document.getElementById(inputId);
+            var icon  = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        }
+    </script>
 }

@@ -4,6 +4,8 @@ namespace GEPCP_Ferreteria_El_Pana.Models
 {
     public class CreditoFerreteria
     {
+
+        public ICollection<AbonoCreditoFerreteria> AbonosCreditoFerreteria { get; set; } = new List<AbonoCreditoFerreteria>();
         public int CreditoFerreteriaId { get; set; }
 
         [Required]

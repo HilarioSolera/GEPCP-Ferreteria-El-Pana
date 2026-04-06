@@ -2,6 +2,50 @@
 @{
     ViewData["Title"] = "Detalle Empleado - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var prestamos = ViewBag.Prestamos as IEnumerable<GEPCP_Ferreteria_El_Pana.Models.Prestamo>
+                    ?? new List<GEPCP_Ferreteria_El_Pana.Models.Prestamo>();
+    var creditos = ViewBag.Creditos as IEnumerable<GEPCP_Ferreteria_El_Pana.Models.CreditoFerreteria>
+                    ?? new List<GEPCP_Ferreteria_El_Pana.Models.CreditoFerreteria>();
+    var busqueda = ViewBag.Busqueda as string ?? "";
+
+    string edadTexto = "—";
+    if (Model.FechaNacimiento.HasValue)
+    {
+        var hoy = DateTime.Today;
+        var fn = Model.FechaNacimiento.Value;
+        var años = hoy.Year - fn.Year;
+        if (fn.Date > hoy.AddYears(-años)) años--;
+        edadTexto = $"{años} años";
+    }
+
+    var hoyA = DateTime.Today;
+    var ingreso = Model.FechaIngreso;
+    var aniosLab = hoyA.Year - ingreso.Year;
+    if (ingreso.Date > hoyA.AddYears(-aniosLab)) aniosLab--;
+    var mesesLab = (hoyA.Year - ingreso.Year) * 12 + hoyA.Month - ingreso.Month;
+    var mesesRest = mesesLab % 12;
+    var antiguedad = aniosLab > 0
+        ? $"{aniosLab} año(s) y {mesesRest} mes(es)"
+        : $"{mesesLab} mes(es)";
+
+    var prestamoActivo = prestamos.FirstOrDefault(p => p.Activo);
+    var creditoActivo = creditos.FirstOrDefault(c => c.Activo);
+
+    string tipoContratoTexto = Model.TipoContrato switch
+    {
+        GEPCP_Ferreteria_El_Pana.Models.TipoContrato.PlazoFijo => "Plazo Fijo",
+        GEPCP_Ferreteria_El_Pana.Models.TipoContrato.PorObra => "Por Obra",
+        _ => "Indefinido"
+    };
+
+    bool tieneDireccion = !string.IsNullOrEmpty(Model.DireccionProvincia) ||
+                          !string.IsNullOrEmpty(Model.DireccionCanton) ||
+                          !string.IsNullOrEmpty(Model.DireccionDistrito) ||
+                          !string.IsNullOrEmpty(Model.DireccionExacta);
+
+    bool tieneContacto = !string.IsNullOrEmpty(Model.ContactoEmergenciaNombre) ||
+                         !string.IsNullOrEmpty(Model.ContactoEmergenciaTelefono);
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -10,15 +54,41 @@
         <a asp-action="Edit" asp-route-id="@Model.EmpleadoId" class="btn btn-warning">
             <i class="bi bi-pencil"></i> Editar
         </a>
-        <a asp-action="Index" class="btn btn-outline-secondary">
+        <a asp-action="Index" asp-route-busqueda="@busqueda" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Volver
         </a>
     </div>
 </div>
 
+@* Alertas de contrato *@
+@if (Model.ContratoVencido)
+{
+    <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+        <div>
+            <strong>Contrato vencido</strong> — venció el
+            @Model.FechaVencimientoContrato!.Value.ToString("dd/MM/yyyy").
+            Renovalo o actualizá el tipo de contrato.
+        </div>
+    </div>
+}
+else if (Model.ContratoProximoAVencer)
+{
+    <div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-clock-history fs-5"></i>
+        <div>
+            <strong>Contrato próximo a vencer</strong> — vence el
+            @Model.FechaVencimientoContrato!.Value.ToString("dd/MM/yyyy")
+            (@Model.DiasParaVencimiento día(s) restante(s)).
+        </div>
+    </div>
+}
+
 <div class="card shadow-sm border-0">
+
+    @* Header *@
     <div class="card-header py-3 d-flex justify-content-between align-items-center"
-         style="background-color: #FF7A00;">
+         style="background-color:#FF7A00;">
         <h5 class="mb-0 text-white fw-bold">
             <i class="bi bi-person-circle"></i>
             @Model.PrimerApellido @Model.SegundoApellido @Model.Nombre
@@ -42,19 +112,25 @@
                             <tbody>
                                 <tr>
                                     <td class="fw-bold text-muted" style="width:45%">Cédula</td>
-                                    <td><code>@Model.Cedula</code></td>
+                                    <td><strong>@Model.Cedula</strong></td>
                                 </tr>
                                 <tr>
-                                    <td class="fw-bold text-muted">Nombre</td>
-                                    <td>@Model.Nombre</td>
+                                    <td class="fw-bold text-muted">Nombre completo</td>
+                                    <td>@Model.PrimerApellido @Model.SegundoApellido @Model.Nombre</td>
                                 </tr>
                                 <tr>
-                                    <td class="fw-bold text-muted">Primer Apellido</td>
-                                    <td>@Model.PrimerApellido</td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-bold text-muted">Segundo Apellido</td>
-                                    <td>@(string.IsNullOrEmpty(Model.SegundoApellido) ? "—" : Model.SegundoApellido)</td>
+                                    <td class="fw-bold text-muted">Fecha de Nacimiento</td>
+                                    <td>
+                                        @if (Model.FechaNacimiento.HasValue)
+                                        {
+                                            @Model.FechaNacimiento.Value.ToString("dd/MM/yyyy")
+                                            <span class="badge bg-secondary ms-1">@edadTexto</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold text-muted">Teléfono</td>
@@ -99,7 +175,7 @@
                                         }
                                         else
                                         {
-                                            <span class="badge bg-warning text-dark">
+                                            <span class="badge bg-secondary">
                                                 <i class="bi bi-cash"></i> Efectivo
                                             </span>
                                         }
@@ -159,16 +235,51 @@
                                     <td>@Model.FechaIngreso.ToString("dd/MM/yyyy")</td>
                                 </tr>
                                 <tr>
+                                    <td class="fw-bold text-muted">Antigüedad</td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-calendar-check"></i> @antiguedad
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Tipo de Contrato</td>
+                                    <td>
+                                        <span class="badge @(Model.TipoContrato == GEPCP_Ferreteria_El_Pana.Models.TipoContrato.Indefinido ? "bg-success" : "bg-secondary")">
+                                            @tipoContratoTexto
+                                        </span>
+                                    </td>
+                                </tr>
+                                @if (Model.FechaVencimientoContrato.HasValue)
+                                {
+                                    <tr>
+                                        <td class="fw-bold text-muted">Vence Contrato</td>
+                                        <td>
+                                            @Model.FechaVencimientoContrato.Value.ToString("dd/MM/yyyy")
+                                            @if (Model.ContratoVencido)
+                                            {
+                                                <span class="badge bg-danger ms-1">Vencido</span>
+                                            }
+                                            else if (Model.ContratoProximoAVencer)
+                                            {
+                                                <span class="badge bg-warning ms-1">
+                                                    @Model.DiasParaVencimiento días
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                                <tr>
                                     <td class="fw-bold text-muted">Salario Base</td>
-                                    <td class="fw-bold text-success">₡@Model.SalarioBase.ToString("N2")</td>
+                                    <td class="fw-bold">₡@Model.SalarioBase.ToString("N2")</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold text-muted">Valor Hora</td>
-                                    <td class="fw-bold text-primary">₡@Model.ValorHora.ToString("N2")</td>
+                                    <td class="fw-bold">₡@Model.ValorHora.ToString("N2")</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold text-muted">Valor Hora Extra</td>
-                                    <td class="fw-bold text-warning">₡@Model.ValorHoraExtra.ToString("N2")</td>
+                                    <td class="fw-bold">₡@Model.ValorHoraExtra.ToString("N2")</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold text-muted">Estado</td>
@@ -183,12 +294,157 @@
                     </div>
                 </div>
             </div>
+
+            @* Dirección *@
+            @if (tieneDireccion)
+            {
+                <div class="col-md-6">
+                    <div class="card border-0 bg-light h-100">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-3 fw-bold">
+                                <i class="bi bi-geo-alt"></i> Dirección
+                            </h6>
+                            <table class="table table-borderless mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold text-muted" style="width:40%">Provincia</td>
+                                        <td>@(Model.DireccionProvincia ?? "—")</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted">Cantón</td>
+                                        <td>@(Model.DireccionCanton ?? "—")</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted">Distrito</td>
+                                        <td>@(Model.DireccionDistrito ?? "—")</td>
+                                    </tr>
+                                    @if (!string.IsNullOrEmpty(Model.DireccionExacta))
+                                    {
+                                        <tr>
+                                            <td class="fw-bold text-muted">Exacta</td>
+                                            <td class="small">@Model.DireccionExacta</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @* Contacto de Emergencia *@
+            @if (tieneContacto)
+            {
+                <div class="col-md-6">
+                    <div class="card border-0 bg-light h-100"
+                         style="border-left:3px solid #FF7A00 !important;">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-3 fw-bold">
+                                <i class="bi bi-person-exclamation"></i> Contacto de Emergencia
+                            </h6>
+                            <table class="table table-borderless mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold text-muted" style="width:40%">Nombre</td>
+                                        <td>@(Model.ContactoEmergenciaNombre ?? "—")</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted">Teléfono</td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(Model.ContactoEmergenciaTelefono))
+                                            {
+                                                <a href="tel:@Model.ContactoEmergenciaTelefono"
+                                                       class="text-decoration-none fw-bold">
+                                                    <i class="bi bi-telephone-fill text-danger"></i>
+                                                    @Model.ContactoEmergenciaTelefono
+                                                </a>
+                                            }
+                                            else
+                                            {
+
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+
         </div>
+
+        @* Resumen financiero — solo si hay préstamo o crédito activo *@
+        @if (prestamoActivo != null || creditoActivo != null)
+        {
+            <div class="row g-3 mt-2">
+                @if (prestamoActivo != null)
+                {
+                    <div class="col-md-6">
+                        <div class="card border-0 h-100"
+                             style="border-left:3px solid #FF7A00 !important;background:#fff9f5;">
+                            <div class="card-body py-3 px-4">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span style="font-size:0.7rem;font-weight:700;text-transform:uppercase;
+                                        letter-spacing:0.8px;color:#888;">
+                                        <i class="bi bi-cash-coin"></i> Préstamo activo
+                                    </span>
+                                    <span class="badge bg-success">Activo</span>
+                                </div>
+                                <div class="fw-bold fs-5 mb-1">₡@prestamoActivo.Monto.ToString("N0")</div>
+                                <div class="text-muted small">
+                                    Cuota mensual: <strong>₡@prestamoActivo.CuotaMensual.ToString("N0")</strong>
+                                    — @prestamoActivo.Cuotas cuota(s)
+                                </div>
+                                <a asp-controller="Prestamos" asp-action="Index"
+                                       asp-route-busqueda="@Model.Cedula"
+                                       class="btn btn-sm btn-outline-secondary mt-2">
+                                    <i class="bi bi-eye"></i> Ver historial completo →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+                @if (creditoActivo != null)
+                {
+                    <div class="col-md-6">
+                        <div class="card border-0 h-100"
+                             style="border-left:3px solid #111 !important;background:#f8f8f8;">
+                            <div class="card-body py-3 px-4">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span style="font-size:0.7rem;font-weight:700;text-transform:uppercase;
+                                        letter-spacing:0.8px;color:#888;">
+                                        <i class="bi bi-cart-check"></i> Crédito activo
+                                    </span>
+                                    <span class="badge bg-success">Activo</span>
+                                </div>
+                                <div class="fw-bold fs-5 mb-1">₡@creditoActivo.Saldo.ToString("N0")</div>
+                                <div class="text-muted small">
+                                    @creditoActivo.Descripcion —
+                                    Cuota: <strong>₡@creditoActivo.CuotaQuincenal.ToString("N0")</strong>
+                                </div>
+                                <a asp-controller="CreditoFerreteria" asp-action="Index"
+                                       asp-route-busqueda="@Model.Cedula"
+                                       class="btn btn-sm btn-outline-secondary mt-2">
+                                    <i class="bi bi-eye"></i> Ver historial completo →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
     </div>
 
-    <div class="card-footer bg-transparent d-flex gap-2 py-3">
+    <div class="card-footer bg-transparent d-flex gap-2 py-3 flex-wrap">
         <a asp-action="Edit" asp-route-id="@Model.EmpleadoId" class="btn btn-warning">
-            <i class="bi bi-pencil"></i> Editar Empleado
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+        <a asp-controller="HistorialSalarios" asp-action="Empleado"
+               asp-route-id="@Model.EmpleadoId" class="btn btn-outline-info">
+            <i class="bi bi-clock-history"></i> Historial Salarios
         </a>
         @if (Model.Estado == "Activo")
         {
@@ -215,10 +471,8 @@
         <a asp-action="Delete" asp-route-id="@Model.EmpleadoId" class="btn btn-danger">
             <i class="bi bi-trash"></i> Eliminar
         </a>
-        <a asp-action="Index" class="btn btn-outline-secondary ms-auto">
+        <a asp-action="Index" asp-route-busqueda="@busqueda" class="btn btn-outline-secondary ms-auto">
             <i class="bi bi-arrow-left"></i> Volver al Listado
         </a>
     </div>
 </div>
-`
-

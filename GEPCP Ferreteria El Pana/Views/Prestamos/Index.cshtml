@@ -2,65 +2,80 @@
 @{
     ViewData["Title"] = "Préstamos - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var verTodos = (bool)(ViewBag.VerTodos ?? false);
+
+    var totalSaldo = (decimal)(ViewBag.TotalSaldo ?? 0m);
+    var totalCuotas = (decimal)(ViewBag.TotalCuotas ?? 0m);
+    var totalPrestamos = (int)(ViewBag.TotalPrestamos ?? 0);
+    var totalActivos = (int)(ViewBag.TotalActivos ?? 0);
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0"><i class="bi bi-cash-coin"></i> Préstamos a Empleados</h2>
-    <a asp-action="Create" class="btn btn-success btn-lg">
+    <a asp-action="Create" class="btn btn-success">
         <i class="bi bi-plus-circle"></i> Nuevo Préstamo
     </a>
 </div>
 
-@* Resumen KPIs *@
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-primary">@ViewBag.TotalPrestamos</div>
-            <div class="text-muted small">Total Préstamos</div>
+@* KPIs *@
+<div class="row g-2 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-2">
+            <div class="fs-4 fw-bold" style="color:#111;">@totalPrestamos</div>
+            <div class="text-muted" style="font-size:0.72rem;">Total Préstamos</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-success">@ViewBag.TotalActivos</div>
-            <div class="text-muted small">Préstamos Activos</div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-2"
+             style="border-left:3px solid #1a4a1a !important;">
+            <div class="fw-bold" style="color:#1a4a1a;font-size:0.92rem;">@totalActivos</div>
+            <div class="text-muted" style="font-size:0.72rem;">Activos</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-warning">₡@ViewBag.TotalSaldo.ToString("N0")</div>
-            <div class="text-muted small">Saldo Total Pendiente</div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-2"
+             style="border-left:3px solid #FF7A00 !important;">
+            <div class="fw-bold" style="color:#FF7A00;font-size:0.92rem;">
+                ₡@totalSaldo.ToString("N0")
+            </div>
+            <div class="text-muted" style="font-size:0.72rem;">Saldo Pendiente</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-info">₡@ViewBag.TotalCuotas.ToString("N0")</div>
-            <div class="text-muted small">Cuotas Mensuales</div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-2">
+            <div class="fw-bold" style="font-size:0.92rem;color:#111;">
+                ₡@totalCuotas.ToString("N0")
+            </div>
+            <div class="text-muted" style="font-size:0.72rem;">Cuotas Quincenales</div>
         </div>
     </div>
 </div>
 
 @* Filtros *@
-<form asp-action="Index" method="get" class="mb-4">
+<form asp-action="Index" method="get" class="mb-3">
     <div class="row g-2">
-        <div class="col-md-7">
+        <div class="col-md-5">
             <div class="input-group shadow-sm">
                 <span class="input-group-text bg-white">
                     <i class="bi bi-search text-muted"></i>
                 </span>
                 <input type="text" name="busqueda" value="@ViewBag.Busqueda"
                        class="form-control border-start-0"
-                       placeholder="Buscar por nombre, apellido o cédula del empleado..." />
+                       placeholder="Nombre, apellido o cédula..." />
             </div>
         </div>
         <div class="col-md-2">
-            @* DESPUÉS - correcto *@
-            @{
-                var filtroActual = ViewBag.EstadoFiltro as string ?? "";
-            }
-            <select name="estado" class="form-select shadow-sm">
-                <option value="" selected="@(filtroActual == "" ? "selected" : null)">Todos los estados</option>
-                <option value="Activo" selected="@(filtroActual == "Activo" ? "selected" : null)">Activo</option>
-                <option value="Cerrado" selected="@(filtroActual == "Cerrado" ? "selected" : null)">Cerrado</option>
+            <select name="estado" class="form-select shadow-sm"
+                    onchange="this.form.submit()">
+                <option value="" selected="@(string.IsNullOrEmpty(ViewBag.EstadoFiltro as string) ? "selected" : null)">
+                    Todos
+                </option>
+                <option value="Activo" selected="@(ViewBag.EstadoFiltro == "Activo" ? "selected" : null)">
+                    Activos
+                </option>
+                <option value="Cerrado" selected="@(ViewBag.EstadoFiltro == "Cerrado" ? "selected" : null)">
+                    Cerrados
+                </option>
             </select>
         </div>
         <div class="col-md-1">
@@ -68,11 +83,27 @@
                 <i class="bi bi-funnel"></i>
             </button>
         </div>
-        <div class="col-md-2">
-            @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string) || !string.IsNullOrEmpty(ViewBag.EstadoFiltro as string))
+        <div class="col-md-1">
+            @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string) ||
+                             !string.IsNullOrEmpty(ViewBag.EstadoFiltro as string))
             {
                 <a asp-action="Index" class="btn btn-outline-secondary w-100">
-                    <i class="bi bi-x-circle"></i> Limpiar
+                    <i class="bi bi-x-circle"></i>
+                </a>
+            }
+        </div>
+        <div class="col-md-3">
+            @if (!verTodos)
+            {
+                <a asp-action="Index" asp-route-verTodos="true"
+                       class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-list-ul"></i> Ver todos
+                </a>
+            }
+            else
+            {
+                <a asp-action="Index" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-x-circle"></i> Volver a búsqueda
                 </a>
             }
         </div>
@@ -83,19 +114,21 @@
 {
     <div class="alert alert-info text-center py-4">
         <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-        No se encontraron préstamos con los filtros aplicados.
+        No se encontraron préstamos. Usá los filtros o registrá uno nuevo.
     </div>
 }
 else
 {
     <div class="table-responsive shadow-sm rounded">
-        <table class="table table-hover align-middle mb-0">
-            <thead style="background-color: #FF7A00; color: white;">
+        <table class="table table-hover align-middle mb-0" style="font-size:0.85rem;">
+            <thead style="background:#FF7A00;color:white;">
                 <tr>
+                    <th style="width:36px;"></th>
                     <th>Empleado</th>
                     <th class="text-end">Monto Original</th>
                     <th class="text-end">Saldo Actual</th>
-                    <th class="text-end">Cuota Mensual</th>
+                    <th class="text-end">Pagado</th>
+                    <th class="text-end">Cuota Quinc.</th>
                     <th class="text-center">Cuotas</th>
                     <th>Fecha</th>
                     <th class="text-center">Estado</th>
@@ -105,46 +138,63 @@ else
             <tbody>
                 @foreach (var p in Model)
                 {
-                    var porcentajePagado = p.Cuotas > 0
-                        ? (int)(((p.CuotaMensual * p.Cuotas - p.Monto) / (p.CuotaMensual * p.Cuotas)) * 100)
+                    var montoOriginal = p.MontoOriginal > 0 ? p.MontoOriginal : p.CuotaMensual * p.Cuotas;
+                    var pagado = Math.Round(montoOriginal - p.Monto, 2);
+                    var pct = montoOriginal > 0
+                        ? (int)Math.Min(100, Math.Round((pagado / montoOriginal) * 100))
                         : 0;
-                    porcentajePagado = Math.Max(0, Math.Min(100, porcentajePagado));
+                    var tieneAbonos = p.AbonosPrestamo.Any();
 
-                    <tr class="@(!p.Activo ? "table-light text-muted" : "")">
-                        <td>
-                            <strong>@p.Empleado.PrimerApellido @p.Empleado.Nombre</strong>
-                            <div class="small text-muted">@p.Empleado.Cedula</div>
-                        </td>
-                        <td class="text-end">₡@((p.CuotaMensual * p.Cuotas).ToString("N0"))</td>
-                        <td class="text-end fw-bold @(p.Activo ? "text-warning" : "text-success")">
-                            ₡@p.Monto.ToString("N0")
-                            @if (p.Activo)
+                    <tr class="@(!p.Activo ? "table-light" : "")">
+                        <td class="text-center">
+                            @if (tieneAbonos)
                             {
-                                <div class="progress mt-1" style="height: 4px;">
-                                    <div class="progress-bar bg-warning"
-                                         style="width: @porcentajePagado%"></div>
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-1"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#hist-@p.PrestamoId"
+                                        title="Ver historial">
+                                    <i class="bi bi-chevron-down" style="font-size:0.7rem;"></i>
+                                </button>
+                            }
+                        </td>
+                        <td>
+                            <div class="fw-bold">
+                                @p.Empleado.PrimerApellido @p.Empleado.Nombre
+                            </div>
+                            <div class="text-muted small">@p.Empleado.Cedula</div>
+                        </td>
+                        <td class="text-end">₡@montoOriginal.ToString("N0")</td>
+                        <td class="text-end fw-bold"
+                            style="color:@(p.Activo ? "#c55000" : "#1a4a1a")">
+                            ₡@p.Monto.ToString("N0")
+                            @if (p.Activo && montoOriginal > 0)
+                            {
+                                <div class="progress mt-1" style="height:3px;">
+                                    <div class="progress-bar"
+                                         style="width:@pct%;background:#FF7A00;">
+                                    </div>
                                 </div>
                             }
                         </td>
+                        <td class="text-end" style="color:#1a4a1a;">
+                            ₡@pagado.ToString("N0")
+                            <div class="text-muted" style="font-size:0.7rem;">@pct%</div>
+                        </td>
                         <td class="text-end">₡@p.CuotaMensual.ToString("N0")</td>
                         <td class="text-center">@p.Cuotas</td>
-                        <td>@p.FechaPrestamo.ToString("dd/MM/yyyy")</td>
-                        <td class="text-center">
-                            @if (p.Activo)
-                            {
-                                <span class="badge bg-success">Activo</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">Cerrado</span>
-                            }
+                        <td style="font-size:0.8rem;">
+                            @p.FechaPrestamo.ToString("dd/MM/yyyy")
                         </td>
                         <td class="text-center">
-                            <div class="d-flex gap-1 justify-content-center">
-
+                            <span class="badge @(p.Activo ? "bg-success" : "bg-secondary")">
+                                @(p.Activo ? "Activo" : "Saldado")
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-1 justify-content-center flex-wrap">
                                 @if (p.Activo)
                                 {
-                                    @* Botón Registrar Abono *@
                                     <button type="button"
                                             class="btn btn-sm btn-primary"
                                             title="Registrar Abono"
@@ -152,69 +202,213 @@ else
                                             data-bs-target="#modalAbono"
                                             data-id="@p.PrestamoId"
                                             data-saldo="@p.Monto"
+                                            data-cuota="@p.CuotaMensual"
                                             data-nombre="@p.Empleado.PrimerApellido @p.Empleado.Nombre">
                                         <i class="bi bi-cash-stack"></i>
                                     </button>
-
-                                    @* Cerrar manual *@
                                     <form asp-action="Cerrar" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Cerrar manualmente el préstamo de @p.Empleado.PrimerApellido @p.Empleado.Nombre? El saldo restante quedará como condonado.')">
+                                          onsubmit="return confirm('¿Cerrar manualmente el préstamo de @p.Empleado.PrimerApellido?')">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@p.PrestamoId" />
-                                        <button type="submit" class="btn btn-sm btn-secondary" title="Cerrar préstamo">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-secondary"
+                                                title="Cerrar manualmente">
                                             <i class="bi bi-x-circle"></i>
                                         </button>
                                     </form>
                                 }
                                 else
                                 {
-                                    @* Reabrir *@
+                                    <a asp-action="DescargarFiniquito"
+                                           asp-route-id="@p.PrestamoId"
+                                           class="btn btn-sm btn-outline-danger"
+                                           title="Descargar finiquito PDF">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </a>
                                     <form asp-action="Reabrir" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Reabrir el préstamo de @p.Empleado.PrimerApellido @p.Empleado.Nombre?')">
+                                          onsubmit="return confirm('¿Reabrir el préstamo de @p.Empleado.PrimerApellido?')">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@p.PrestamoId" />
-                                        <button type="submit" class="btn btn-sm btn-warning" title="Reabrir préstamo">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-warning"
+                                                title="Reabrir">
                                             <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
+                                    </form>
+                                    <form asp-action="Eliminar" method="post" class="d-inline"
+                                          onsubmit="return confirm('¿Eliminar permanentemente el préstamo de @p.Empleado.PrimerApellido? Esta acción no se puede deshacer.')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@p.PrestamoId" />
+                                        <button type="submit"
+                                                class="btn btn-sm btn-danger"
+                                                title="Eliminar">
+                                            <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
                                 }
                             </div>
                         </td>
                     </tr>
+
+                    @* ── Historial de abonos expandible ── *@
+                    @if (tieneAbonos)
+                    {
+                        <tr class="collapse" id="hist-@p.PrestamoId">
+                            <td colspan="10" class="p-0">
+                                <div class="px-4 py-3"
+                                     style="background:#f8f8f8;border-top:1px solid #eee;">
+
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div style="font-size:0.7rem;font-weight:700;
+                                            text-transform:uppercase;letter-spacing:0.8px;
+                                            color:#666;">
+                                            <i class="bi bi-clock-history"></i>
+                                            Historial de abonos —
+                                            @p.AbonosPrestamo.Count() abono(s)
+                                        </div>
+                                        <div style="font-size:0.72rem;color:#888;">
+                                            Monto original: <strong>₡@montoOriginal.ToString("N0")</strong>
+                                            · Total pagado: <strong style="color:#1a4a1a;">₡@pagado.ToString("N0")</strong>
+                                            · Saldo: <strong style="color:#c55000;">₡@p.Monto.ToString("N0")</strong>
+                                        </div>
+                                    </div>
+
+                                    <table class="table table-sm mb-0"
+                                           style="font-size:0.8rem;border-radius:6px;overflow:hidden;">
+                                        <thead style="background:#333;color:#fff;">
+                                            <tr>
+                                                <th style="padding:5px 10px;">#</th>
+                                                <th style="padding:5px 10px;">Fecha</th>
+                                                <th style="padding:5px 10px;text-align:right;">Monto Abono</th>
+                                                <th style="padding:5px 10px;text-align:right;">Saldo Anterior</th>
+                                                <th style="padding:5px 10px;text-align:right;">Saldo Después</th>
+                                                <th style="padding:5px 10px;">Observaciones</th>
+                                                <th style="padding:5px 10px;text-align:center;">Corregir</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @{
+                                                var abonos = p.AbonosPrestamo
+                                                    .OrderBy(a => a.FechaAbono)
+                                                    .ToList();
+                                                var saldoCalc = montoOriginal;
+                                                int numAbono = 1;
+                                            }
+                                            @foreach (var a in abonos)
+                                            {
+                                                var saldoAnt = saldoCalc;
+                                                saldoCalc = Math.Round(saldoCalc - a.Monto, 2);
+                                                if (saldoCalc < 0) saldoCalc = 0;
+
+                                                <tr style="background:@(numAbono % 2 == 0 ? "#f5f5f5" : "#fff")">
+                                                    <td style="padding:5px 10px;color:#888;">
+                                                        @numAbono
+                                                    </td>
+                                                    <td style="padding:5px 10px;">
+                                                        @a.FechaAbono.ToString("dd/MM/yyyy HH:mm")
+                                                    </td>
+                                                    <td style="padding:5px 10px;text-align:right;
+                                                        font-weight:700;color:#1a4a1a;">
+                                                        ₡@a.Monto.ToString("N0")
+                                                    </td>
+                                                    <td style="padding:5px 10px;text-align:right;
+                                                        color:#888;">
+                                                        ₡@saldoAnt.ToString("N0")
+                                                    </td>
+                                                    <td style="padding:5px 10px;text-align:right;
+                                                        color:#c55000;font-weight:600;">
+                                                        ₡@saldoCalc.ToString("N0")
+                                                    </td>
+                                                    <td style="padding:5px 10px;color:#555;
+                                                        font-size:0.75rem;max-width:200px;">
+                                                        @(a.Observaciones ?? "—")
+                                                    </td>
+                                                    <td style="padding:5px 10px;text-align:center;">
+                                                        <button type="button"
+                                                                class="btn btn-sm btn-outline-warning"
+                                                                style="padding:1px 6px;font-size:0.7rem;"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#modalCorregir"
+                                                                data-abono-id="@a.AbonoPrestamoId"
+                                                                data-monto="@a.Monto"
+                                                                data-fecha="@a.FechaAbono.ToString("dd/MM/yyyy HH:mm")"
+                                                                data-nombre="@p.Empleado.PrimerApellido @p.Empleado.Nombre"
+                                                                title="Corregir abono">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <form asp-action="EliminarAbono"
+                                                              method="post" class="d-inline"
+                                                              onsubmit="return confirm('¿Eliminar este abono de ₡@a.Monto.ToString("N0")? El saldo se recalculará.')">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="abonoId"
+                                                                   value="@a.AbonoPrestamoId" />
+                                                            <button type="submit"
+                                                                    class="btn btn-sm btn-outline-danger"
+                                                                    style="padding:1px 6px;font-size:0.7rem;"
+                                                                    title="Eliminar abono">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                                numAbono++;
+                                            }
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style="background:#222;color:#fff;font-weight:700;">
+                                                <td colspan="2" style="padding:5px 10px;">
+                                                    Total abonado (@abonos.Count abono(s))
+                                                </td>
+                                                <td style="padding:5px 10px;text-align:right;">
+                                                    ₡@abonos.Sum(a => a.Monto).ToString("N0")
+                                                </td>
+                                                <td colspan="2" style="padding:5px 10px;text-align:right;">
+                                                    Saldo final: ₡@p.Monto.ToString("N0")
+                                                </td>
+                                                <td colspan="2"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    }
                 }
             </tbody>
         </table>
     </div>
-
     <div class="text-muted small mt-2 text-end">
-        Total: <strong>@Model.Count</strong> préstamo(s) —
-        Activos: <strong>@Model.Count(p => p.Activo)</strong> /
-        Cerrados: <strong>@Model.Count(p => !p.Activo)</strong>
+        @Model.Count préstamo(s) —
+        Activos: @Model.Count(p => p.Activo) /
+        Saldados: @Model.Count(p => !p.Activo)
     </div>
 }
 
-@* Modal Registrar Abono *@
+@* ── Modal Abono ── *@
 <div class="modal fade" id="modalAbono" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header text-white" style="background-color: #FF7A00;">
+            <div class="modal-header text-white" style="background:#FF7A00;">
                 <h5 class="modal-title">
                     <i class="bi bi-cash-stack"></i> Registrar Abono
                 </h5>
                 <button type="button" class="btn-close btn-close-white"
                         data-bs-dismiss="modal"></button>
             </div>
-            <form asp-action="RegistrarAbono" method="post" id="formAbono">
+            <form asp-action="RegistrarAbono" method="post">
                 @Html.AntiForgeryToken()
                 <div class="modal-body p-4">
                     <input type="hidden" name="prestamoId" id="abonoPrestamoId" />
-
-                    <div class="alert alert-info py-2">
+                    <div class="alert alert-info py-2 mb-3">
                         <i class="bi bi-person-circle"></i>
-                        Empleado: <strong id="abonoNombre"></strong><br />
-                        Saldo actual: <strong id="abonoSaldoTexto" class="text-warning"></strong>
+                        <strong id="abonoNombre"></strong><br />
+                        <small>
+                            Saldo actual:
+                            <strong id="abonoSaldoTexto" class="text-warning"></strong>
+                            · Cuota quincenal:
+                            <strong id="abonoCuotaTexto"></strong>
+                        </small>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label fw-bold">
                             Monto del Abono (₡) <span class="text-danger">*</span>
@@ -222,16 +416,86 @@ else
                         <input type="number" name="monto" id="abonoMonto"
                                class="form-control form-control-lg"
                                step="0.01" min="0.01"
-                               placeholder="Ingresá el monto a abonar" />
+                               placeholder="Ingresá el monto" />
                         <div class="form-text text-muted" id="abonoHint"></div>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label fw-bold">
+                            Observaciones <span class="text-muted fw-normal">(opcional)</span>
+                        </label>
+                        <input type="text" name="observaciones"
+                               class="form-control"
+                               maxlength="150"
+                               placeholder="Ej: Pago quincenal, pago extra..." />
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary"
-                            data-bs-dismiss="modal">Cancelar</button>
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
                     <button type="submit" class="btn btn-primary px-4"
                             onclick="return validarAbono()">
-                        <i class="bi bi-check-circle"></i> Registrar Abono
+                        <i class="bi bi-check-circle"></i> Registrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* ── Modal Corregir Abono ── *@
+<div class="modal fade" id="modalCorregir" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header text-white" style="background:#333;">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil-square"></i> Corregir Abono
+                </h5>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="CorregirAbono" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <input type="hidden" name="abonoId" id="corregirAbonoId" />
+                    <div class="alert alert-warning py-2 mb-3">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong id="corregirNombre"></strong><br />
+                        <small>
+                            Abono del <strong id="corregirFecha"></strong> —
+                            Monto actual: <strong id="corregirMontoActual"></strong>
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Monto Corregido (₡) <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" name="montoNuevo" id="corregirMontoNuevo"
+                               class="form-control form-control-lg"
+                               step="0.01" min="0.01"
+                               placeholder="Ingresá el monto correcto" />
+                        <div class="form-text text-muted">
+                            El saldo del préstamo se recalculará automáticamente.
+                        </div>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label fw-bold">
+                            Motivo de la corrección <span class="text-muted fw-normal">(opcional)</span>
+                        </label>
+                        <input type="text" name="observaciones"
+                               class="form-control"
+                               maxlength="150"
+                               placeholder="Ej: Error de digitación, monto incorrecto..." />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-warning px-4">
+                        <i class="bi bi-check-circle"></i> Guardar Corrección
                     </button>
                 </div>
             </form>
@@ -240,42 +504,60 @@ else
 </div>
 
 @section Scripts {
-<script>
-    // Cargar datos en el modal de abono
-    const modalAbono = document.getElementById('modalAbono');
-    modalAbono.addEventListener('show.bs.modal', function (e) {
-        const btn     = e.relatedTarget;
-        const id      = btn.getAttribute('data-id');
-        const saldo   = parseFloat(btn.getAttribute('data-saldo'));
-        const nombre  = btn.getAttribute('data-nombre');
+    <script>
+        // ── Modal Abono ───────────────────────────────────────────────────────
+        document.getElementById('modalAbono')
+            .addEventListener('show.bs.modal', function(e) {
+                var btn = e.relatedTarget;
+                var saldo = parseFloat(btn.getAttribute('data-saldo'));
+                var cuota = parseFloat(btn.getAttribute('data-cuota'));
 
-        document.getElementById('abonoPrestamoId').value = id;
-        document.getElementById('abonoMonto').value      = '';
-        document.getElementById('abonoMonto').max        = saldo;
-        document.getElementById('abonoNombre').textContent = nombre;
-        document.getElementById('abonoSaldoTexto').textContent =
-            '₡' + saldo.toLocaleString('es-CR', { minimumFractionDigits: 2 });
-        document.getElementById('abonoHint').textContent =
-            'Máximo permitido: ₡' + saldo.toLocaleString('es-CR', { minimumFractionDigits: 2 });
-    });
+                document.getElementById('abonoPrestamoId').value = btn.getAttribute('data-id');
+                document.getElementById('abonoMonto').value = '';
+                document.getElementById('abonoMonto').max = saldo;
+                document.getElementById('abonoNombre').textContent =
+                    btn.getAttribute('data-nombre');
+                document.getElementById('abonoSaldoTexto').textContent =
+                    '₡' + saldo.toLocaleString('es-CR', { minimumFractionDigits: 2 });
+                document.getElementById('abonoCuotaTexto').textContent =
+                    '₡' + cuota.toLocaleString('es-CR', { minimumFractionDigits: 2 });
+                document.getElementById('abonoHint').textContent =
+                    'Máximo: ₡' + saldo.toLocaleString('es-CR', { minimumFractionDigits: 2 });
+                document.getElementById('abonoHint').className = 'form-text text-muted';
+            });
 
-    // Validación cliente del abono
-    function validarAbono() {
-        const monto  = parseFloat(document.getElementById('abonoMonto').value);
-        const max    = parseFloat(document.getElementById('abonoMonto').max);
-        const hint   = document.getElementById('abonoHint');
-
-        if (isNaN(monto) || monto <= 0) {
-            hint.textContent = '⚠ El monto debe ser mayor a cero.';
-            hint.className   = 'form-text text-danger';
-            return false;
+        function validarAbono() {
+            var monto = parseFloat(document.getElementById('abonoMonto').value);
+            var max = parseFloat(document.getElementById('abonoMonto').max);
+            var hint = document.getElementById('abonoHint');
+            if (isNaN(monto) || monto <= 0) {
+                hint.textContent = '⚠ El monto debe ser mayor a cero.';
+                hint.className = 'form-text text-danger';
+                return false;
+            }
+            if (monto > max) {
+                hint.textContent =
+                    `⚠ No puede superar el saldo (₡${max.toLocaleString('es-CR')}).`;
+                hint.className = 'form-text text-danger';
+                return false;
+            }
+            return true;
         }
-        if (monto > max) {
-            hint.textContent = `⚠ El abono no puede superar el saldo actual (₡${max.toLocaleString('es-CR')}).`;
-            hint.className   = 'form-text text-danger';
-            return false;
-        }
-        return true;
-    }
-</script>
+
+        // ── Modal Corregir ────────────────────────────────────────────────────
+        document.getElementById('modalCorregir')
+            .addEventListener('show.bs.modal', function(e) {
+                var btn = e.relatedTarget;
+                var monto = parseFloat(btn.getAttribute('data-monto'));
+
+                document.getElementById('corregirAbonoId').value = btn.getAttribute('data-abono-id');
+                document.getElementById('corregirMontoNuevo').value = monto.toFixed(2);
+                document.getElementById('corregirNombre').textContent =
+                    btn.getAttribute('data-nombre');
+                document.getElementById('corregirFecha').textContent =
+                    btn.getAttribute('data-fecha');
+                document.getElementById('corregirMontoActual').textContent =
+                    '₡' + monto.toLocaleString('es-CR', { minimumFractionDigits: 2 });
+            });
+    </script>
 }

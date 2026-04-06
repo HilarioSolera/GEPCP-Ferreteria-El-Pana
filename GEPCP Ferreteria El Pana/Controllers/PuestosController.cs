@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace GEPCP_Ferreteria_El_Pana.Controllers
 {
-    [CustomAuthorize("RRHH")]
+    [CustomAuthorize("RRHH", "Jefatura")]
     public class PuestosController : Controller
     {
         private readonly ApplicationDbContext _context;

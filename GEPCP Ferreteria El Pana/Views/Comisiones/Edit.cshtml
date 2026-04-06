@@ -11,52 +11,93 @@
     </a>
 </div>
 
-<div class="card shadow-sm border-0" style="max-width: 700px;">
+<div class="card shadow-sm border-0">
     <div class="card-body p-4">
         <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="ComisionId" />
+            <input type="hidden" asp-for="EmpleadoId" />
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-3">
+                    <ul class="mb-0">
+                        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@e.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
 
             <div class="row g-3">
 
+                @* ── Empleado solo lectura ── *@
                 <div class="col-12">
-                    <label asp-for="EmpleadoId" class="form-label fw-bold">
-                        <i class="bi bi-person"></i> Empleado <span class="text-danger">*</span>
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-person"></i> Empleado
                     </label>
-                    <select asp-for="EmpleadoId" asp-items="ViewBag.Empleados"
-                            class="form-select form-select-lg">
-                        <option value="">— Seleccione un empleado —</option>
-                    </select>
-                    <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
+                    <div class="alert alert-secondary py-2 d-flex align-items-center gap-2 mb-0">
+                        <i class="bi bi-person-badge"></i>
+                        <strong>@ViewBag.EmpleadoNombre</strong>
+                        <span class="text-muted small ms-1">@ViewBag.EmpleadoCedula</span>
+                        <span class="badge bg-secondary ms-auto" style="font-size:0.68rem;">
+                            Solo lectura
+                        </span>
+                    </div>
                 </div>
 
-                <div class="col-md-6">
+                @* ── Período ── *@
+                <div class="col-12">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-calendar2-range"></i> Período de Pago
+                        <span class="text-danger">*</span>
+                    </label>
+                    <select name="PeriodoPagoId" id="selectPeriodo"
+                            class="form-select form-select-lg">
+                        <option value="">— Seleccione un período —</option>
+                        @foreach (var p in ViewBag.PeriodosSelect as IEnumerable<dynamic>
+                                                                    ?? Enumerable.Empty<dynamic>())
+                        {
+                            <option value="@p.PeriodoPagoId"
+                                    data-inicio="@p.FechaInicio.ToString("yyyy-MM-dd")"
+                                    data-fin="@p.FechaFin.ToString("yyyy-MM-dd")"
+                                    selected="@(p.Seleccionado ? "selected" : null)">
+                                @p.Descripcion
+                            </option>
+                        }
+                    </select>
+                    <div class="form-text text-muted" id="rangoPeriodo"></div>
+                </div>
+
+                @* ── Fecha ── *@
+                <div class="col-md-4">
+                    <label asp-for="Fecha" class="form-label fw-bold">
+                        <i class="bi bi-calendar"></i> Fecha <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="Fecha" type="date" id="inputFecha"
+                           class="form-control form-control-lg" />
+                    <span asp-validation-for="Fecha" class="text-danger small"></span>
+                </div>
+
+                @* ── Monto ── *@
+                <div class="col-md-4">
                     <label asp-for="Monto" class="form-label fw-bold">
                         <i class="bi bi-cash"></i> Monto (₡) <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Monto" type="number" min="1" step="0.01"
-                           max="9999999.99"
-                           class="form-control form-control-lg" />
+                           max="9999999.99" class="form-control form-control-lg" />
                     <span asp-validation-for="Monto" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="Fecha" class="form-label fw-bold">
-                        <i class="bi bi-calendar"></i> Fecha <span class="text-danger">*</span>
-                    </label>
-                    <input asp-for="Fecha" type="date"
-                           class="form-control form-control-lg"
-                           max="@DateTime.Today.ToString("yyyy-MM-dd")" />
-                    <span asp-validation-for="Fecha" class="text-danger small"></span>
-                </div>
-
-                <div class="col-12">
+                @* ── Descripción ── *@
+                <div class="col-md-4">
                     <label asp-for="Descripcion" class="form-label fw-bold">
-                        <i class="bi bi-chat-text"></i> Descripción <span class="text-danger">*</span>
+                        <i class="bi bi-chat-text"></i> Descripción
+                        <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Descripcion" class="form-control form-control-lg"
                            maxlength="200" />
-                    <div class="form-text text-muted">Máximo 200 caracteres.</div>
                     <span asp-validation-for="Descripcion" class="text-danger small"></span>
                 </div>
 
@@ -66,7 +107,9 @@
                 <button type="submit" class="btn btn-warning btn-lg px-5">
                     <i class="bi bi-check-circle"></i> Guardar Cambios
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">
+                    Cancelar
+                </a>
             </div>
         </form>
     </div>
@@ -76,4 +119,30 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        var selectPeriodo = document.getElementById('selectPeriodo');
+        var inputFecha = document.getElementById('inputFecha');
+        var rangoInfo = document.getElementById('rangoPeriodo');
+
+        function actualizarRango() {
+            var opt = selectPeriodo.options[selectPeriodo.selectedIndex];
+            var ini = opt?.dataset?.inicio;
+            var fin = opt?.dataset?.fin;
+            if (ini && fin) {
+                inputFecha.min = ini;
+                inputFecha.max = fin;
+                rangoInfo.textContent =
+                    'Fecha entre ' +
+                    new Date(ini + 'T00:00:00').toLocaleDateString('es-CR') +
+                    ' y ' +
+                    new Date(fin + 'T00:00:00').toLocaleDateString('es-CR');
+            } else {
+                inputFecha.min = '';
+                inputFecha.max = '';
+                rangoInfo.textContent = '';
+            }
+        }
+        selectPeriodo.addEventListener('change', actualizarRango);
+        actualizarRango();
+    </script>
 }

@@ -1,4 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
@@ -69,12 +72,84 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Forma de Pago")]
         public FormaPago FormaPago { get; set; } = FormaPago.Transferencia;
 
-        // Calculados (no mapeados a BD)
-        public int HorasMensuales    => TipoJornada == TipoJornada.Completa ? 240 : 120;
-        public int HorasQuincenales  => TipoJornada == TipoJornada.Completa ? 120 : 60;
-        public decimal ValorHora     => HorasMensuales > 0
-                                        ? Math.Round(SalarioBase / HorasMensuales, 2)
-                                        : 0;
+        [Display(Name = "Fecha de Nacimiento")]
+        [DataType(DataType.Date)]
+        public DateTime? FechaNacimiento { get; set; }
+
+        // ── Contrato ────────────────────────────────────────────────────────
+        [Required(ErrorMessage = "El tipo de contrato es obligatorio")]
+        [Display(Name = "Tipo de Contrato")]
+        public TipoContrato TipoContrato { get; set; } = TipoContrato.Indefinido;
+
+        [DataType(DataType.Date)]
+        [Display(Name = "Fecha de Vencimiento de Contrato")]
+        public DateTime? FechaVencimientoContrato { get; set; }
+
+        // ── Dirección ───────────────────────────────────────────────────────
+        [StringLength(100)]
+        [Display(Name = "Provincia")]
+        public string? DireccionProvincia { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "Cantón")]
+        public string? DireccionCanton { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "Distrito")]
+        public string? DireccionDistrito { get; set; }
+
+        [StringLength(300)]
+        [Display(Name = "Dirección Exacta")]
+        public string? DireccionExacta { get; set; }
+
+        // ── Contacto de emergencia ──────────────────────────────────────────
+        [StringLength(100)]
+        [Display(Name = "Nombre Contacto de Emergencia")]
+        public string? ContactoEmergenciaNombre { get; set; }
+
+        [StringLength(20)]
+        [Display(Name = "Teléfono Contacto de Emergencia")]
+        public string? ContactoEmergenciaTelefono { get; set; }
+
+        // ── Calculados (no mapeados a BD) ───────────────────────────────────
+        public int HorasMensuales => TipoJornada == TipoJornada.Completa ? 240 : 120;
+        public int HorasQuincenales => TipoJornada == TipoJornada.Completa ? 120 : 60;
+        public decimal ValorHora => HorasMensuales > 0
+                                       ? Math.Round(SalarioBase / HorasMensuales, 2)
+                                       : 0;
         public decimal ValorHoraExtra => Math.Round(ValorHora * 1.5m, 2);
+
+        // ── Helper: días para vencimiento de contrato ───────────────────────
+        public int? DiasParaVencimiento => FechaVencimientoContrato.HasValue
+            ? (int)(FechaVencimientoContrato.Value.Date - DateTime.Today).TotalDays
+            : null;
+
+        public bool ContratoProximoAVencer =>
+            DiasParaVencimiento.HasValue && DiasParaVencimiento.Value >= 0 &&
+            DiasParaVencimiento.Value <= 30;
+
+        public bool ContratoVencido =>
+            DiasParaVencimiento.HasValue && DiasParaVencimiento.Value < 0;
+
+        // ── Vacaciones ──────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Días de vacaciones proporcionales disponibles según ley CR:
+        /// 12 días hábiles por cada 50 semanas trabajadas.
+        /// </summary>
+        [NotMapped]
+        public decimal DiasVacacionesDisponibles
+        {
+            get
+            {
+                if (FechaIngreso == default) return 0;
+                var semanasTrabajadas = (decimal)(DateTime.Today - FechaIngreso).TotalDays / 7;
+                var periodos50 = Math.Floor(semanasTrabajadas / 50);
+                return periodos50 * 12;
+            }
+        }
+
+        [NotMapped]
+        public decimal SalarioDiario => SalarioBase / 30;
     }
 }

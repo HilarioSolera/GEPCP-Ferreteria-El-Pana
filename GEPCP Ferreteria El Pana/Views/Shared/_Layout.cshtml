@@ -16,13 +16,19 @@
         var rol = Context.Session.GetString("Rol");
         var ctrl = ViewContext.RouteData.Values["controller"]?.ToString()?.ToLower() ?? "";
 
-        <nav class="navbar navbar-expand-lg navbar-dark shadow-sm" style="background-color: #FF7A00;">
-            <div class="container-fluid px-4">
+        <nav class="navbar navbar-expand-lg navbar-dark" style="background-color:#FF7A00;">
+            <div class="container-fluid px-3">
 
-                <a class="navbar-brand fw-bold d-flex align-items-center gap-2"
+                <a class="navbar-brand d-flex align-items-center gap-2"
                        asp-controller="Home" asp-action="Dashboard">
-                    <i class="bi bi-tools fs-5"></i>
-                    <span>GEPCP — Ferretería El Pana</span>
+                    <i class="bi bi-tools" style="font-size:1.9rem;"></i>
+                    <div class="d-flex flex-column lh-1">
+                        <span style="font-size:1.3rem;font-weight:800;letter-spacing:-0.3px;">GEPCP</span>
+                        <span style="font-size:0.55rem;font-weight:600;letter-spacing:1.8px;
+                            text-transform:uppercase;opacity:0.85;">
+                            Ferretería El Pana
+                        </span>
+                    </div>
                 </a>
 
                 <button class="navbar-toggler" type="button"
@@ -31,120 +37,152 @@
                 </button>
 
                 <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto">
+                    <ul class="navbar-nav me-0" style="--nav-active-bg: rgba(255,255,255,0.22);">
 
-                        @* Dashboard *@
                         <li class="nav-item">
-                            <a class="nav-link @(ctrl == "home" ? "active fw-bold" : "")"
+                            <a class="nav-link @(ctrl == "home" ? "active" : "")"
                                    asp-controller="Home" asp-action="Dashboard">
-                                <i class="bi bi-speedometer2"></i> Dashboard
+                                <i class="bi bi-speedometer2"></i>
+                                <span class="nav-label">Dashboard</span>
                             </a>
                         </li>
 
-                        @* Empleados *@
                         <li class="nav-item">
-                            <a class="nav-link @(ctrl == "empleados" ? "active fw-bold" : "")"
+                            <a class="nav-link @(ctrl == "empleados" ? "active" : "")"
                                    asp-controller="Empleados" asp-action="Index">
-                                <i class="bi bi-people"></i> Empleados
+                                <i class="bi bi-people"></i>
+                                <span class="nav-label">Empleados</span>
                             </a>
                         </li>
 
-                        @* Planilla *@
                         <li class="nav-item">
-                            <a class="nav-link @(ctrl == "planilla" ? "active fw-bold" : "")"
+                            <a class="nav-link @(ctrl == "planilla" ? "active" : "")"
                                    asp-controller="Planilla" asp-action="Index">
-                                <i class="bi bi-file-earmark-text"></i> Planilla
+                                <i class="bi bi-file-earmark-text"></i>
+                                <span class="nav-label">Planilla</span>
                             </a>
                         </li>
 
-                        @* Períodos *@
                         <li class="nav-item">
-                            <a class="nav-link @(ctrl == "periodospago" ? "active fw-bold" : "")"
+                            <a class="nav-link @(ctrl == "periodospago" ? "active" : "")"
                                    asp-controller="PeriodosPago" asp-action="Index">
-                                <i class="bi bi-calendar2-range"></i> Períodos
+                                <i class="bi bi-calendar2-range"></i>
+                                <span class="nav-label">Períodos</span>
                             </a>
                         </li>
 
-                        @* Horas Extras *@
                         <li class="nav-item">
-                            <a class="nav-link @(ctrl == "horasextras" ? "active fw-bold" : "")"
+                            <a class="nav-link @(ctrl == "horasextras" ? "active" : "")"
                                    asp-controller="HorasExtras" asp-action="Index">
-                                <i class="bi bi-clock-history"></i> Hrs. Extras
+                                <i class="bi bi-clock-history"></i>
+                                <span class="nav-label">Hrs. Extras</span>
                             </a>
                         </li>
 
-                        @* Comisiones *@
                         <li class="nav-item">
-                            <a class="nav-link @(ctrl == "comisiones" ? "active fw-bold" : "")"
+                            <a class="nav-link @(ctrl == "vacaciones" ? "active" : "")"
+                                   asp-controller="Vacaciones" asp-action="Index">
+                                <i class="bi bi-umbrella"></i>
+                                <span class="nav-label">Vacaciones</span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link @(ctrl == "comisiones" ? "active" : "")"
                                    asp-controller="Comisiones" asp-action="Index">
-                                <i class="bi bi-graph-up"></i> Comisiones
+                                <i class="bi bi-graph-up"></i>
+                                <span class="nav-label">Comisiones</span>
                             </a>
                         </li>
 
-                        @* Préstamos *@
                         <li class="nav-item">
-                            <a class="nav-link @(ctrl == "prestamos" ? "active fw-bold" : "")"
+                            <a class="nav-link @(ctrl == "prestamos" ? "active" : "")"
                                    asp-controller="Prestamos" asp-action="Index">
-                                <i class="bi bi-cash-coin"></i> Préstamos
+                                <i class="bi bi-cash-coin"></i>
+                                <span class="nav-label">Préstamos</span>
                             </a>
                         </li>
 
-                        @* Incapacidades *@
                         <li class="nav-item">
-                            <a class="nav-link @(ctrl == "incapacidades" ? "active fw-bold" : "")"
+                            <a class="nav-link @(ctrl == "incapacidades" ? "active" : "")"
                                    asp-controller="Incapacidades" asp-action="Index">
-                                <i class="bi bi-hospital"></i> Incapacidades
+                                <i class="bi bi-hospital"></i>
+                                <span class="nav-label">Incapacidades</span>
                             </a>
                         </li>
 
-                        @* Aguinaldo *@
                         <li class="nav-item">
-                            <a class="nav-link @(ctrl == "aguinaldo" ? "active fw-bold" : "")"
+                            <a class="nav-link @(ctrl == "aguinaldo" ? "active" : "")"
                                    asp-controller="Aguinaldo" asp-action="Index">
-                                <i class="bi bi-gift"></i> Aguinaldo
+                                <i class="bi bi-gift"></i>
+                                <span class="nav-label">Aguinaldo</span>
                             </a>
                         </li>
 
-                        @* Solo RRHH *@
-                        @if (rol == "RRHH")
+                        <li class="nav-item">
+                            <a class="nav-link @(ctrl == "feriados" ? "active" : "")"
+                                   asp-controller="Feriados" asp-action="Index">
+                                <i class="bi bi-calendar-event"></i>
+                                <span class="nav-label">Feriados</span>
+                            </a>
+                        </li>
+
+                        @if (rol == "RRHH" || rol == "Jefatura")
                         {
                             <li class="nav-item">
-                                <a class="nav-link @(ctrl == "creditoferreteria" ? "active fw-bold" : "")"
+                                <a class="nav-link @(ctrl == "creditoferreteria" ? "active" : "")"
                                        asp-controller="CreditoFerreteria" asp-action="Index">
-                                    <i class="bi bi-cart-check"></i> Créditos
+                                    <i class="bi bi-cart-check"></i>
+                                    <span class="nav-label">Créditos</span>
                                 </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link @(ctrl == "puestos" ? "active fw-bold" : "")"
+                                <a class="nav-link @(ctrl == "puestos" ? "active" : "")"
                                        asp-controller="Puestos" asp-action="Index">
-                                    <i class="bi bi-briefcase"></i> Puestos
+                                    <i class="bi bi-briefcase"></i>
+                                    <span class="nav-label">Puestos</span>
                                 </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link @(ctrl == "usuarios" ? "active fw-bold" : "")"
-                                       asp-controller="Usuarios" asp-action="Index">
-                                    <i class="bi bi-person-gear"></i> Usuarios
+                                <a class="nav-link @(ctrl == "historialsalarios" ? "active" : "")"
+                                       asp-controller="HistorialSalarios" asp-action="Index">
+                                    <i class="bi bi-clock-history"></i>
+                                    <span class="nav-label">Historial</span>
                                 </a>
                             </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link @(ctrl == "usuarios" ? "active" : "")"
+                                       asp-controller="Usuarios" asp-action="Index">
+                                    <i class="bi bi-person-gear"></i>
+                                    <span class="nav-label">Usuarios</span>
+                                </a>
+                            </li>
+
+                            @if (rol == "Jefatura")
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @(ctrl == "auditoria" ? "active" : "")"
+                                           asp-controller="Auditoria" asp-action="Index">
+                                        <i class="bi bi-shield-check"></i>
+                                        <span class="nav-label">Auditoría</span>
+                                    </a>
+                                </li>
+                            }
                         }
 
                     </ul>
 
-                    @* Usuario y cerrar sesión *@
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="d-flex flex-column align-items-end me-1">
-                            <span class="text-white fw-bold small">
-                                <i class="bi bi-person-circle"></i> @usuario
-                            </span>
-                            <span class="badge bg-dark">@rol</span>
-                        </div>
+                    <div class="d-flex align-items-center ms-auto" style="flex-shrink:0;">
+                        <div class="nav-divisor"></div>
                         <form asp-controller="Account" asp-action="Logout"
                               method="post" class="d-inline">
                             @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-outline-light btn-sm">
-                                <i class="bi bi-box-arrow-right"></i> Salir
+                            <button type="submit" class="nav-salir">
+                                <i class="bi bi-box-arrow-right"></i>
+                                <span>Salir</span>
                             </button>
                         </form>
                     </div>
@@ -153,7 +191,6 @@
         </nav>
     }
 
-    @* Contenido principal *@
     <div class="container-fluid px-4 mt-4">
 
         @if (TempData["Success"] != null)
@@ -170,9 +207,15 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         }
+        @if (TempData["Warning"] != null)
+        {
+            <div class="alert alert-warning alert-dismissible fade show shadow-sm">
+                <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Warning"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
 
         @RenderBody()
-
     </div>
 
     <footer class="text-center text-muted small py-4 mt-5 border-top">
@@ -182,6 +225,5 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
-
 </body>
 </html>

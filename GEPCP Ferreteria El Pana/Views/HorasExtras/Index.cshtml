@@ -4,11 +4,15 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
     var periodoActual = ViewBag.PeriodoActual as GEPCP_Ferreteria_El_Pana.Models.PeriodoPago;
     var periodoCerrado = periodoActual?.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado;
+    var totalRegistros = (int)(ViewBag.TotalRegistros ?? 0);
+    var totalHoras = (decimal)(ViewBag.TotalHoras ?? 0m);
+    var totalMonto = (decimal)(ViewBag.TotalMonto ?? 0m);
+    var verTodos = (bool)(ViewBag.VerTodos ?? false);
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0"><i class="bi bi-clock-history"></i> Horas Extras</h2>
-    @if (!periodoCerrado)
+    @if (!periodoCerrado && !verTodos)
     {
         <a asp-action="Create" asp-route-periodoId="@ViewBag.PeriodoId"
                class="btn btn-success btn-lg">
@@ -17,23 +21,77 @@
     }
 </div>
 
+@* Banner del período activo *@
+@if (periodoActual != null && !verTodos)
+{
+    <div class="banner mb-4">
+        <div>
+            <div class="banner-label">
+                @if (periodoCerrado)
+                {
+                    <i class="bi bi-lock-fill"></i>
+                }
+                else
+                {
+
+                    <i class="bi bi-unlock"></i>
+                }
+                Período seleccionado
+            </div>
+            <div class="banner-detail">
+                <strong>@periodoActual.Descripcion</strong> —
+                @periodoActual.FechaInicio.ToString("dd/MM/yyyy")
+                al @periodoActual.FechaFin.ToString("dd/MM/yyyy")
+                @if (periodoCerrado)
+                {
+                    <span class="badge bg-secondary ms-2">Cerrado</span>
+                }
+                else
+                {
+
+                    <span class="badge bg-success ms-2">Abierto</span>
+                }
+            </div>
+        </div>
+        @if (!periodoCerrado)
+        {
+            <a asp-action="Create" asp-route-periodoId="@ViewBag.PeriodoId"
+                   class="banner-btn">
+                Registrar extras →
+            </a>
+        }
+    </div>
+}
+
+@* Banner ver todos *@
+@if (verTodos)
+{
+    <div class="alert alert-primary d-flex align-items-center gap-2 mb-4">
+        <i class="bi bi-list-ul fs-5"></i>
+        <span>Mostrando <strong>todos los registros</strong> de horas extras de todos los períodos.</span>
+        <a asp-action="Index" class="btn btn-sm btn-outline-primary ms-auto">
+            <i class="bi bi-x-circle"></i> Volver a vista por período
+        </a>
+    </div>
+}
+
 @* KPIs *@
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-primary">@ViewBag.TotalRegistros</div>
-            <div class="text-muted small">Empleados con Horas Extras</div>
+            <div class="fs-4 fw-bold text-primary">@totalRegistros</div>
+            <div class="text-muted small">Registros de Horas Extras</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-info">@ViewBag.TotalHoras.ToString("N2")</div>
+            <div class="fs-4 fw-bold text-info">@totalHoras.ToString("N2")</div>
             <div class="text-muted small">Total Horas Registradas</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-success">₡@ViewBag.TotalMonto.ToString("N0")</div>
+            <div class="fs-4 fw-bold text-success">₡@totalMonto.ToString("N0")</div>
             <div class="text-muted small">Total a Pagar por Extras</div>
         </div>
     </div>
@@ -41,20 +99,24 @@
 
 @* Filtros *@
 <form asp-action="Index" method="get" class="mb-4">
+    <input type="hidden" name="verTodos" value="@verTodos.ToString().ToLower()" />
     <div class="row g-2">
-        <div class="col-md-5">
-            @Html.DropDownList("periodoId", ViewBag.Periodos as SelectList,
-                "-- Todos los períodos --",
-                new { @class = "form-select shadow-sm", onchange = "this.form.submit()" })
-        </div>
-        <div class="col-md-5">
+        @if (!verTodos)
+        {
+            <div class="col-md-4">
+                @Html.DropDownList("periodoId", ViewBag.Periodos as SelectList,
+                    "-- Todos los períodos --",
+                    new { @class = "form-select shadow-sm", onchange = "this.form.submit()" })
+            </div>
+        }
+        <div class="@(verTodos ? "col-md-9" : "col-md-4")">
             <div class="input-group shadow-sm">
                 <span class="input-group-text bg-white">
                     <i class="bi bi-search text-muted"></i>
                 </span>
                 <input type="text" name="busqueda" value="@ViewBag.Busqueda"
                        class="form-control border-start-0"
-                       placeholder="Buscar por nombre o cédula..." />
+                       placeholder="Buscar por nombre, apellido o cédula..." />
             </div>
         </div>
         <div class="col-md-1">
@@ -65,17 +127,28 @@
         <div class="col-md-1">
             @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string))
             {
-                <a asp-action="Index" asp-route-periodoId="@ViewBag.PeriodoId"
+                <a asp-action="Index"
+                       asp-route-periodoId="@ViewBag.PeriodoId"
+                       asp-route-verTodos="@verTodos"
                        class="btn btn-outline-secondary w-100">
                     <i class="bi bi-x-circle"></i>
                 </a>
             }
         </div>
+        @if (!verTodos)
+        {
+            <div class="col-md-2">
+                <a asp-action="Index" asp-route-verTodos="true"
+                       class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-list-ul"></i> Ver todos
+                </a>
+            </div>
+        }
     </div>
 </form>
 
-@* Badge período cerrado *@
-@if (periodoCerrado)
+@* Alerta período cerrado *@
+@if (periodoCerrado && !verTodos)
 {
     <div class="alert alert-secondary d-flex align-items-center mb-3">
         <i class="bi bi-lock-fill me-2"></i>
@@ -87,17 +160,29 @@
 {
     <div class="alert alert-info text-center py-4">
         <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-        No hay horas extras registradas para el período seleccionado.
+        @if (verTodos)
+        {
+            <span>No hay registros de horas extras.</span>
+        }
+        else if (periodoActual != null)
+        {
+            <span>No hay horas extras registradas para <strong>@periodoActual.Descripcion</strong>.</span>
+        }
+        else
+        {
+            <span>Usá los filtros para buscar horas extras registradas.</span>
+        }
     </div>
 }
 else
 {
     <div class="table-responsive shadow-sm rounded">
         <table class="table table-hover align-middle mb-0">
-            <thead style="background-color: #FF7A00; color: white;">
+            <thead style="background-color:#FF7A00;color:white;">
                 <tr>
                     <th>Empleado</th>
                     <th>Período</th>
+                    <th>Fecha</th>
                     <th class="text-end">Valor Hora</th>
                     <th class="text-center">Horas</th>
                     <th class="text-center">%</th>
@@ -108,30 +193,34 @@ else
             <tbody>
                 @foreach (var h in Model)
                 {
-                    <tr>
+                    var cerradoFila = h.PeriodoPago.Estado ==
+                                     GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado;
+                    <tr class="@(cerradoFila ? "table-light text-muted" : "")">
                         <td>
                             <strong>@h.Empleado.PrimerApellido @h.Empleado.Nombre</strong>
                             <div class="small text-muted">@h.Empleado.Puesto</div>
                         </td>
                         <td>
-                            <span class="badge @(h.PeriodoPago.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Abierto
-                                                                                                                  ? "bg-success" : "bg-secondary")">
+                            <span class="badge @(cerradoFila ? "bg-secondary" : "bg-success")">
                                 @h.PeriodoPago.Descripcion
                             </span>
+                            <div class="small text-muted mt-1">
+                                @h.PeriodoPago.FechaInicio.ToString("dd/MM") al
+                                @h.PeriodoPago.FechaFin.ToString("dd/MM/yyyy")
+                            </div>
                         </td>
+                        <td><span class="small">@h.Fecha.ToString("dd/MM/yyyy")</span></td>
                         <td class="text-end text-muted">₡@h.ValorHora.ToString("N2")</td>
                         <td class="text-center fw-bold">@h.TotalHoras.ToString("N2")</td>
                         <td class="text-center">@((h.Porcentaje * 100).ToString("N0"))%</td>
                         <td class="text-end fw-bold text-success">₡@h.MontoTotal.ToString("N0")</td>
                         <td class="text-center">
                             <div class="d-flex gap-1 justify-content-center">
-                                @* PDF siempre visible *@
                                 <a asp-action="DescargarPDF" asp-route-id="@h.HorasExtrasId"
                                        class="btn btn-sm btn-outline-danger" title="Descargar PDF">
                                     <i class="bi bi-file-earmark-pdf"></i>
                                 </a>
-                                @* Editar y Eliminar solo si período abierto *@
-                                @if (!periodoCerrado)
+                                @if (!cerradoFila)
                                 {
                                     <a asp-action="Edit" asp-route-id="@h.HorasExtrasId"
                                            class="btn btn-sm btn-warning" title="Editar">
@@ -141,8 +230,7 @@ else
                                           onsubmit="return confirm('¿Eliminar las horas extras de @h.Empleado.PrimerApellido @h.Empleado.Nombre?')">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@h.HorasExtrasId" />
-                                        <button type="submit" class="btn btn-sm btn-danger"
-                                                title="Eliminar">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -154,7 +242,7 @@ else
             </tbody>
             <tfoot class="table-light fw-bold">
                 <tr>
-                    <td colspan="3" class="text-end">TOTALES:</td>
+                    <td colspan="4" class="text-end">TOTALES:</td>
                     <td class="text-center">@Model.Sum(h => h.TotalHoras).ToString("N2")</td>
                     <td></td>
                     <td class="text-end text-success">₡@Model.Sum(h => h.MontoTotal).ToString("N0")</td>
@@ -162,5 +250,9 @@ else
                 </tr>
             </tfoot>
         </table>
+    </div>
+
+    <div class="text-muted small mt-2 text-end">
+        @Model.Count registro(s) — @Model.Sum(h => h.TotalHoras).ToString("N2") horas totales
     </div>
 }

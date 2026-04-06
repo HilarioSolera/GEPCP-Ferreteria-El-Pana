@@ -2,6 +2,10 @@
 @{
     ViewData["Title"] = "Editar Horas Extras - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var periodoFechaInicio = ViewBag.PeriodoFechaInicio as string ?? "";
+    var periodoFechaFin = ViewBag.PeriodoFechaFin as string ?? "";
+    var periodoDescripcion = ViewBag.PeriodoDescripcion as string ?? "";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -12,7 +16,7 @@
     </a>
 </div>
 
-<div class="card shadow-sm border-0" style="max-width: 700px;">
+<div class="card shadow-sm border-0">
     <div class="card-body p-4">
         <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
@@ -20,62 +24,129 @@
             <input type="hidden" asp-for="EmpleadoId" />
             <input type="hidden" asp-for="PeriodoPagoId" />
 
+            @* Errores del servidor *@
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>No se pudo guardar:</strong>
+                    <ul class="mb-0 mt-1">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@error.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
             <div class="row g-3">
 
-                <div class="col-12">
-                    <div class="alert alert-info py-2 mb-0">
-                        <i class="bi bi-person-circle"></i>
-                        <strong>@Model.Empleado?.PrimerApellido @Model.Empleado?.Nombre</strong>
-                        — @Model.PeriodoPago?.Descripcion
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <label asp-for="TotalHoras" class="form-label fw-bold">
-                        <i class="bi bi-hourglass-split"></i> Total Horas <span class="text-danger">*</span>
+                @* ── Período (solo lectura) ── *@
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-calendar2-week"></i> Período
                     </label>
-                    <input asp-for="TotalHoras" type="number" step="0.01"
-                           min="0.01" max="999.99"
-                           class="form-control form-control-lg" id="inputHoras" />
-                    <span asp-validation-for="TotalHoras" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-4">
-                    <label asp-for="Porcentaje" class="form-label fw-bold">
-                        <i class="bi bi-percent"></i> Porcentaje <span class="text-danger">*</span>
-                    </label>
-                    <select asp-for="Porcentaje" class="form-select form-select-lg"
-                            id="selectPorcentaje">
-                        <option value="1.5">150% — Hora Extra Normal</option>
-                        <option value="2.0">200% — Hora Extra Doble</option>
-                    </select>
-                    <span asp-validation-for="Porcentaje" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label fw-bold text-muted">
-                        <i class="bi bi-calculator"></i> Monto Estimado
-                    </label>
-                    <div class="form-control form-control-lg bg-light text-center fw-bold text-success"
-                         id="montoRef">
-                        ₡@Model.MontoTotal.ToString("N0")
+                    <div class="form-control form-control-lg bg-light">
+                        @periodoDescripcion
                     </div>
-                    <div class="form-text text-muted" id="valorHoraRef">
-                        Valor hora actual: ₡@Model.ValorHora.ToString("N2")
+                    @if (!string.IsNullOrEmpty(periodoFechaInicio) && !string.IsNullOrEmpty(periodoFechaFin))
+                    {
+                        <div class="form-text text-success">
+                            <i class="bi bi-calendar-check"></i>
+                            Rango: <strong>
+                            @DateTime.Parse(periodoFechaInicio).ToString("dd/MM/yyyy")
+                            al @DateTime.Parse(periodoFechaFin).ToString("dd/MM/yyyy")
+                        </strong>
                     </div>
-                </div>
-
+                }
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-warning btn-lg px-5">
-                    <i class="bi bi-check-circle"></i> Guardar Cambios
-                </button>
-                <a asp-action="Index" asp-route-periodoId="@Model.PeriodoPagoId"
-                   class="btn btn-secondary btn-lg px-5">Cancelar</a>
+            @* ── Fecha ── *@
+            <div class="col-md-6">
+                <label asp-for="Fecha" class="form-label fw-bold">
+                    <i class="bi bi-calendar-date"></i> Fecha <span class="text-danger">*</span>
+                </label>
+                <input asp-for="Fecha" type="date"
+                       class="form-control form-control-lg"
+                       id="inputFecha"
+                       min="@periodoFechaInicio"
+                       max="@periodoFechaFin" />
+                <div class="form-text text-muted">
+                    Solo fechas dentro del período seleccionado.
+                </div>
+                <span asp-validation-for="Fecha" class="text-danger small"></span>
             </div>
-        </form>
-    </div>
+
+            @* ── Empleado (solo lectura) ── *@
+            <div class="col-12">
+                <label class="form-label fw-bold">
+                    <i class="bi bi-person"></i> Empleado
+                </label>
+                <div class="alert alert-info py-2 mb-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-person-check-fill"></i>
+                        <strong>@ViewBag.EmpleadoNombre</strong>
+                        <span class="text-muted ms-2 small">@ViewBag.EmpleadoCedula</span>
+                    </div>
+                    <div class="fw-bold text-end">
+                        ₡@(((decimal)(ViewBag.EmpleadoValorHora ?? 0m)).ToString("N2"))/hr
+                    </div>
+                </div>
+            </div>
+
+            @* ── Tipo de hora extra ── *@
+            <div class="col-md-4">
+                <label asp-for="Porcentaje" class="form-label fw-bold">
+                    <i class="bi bi-percent"></i> Tipo de Hora Extra <span class="text-danger">*</span>
+                </label>
+                <select asp-for="Porcentaje" class="form-select form-select-lg"
+                        id="selectPorcentaje">
+                    <option value="1.5">150% — Hora Extra Normal</option>
+                    <option value="2.0">200% — Hora Extra Doble</option>
+                </select>
+                <span asp-validation-for="Porcentaje" class="text-danger small"></span>
+            </div>
+
+            @* ── Total Horas ── *@
+            <div class="col-md-4">
+                <label asp-for="TotalHoras" class="form-label fw-bold">
+                    <i class="bi bi-hourglass-split"></i> Total Horas <span class="text-danger">*</span>
+                </label>
+                <input asp-for="TotalHoras" type="number" step="0.5"
+                       min="0.5" max="999.99"
+                       class="form-control form-control-lg" id="inputHoras" />
+                <div id="advertenciaHoras" class="form-text text-warning d-none">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Supera el límite recomendado de 48 hrs quincenales.
+                </div>
+                <span asp-validation-for="TotalHoras" class="text-danger small"></span>
+            </div>
+
+            @* ── Monto estimado ── *@
+            <div class="col-md-4">
+                <label class="form-label fw-bold text-muted">
+                    <i class="bi bi-calculator"></i> Monto Estimado
+                </label>
+                <div class="form-control form-control-lg bg-light text-center fw-bold text-success"
+                     id="montoRef">
+                    ₡@Model.MontoTotal.ToString("N0")
+                </div>
+                <div class="form-text text-muted" id="valorHoraRef">
+                    Valor hora: ₡@Model.ValorHora.ToString("N2")
+                </div>
+            </div>
+
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-warning btn-lg px-5">
+                <i class="bi bi-check-circle"></i> Guardar Cambios
+            </button>
+            <a asp-action="Index" asp-route-periodoId="@Model.PeriodoPagoId"
+               class="btn btn-secondary btn-lg px-5">Cancelar</a>
+        </div>
+    </form>
+</div>
 </div>
 
 @section Scripts {
@@ -83,25 +154,29 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
-        var empleadoId = @Model.EmpleadoId;
         var valorHoraActual = @Model.ValorHora.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
         function calcularMonto() {
-            var horas      = parseFloat(document.getElementById('inputHoras').value) || 0;
+            var horas = parseFloat(document.getElementById('inputHoras').value) || 0;
             var porcentaje = parseFloat(document.getElementById('selectPorcentaje').value) || 1.5;
-            var montoRef   = document.getElementById('montoRef');
-            var hint       = document.getElementById('valorHoraRef');
+            var montoRef = document.getElementById('montoRef');
+            var hint = document.getElementById('valorHoraRef');
+            var advHoras = document.getElementById('advertenciaHoras');
 
             if (horas > 0) {
                 var monto = horas * valorHoraActual * porcentaje;
-                montoRef.innerHTML = '&#8353;' +
-                    monto.toLocaleString('es-CR', {minimumFractionDigits: 2});
+                montoRef.textContent = '₡' +
+                    monto.toLocaleString('es-CR', { minimumFractionDigits: 2 });
                 hint.innerHTML =
-                    'Valor hora: <strong>&#8353;' +
-                    parseFloat(valorHoraActual).toLocaleString('es-CR', {minimumFractionDigits: 2}) +
-                    '</strong> &times; ' + horas + ' hrs &times; ' + (porcentaje * 100) + '%';
+                    `Valor hora: <strong>₡${parseFloat(valorHoraActual)
+                        .toLocaleString('es-CR', { minimumFractionDigits: 2 })}</strong>` +
+                    ` × ${horas} hrs × ${(porcentaje * 100).toFixed(0)}%`;
+                advHoras.classList.toggle('d-none', horas <= 48);
             } else {
                 montoRef.textContent = '—';
+                hint.textContent = `Valor hora: ₡${parseFloat(valorHoraActual)
+                    .toLocaleString('es-CR', { minimumFractionDigits: 2 })}`;
+                advHoras.classList.add('d-none');
             }
         }
 

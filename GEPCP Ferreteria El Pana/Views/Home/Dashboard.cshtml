@@ -1,322 +1,512 @@
 ﻿@{
-    ViewData["Title"] = "Dashboard Ejecutivo";
+    ViewData["Title"] = "Dashboard";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var rol = ViewBag.Rol as string ?? "";
     var periodoActivo = ViewBag.PeriodoActivo as GEPCP_Ferreteria_El_Pana.Models.PeriodoPago;
+    var graficoLabels = ViewBag.GraficoLabels as List<string> ?? new List<string>();
+    var graficoNetos = ViewBag.GraficoNetos as List<decimal> ?? new List<decimal>();
+    var prestamosProx = ViewBag.PrestamosProximos as List<GEPCP_Ferreteria_El_Pana.Models.Prestamo>
+                         ?? new List<GEPCP_Ferreteria_El_Pana.Models.Prestamo>();
+    var vacAlerta = ViewBag.VacacionesAlerta as List<object> ?? new List<object>();
+    var totalVacAlerta = (int)(ViewBag.TotalVacAlerta ?? 0);
+    var reporteVac = ViewBag.ReporteVacaciones as List<object> ?? new List<object>();
+
+    decimal netoPeriodo = (decimal)(ViewBag.NetoPeriodoActivo ?? 0m);
+    decimal saldoPresta = (decimal)(ViewBag.TotalSaldoPrestamos ?? 0m);
+    decimal saldoCreditos = (decimal)(ViewBag.TotalCreditosActivos ?? 0m);
+    decimal hrsExtrasMonto = (decimal)(ViewBag.TotalHorasExtrasPeriodo ?? 0m);
+    decimal incapMonto = (decimal)(ViewBag.TotalMontoIncapacidades ?? 0m);
+    decimal comisionesMon = (decimal)(ViewBag.TotalComisiones ?? 0m);
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="mb-0">
-            <i class="bi bi-speedometer2"></i> Dashboard Ejecutivo
-        </h2>
-        <small class="text-muted">
-            Bienvenido, <strong>@ViewBag.Usuario</strong> —
-            Rol: <span class="badge bg-secondary">@ViewBag.Rol</span>
-        </small>
-    </div>
-    <span class="text-muted small">
-        @DateTime.Now.ToString("dddd, dd MMMM yyyy")
-    </span>
-</div>
+<div class="db-wrap">
 
-@* ── BANNER PERÍODO ACTIVO ────────────────────────────────────────── *@
-@if (periodoActivo != null)
-{
-    <div class="alert border-0 shadow-sm mb-4 py-3"
-         style="background-color: #FFF3E0; border-left: 4px solid #FF7A00 !important;">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    @* ── Encabezado ── *@
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <p class="db-title">
+                <i class="bi bi-speedometer2"></i> Bienvenido,
+                <strong>@ViewBag.Usuario</strong>
+                <span class="db-badge">@ViewBag.Rol</span>
+            </p>
+            <p class="db-sub text-muted small mb-0">
+                @DateTime.Now.ToString("dddd dd 'de' MMMM yyyy",
+                    new System.Globalization.CultureInfo("es-CR")).ToUpper()
+            </p>
+        </div>
+    </div>
+
+    @* ── Alerta vacaciones acumuladas ── *@
+    @if (totalVacAlerta > 0)
+    {
+        <div class="d-flex align-items-start gap-3 mb-4 p-3 rounded"
+             style="background:#fff8e1;border-left:3px solid #FF7A00;">
+            <i class="bi bi-umbrella-fill flex-shrink-0 mt-1"
+               style="color:#FF7A00;font-size:1.15rem;"></i>
+            <div class="w-100">
+                <div class="fw-bold mb-1" style="color:#c55000;font-size:0.85rem;">
+                    @totalVacAlerta empleado(s) con vacaciones acumuladas sin tomar
+                    <span class="fw-normal text-muted">(≥ 14 días disponibles)</span>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mb-1">
+                    @foreach (var v in vacAlerta.Take(6))
+                    {
+                        var dv = (dynamic)v;
+                        <span style="background:#fff3e0;color:#c55000;border:1px solid #FFB74D;
+                            border-radius:5px;padding:2px 8px;font-size:0.72rem;font-weight:600;">
+                            @dv.Nombre — @dv.Disponibles días
+                        </span>
+                    }
+                    @if (vacAlerta.Count > 6)
+                    {
+                        <span class="text-muted" style="font-size:0.72rem;">
+                            y @(vacAlerta.Count - 6) más...
+                        </span>
+                    }
+                </div>
+                <a asp-controller="Vacaciones" asp-action="Index" asp-route-verTodos="true"
+                       style="color:#FF7A00;font-size:0.78rem;font-weight:600;text-decoration:none;">
+                    Ver módulo de vacaciones →
+                </a>
+            </div>
+        </div>
+    }
+
+    @* ── Banner período ── *@
+    @if (periodoActivo != null)
+    {
+        <div class="banner mb-4">
             <div>
-                <i class="bi bi-calendar2-check" style="color:#FF7A00;"></i>
-                <strong style="color:#FF7A00;">Período Activo:</strong>
-                @periodoActivo.Descripcion —
-                <span class="text-muted small">
+                <div class="banner-label">
+                    <i class="bi bi-unlock me-1"></i> Período activo
+                </div>
+                <div class="banner-detail">
+                    <strong>@periodoActivo.Descripcion</strong> —
                     @periodoActivo.FechaInicio.ToString("dd/MM/yyyy")
                     al @periodoActivo.FechaFin.ToString("dd/MM/yyyy")
-                </span>
+                </div>
             </div>
-            <a asp-controller="Planilla" asp-action="Index"
-                   class="btn btn-sm btn-outline-warning">
-                <i class="bi bi-file-earmark-text"></i> Ver Planilla
+            <a asp-controller="Planilla" asp-action="Index" class="banner-btn">
+                Ver planilla →
             </a>
         </div>
-    </div>
-}
-else
-{
-    <div class="alert alert-warning shadow-sm mb-4 py-2 small">
-        <i class="bi bi-exclamation-triangle"></i>
-        No hay ningún período de pago abierto.
-        <a asp-controller="PeriodosPago" asp-action="Create"
-           class="alert-link ms-1">Crear período</a>
-    </div>
-}
-
-@* ── KPIs FILA 1: EMPLEADOS Y PLANILLA ───────────────────────────── *@
-<div class="row g-4 mb-4">
-
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-success bg-opacity-10 p-3">
-                    <i class="bi bi-people-fill fs-3 text-success"></i>
-                </div>
-                <div>
-                    <div class="text-muted small">Empleados Activos</div>
-                    <div class="fs-3 fw-bold text-success">
-                        @ViewBag.TotalEmpleadosActivos
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-0 pt-0">
-                <a asp-controller="Empleados" asp-action="Index"
-                       class="small text-decoration-none text-success">
-                    Ver empleados <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-primary bg-opacity-10 p-3">
-                    <i class="bi bi-file-earmark-text fs-3 text-primary"></i>
-                </div>
-                <div>
-                    <div class="text-muted small">
-                        Neto Período
-                        @if (periodoActivo != null)
-                        {
-                            <span class="badge bg-success ms-1" style="font-size:0.65rem;">Activo</span>
-                        }
-                    </div>
-                    <div class="fs-3 fw-bold text-primary">
-                        ₡@ViewBag.NetoPeriodoActivo.ToString("N0")
-                    </div>
-                    <div class="text-muted" style="font-size:0.75rem;">
-                        @ViewBag.EmpleadosEnPlanilla empleados calculados
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-0 pt-0">
-                <a asp-controller="Planilla" asp-action="Index"
-                       class="small text-decoration-none text-primary">
-                    Ver planilla <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-warning bg-opacity-10 p-3">
-                    <i class="bi bi-cash-coin fs-3 text-warning"></i>
-                </div>
-                <div>
-                    <div class="text-muted small">Saldo Préstamos</div>
-                    <div class="fs-3 fw-bold text-warning">
-                        ₡@ViewBag.TotalSaldoPrestamos.ToString("N0")
-                    </div>
-                    <div class="text-muted" style="font-size:0.75rem;">
-                        @ViewBag.TotalPrestamosActivos préstamo(s) activo(s)
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-0 pt-0">
-                <a asp-controller="Prestamos" asp-action="Index"
-                       class="small text-decoration-none text-warning">
-                    Ver préstamos <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-danger bg-opacity-10 p-3">
-                    <i class="bi bi-cart-check fs-3 text-danger"></i>
-                </div>
-                <div>
-                    <div class="text-muted small">Saldo Créditos Ferretería</div>
-                    <div class="fs-3 fw-bold text-danger">
-                        ₡@ViewBag.TotalCreditosActivos.ToString("N0")
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-0 pt-0">
-                <a asp-controller="CreditoFerreteria" asp-action="Index"
-                       class="small text-decoration-none text-danger">
-                    Ver créditos <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-@* ── KPIs FILA 2: HORAS EXTRAS, INCAPACIDADES, COMISIONES ────────── *@
-<div class="row g-4 mb-5">
-
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-info bg-opacity-10 p-3">
-                    <i class="bi bi-clock-history fs-3 text-info"></i>
-                </div>
-                <div>
-                    <div class="text-muted small">
-                        Horas Extras
-                        @if (periodoActivo != null)
-                        {
-                            <span class="text-muted" style="font-size:0.7rem;">
-                                (período activo)
-                            </span>
-                        }
-                    </div>
-                    <div class="fs-3 fw-bold text-info">
-                        ₡@ViewBag.TotalHorasExtrasPeriodo.ToString("N0")
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-0 pt-0">
-                <a asp-controller="HorasExtras" asp-action="Index"
-                       class="small text-decoration-none text-info">
-                    Ver horas extras <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-danger bg-opacity-10 p-3">
-                    <i class="bi bi-hospital fs-3 text-danger"></i>
-                </div>
-                <div>
-                    <div class="text-muted small">Incapacidades Activas</div>
-                    <div class="fs-3 fw-bold text-danger">
-                        @ViewBag.TotalIncapacidadesActivas
-                    </div>
-                    <div class="text-muted" style="font-size:0.75rem;">
-                        Costo patrono: ₡@ViewBag.TotalMontoIncapacidades.ToString("N0")
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-0 pt-0">
-                <a asp-controller="Incapacidades" asp-action="Index"
-                       class="small text-decoration-none text-danger">
-                    Ver incapacidades <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle bg-success bg-opacity-10 p-3">
-                    <i class="bi bi-graph-up fs-3 text-success"></i>
-                </div>
-                <div>
-                    <div class="text-muted small">Comisiones Registradas</div>
-                    <div class="fs-3 fw-bold text-success">
-                        ₡@ViewBag.TotalComisiones.ToString("N0")
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-0 pt-0">
-                <a asp-controller="Comisiones" asp-action="Index"
-                       class="small text-decoration-none text-success">
-                    Ver comisiones <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    @if (rol == "RRHH")
+    }
+    else
     {
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center gap-3">
-                    <div class="rounded-circle p-3"
-                         style="background-color: rgba(255,122,0,0.10);">
-                        <i class="bi bi-briefcase fs-3" style="color:#FF7A00;"></i>
-                    </div>
+        <div class="banner mb-4" style="border-left-color:#bbb;">
+            <div>
+                <div class="banner-label" style="color:#999;">
+                    <i class="bi bi-dash-circle me-1"></i> Sin período activo
+                </div>
+                <div class="banner-detail">No hay ningún período de pago abierto.</div>
+            </div>
+            <a asp-controller="PeriodosPago" asp-action="Create" class="banner-btn">
+                Crear período →
+            </a>
+        </div>
+    }
+
+    @* ── KPIs fila 1 ── *@
+    <div class="section-label mt-2">Indicadores clave</div>
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="kpi-card h-100">
+                <div class="kpi-body">
+                    <div class="kpi-icon-box"><i class="bi bi-people-fill"></i></div>
                     <div>
-                        <div class="text-muted small">Puestos Activos</div>
-                        <div class="fs-3 fw-bold" style="color:#FF7A00;">
-                            @ViewBag.TotalPuestosActivos
+                        <div class="kpi-label3">Empleados activos</div>
+                        <div class="kpi-value2">@ViewBag.TotalEmpleadosActivos</div>
+                    </div>
+                </div>
+                <a asp-controller="Empleados" asp-action="Index" class="kpi-foot2">
+                    Ver empleados →
+                </a>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card h-100">
+                <div class="kpi-body">
+                    <div class="kpi-icon-box"><i class="bi bi-file-earmark-text"></i></div>
+                    <div>
+                        <div class="kpi-label3">
+                            Neto período
+                            @if (periodoActivo != null)
+                            {
+                                <span class="activo-pill">ACTIVO</span>
+                            }
+                        </div>
+                        <div class="kpi-value2">₡@netoPeriodo.ToString("N0")</div>
+                        <div class="kpi-sub3">@ViewBag.EmpleadosEnPlanilla calculados</div>
+                    </div>
+                </div>
+                <a asp-controller="Planilla" asp-action="Index" class="kpi-foot2">
+                    Ver planilla →
+                </a>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card h-100">
+                <div class="kpi-body">
+                    <div class="kpi-icon-box"><i class="bi bi-cash-coin"></i></div>
+                    <div>
+                        <div class="kpi-label3">Saldo préstamos</div>
+                        <div class="kpi-value2">₡@saldoPresta.ToString("N0")</div>
+                        <div class="kpi-sub3">@ViewBag.TotalPrestamosActivos activo(s)</div>
+                    </div>
+                </div>
+                <a asp-controller="Prestamos" asp-action="Index" class="kpi-foot2">
+                    Ver préstamos →
+                </a>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card h-100">
+                <div class="kpi-body">
+                    <div class="kpi-icon-box"><i class="bi bi-cart-check"></i></div>
+                    <div>
+                        <div class="kpi-label3">Créditos ferretería</div>
+                        <div class="kpi-value2">₡@saldoCreditos.ToString("N0")</div>
+                    </div>
+                </div>
+                <a asp-controller="CreditoFerreteria" asp-action="Index" class="kpi-foot2">
+                    Ver créditos →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @* ── KPIs fila 2 ── *@
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="kpi-card h-100">
+                <div class="kpi-body">
+                    <div class="kpi-icon-box"><i class="bi bi-clock-history"></i></div>
+                    <div>
+                        <div class="kpi-label3">Horas extras</div>
+                        <div class="kpi-value2">₡@hrsExtrasMonto.ToString("N0")</div>
+                    </div>
+                </div>
+                <a asp-controller="HorasExtras" asp-action="Index" class="kpi-foot2">
+                    Ver horas extras →
+                </a>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card h-100">
+                <div class="kpi-body">
+                    <div class="kpi-icon-box"><i class="bi bi-hospital"></i></div>
+                    <div>
+                        <div class="kpi-label3">Incapacidades activas</div>
+                        <div class="kpi-value2">@ViewBag.TotalIncapacidadesActivas</div>
+                        <div class="kpi-sub3">Costo: ₡@incapMonto.ToString("N0")</div>
+                    </div>
+                </div>
+                <a asp-controller="Incapacidades" asp-action="Index" class="kpi-foot2">
+                    Ver incapacidades →
+                </a>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card h-100">
+                <div class="kpi-body">
+                    <div class="kpi-icon-box"><i class="bi bi-graph-up"></i></div>
+                    <div>
+                        <div class="kpi-label3">Comisiones</div>
+                        <div class="kpi-value2">₡@comisionesMon.ToString("N0")</div>
+                    </div>
+                </div>
+                <a asp-controller="Comisiones" asp-action="Index" class="kpi-foot2">
+                    Ver comisiones →
+                </a>
+            </div>
+        </div>
+        @if (rol == "RRHH")
+        {
+            <div class="col-6 col-md-3">
+                <div class="kpi-card h-100">
+                    <div class="kpi-body">
+                        <div class="kpi-icon-box"><i class="bi bi-briefcase"></i></div>
+                        <div>
+                            <div class="kpi-label3">Puestos activos</div>
+                            <div class="kpi-value2">@ViewBag.TotalPuestosActivos</div>
                         </div>
                     </div>
-                </div>
-                <div class="card-footer bg-transparent border-0 pt-0">
-                    <a asp-controller="Puestos" asp-action="Index"
-                           class="small text-decoration-none" style="color:#FF7A00;">
-                        Ver puestos <i class="bi bi-arrow-right"></i>
+                    <a asp-controller="Puestos" asp-action="Index" class="kpi-foot2">
+                        Ver puestos →
                     </a>
                 </div>
             </div>
+        }
+    </div>
+
+    @* ── Gráfico + Préstamos próximos ── *@
+    <div class="row g-3 mb-4">
+        <div class="col-md-7">
+            <div class="kpi-card h-100">
+                <div class="kpi-body flex-column align-items-start p-3 pb-0">
+                    <div class="kpi-label3 mb-3">
+                        <i class="bi bi-bar-chart-line"></i>
+                        Neto pagado — últimos 6 períodos cerrados
+                    </div>
+                </div>
+                @if (graficoLabels.Any())
+                {
+                    <div class="p-3 pt-0">
+                        <canvas id="graficoPlanilla" height="140"></canvas>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-3 text-muted small text-center py-5">
+                        <i class="bi bi-inbox d-block fs-3 mb-2"></i>
+                        Sin períodos cerrados aún.
+                    </div>
+                }
+            </div>
         </div>
-    }
 
-</div>
+        <div class="col-md-5">
+            <div class="kpi-card h-100">
+                <div class="kpi-body flex-column align-items-start p-3 pb-1">
+                    <div class="kpi-label3">
+                        <i class="bi bi-alarm"></i> Préstamos próximos a saldarse
+                    </div>
+                </div>
+                @if (prestamosProx.Any())
+                {
+                    <div class="px-3 pb-1">
+                        @foreach (var p in prestamosProx)
+                        {
+                            var cuotasRestantes = p.CuotaMensual > 0
+                                ? (int)Math.Ceiling((double)(p.Monto / p.CuotaMensual))
+                                : 0;
+                            <div class="d-flex justify-content-between align-items-center
+                                py-2 border-bottom">
+                                <div>
+                                    <div class="fw-bold small">
+                                        @p.Empleado.PrimerApellido @p.Empleado.Nombre
+                                    </div>
+                                    <div class="text-muted" style="font-size:0.7rem;">
+                                        ~@cuotasRestantes cuota(s) restante(s)
+                                    </div>
+                                </div>
+                                <span class="badge bg-warning text-dark"
+                                      style="font-size:0.72rem;">
+                                    ₡@p.Monto.ToString("N0")
+                                </span>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="px-3 pb-2 text-muted small text-center py-4">
+                        <i class="bi bi-check-circle d-block fs-3 mb-2"
+                           style="color:#1a4a1a;"></i>
+                        No hay préstamos próximos a vencer.
+                    </div>
+                }
+                <a asp-controller="Prestamos" asp-action="Index" class="kpi-foot2">
+                    Ver todos los préstamos →
+                </a>
+            </div>
+        </div>
+    </div>
 
-@* ── ACCESOS RÁPIDOS ──────────────────────────────────────────────── *@
-<h5 class="mb-3 text-muted">
-    <i class="bi bi-lightning-charge"></i> Accesos Rápidos
-</h5>
-<div class="row g-3">
-
-    @if (rol == "RRHH")
+    @* ── Reporte saldos de vacaciones ── *@
+    @if (reporteVac.Any())
     {
-        <div class="col-md-2">
-            <a asp-controller="Empleados" asp-action="Create"
-                   class="btn btn-outline-success w-100 py-3">
-                <i class="bi bi-person-plus fs-4 d-block mb-1"></i>
-                Nuevo Empleado
-            </a>
-        </div>
-        <div class="col-md-2">
-            <a asp-controller="Prestamos" asp-action="Create"
-                   class="btn btn-outline-warning w-100 py-3">
-                <i class="bi bi-cash-coin fs-4 d-block mb-1"></i>
-                Nuevo Préstamo
-            </a>
-        </div>
-        <div class="col-md-2">
-            <a asp-controller="HorasExtras" asp-action="Create"
-                   class="btn btn-outline-info w-100 py-3">
-                <i class="bi bi-clock-history fs-4 d-block mb-1"></i>
-                Horas Extras
-            </a>
-        </div>
-        <div class="col-md-2">
-            <a asp-controller="Incapacidades" asp-action="Create"
-                   class="btn btn-outline-danger w-100 py-3">
-                <i class="bi bi-hospital fs-4 d-block mb-1"></i>
-                Nueva Incapacidad
-            </a>
-        </div>
-        <div class="col-md-2">
-            <a asp-controller="Comisiones" asp-action="Create"
-                   class="btn btn-outline-secondary w-100 py-3">
-                <i class="bi bi-graph-up-arrow fs-4 d-block mb-1"></i>
-                Nueva Comisión
-            </a>
+        <div class="section-label">Saldos de vacaciones por empleado</div>
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0"
+                           style="font-size:0.8rem;">
+                        <thead style="background:#222;color:#fff;">
+                            <tr>
+                                <th class="px-3 py-2">Empleado</th>
+                                <th class="px-3 py-2">Puesto</th>
+                                <th class="text-center px-3 py-2">Semanas</th>
+                                <th class="text-center px-3 py-2">Acumulados</th>
+                                <th class="text-center px-3 py-2">Tomados</th>
+                                <th class="text-center px-3 py-2">Disponibles</th>
+                                <th class="text-center px-3 py-2">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var v in reporteVac)
+                            {
+                                var dv = (dynamic)v;
+                                decimal disp = dv.Disponibles;
+                                decimal base_ = dv.DiasBase;
+                                decimal tomados = dv.Tomados;
+                                decimal sem = dv.Semanas;
+                                string nombre = dv.Nombre;
+                                string puesto = dv.Puesto;
+                                int pct = base_ > 0
+                                    ? (int)Math.Min(100, (tomados / base_) * 100)
+                                    : 0;
+
+                                <tr class="@(disp >= 14 ? "table-warning" : "")">
+                                    <td class="px-3 fw-bold">@nombre</td>
+                                    <td class="px-3 text-muted" style="font-size:0.75rem;">
+                                        @puesto
+                                    </td>
+                                    <td class="text-center px-3">@sem</td>
+                                    <td class="text-center px-3">@base_</td>
+                                    <td class="text-center px-3">@tomados</td>
+                                    <td class="text-center px-3 fw-bold"
+                                        style="color:@(disp >= 14 ? "#c55000" : disp > 0 ? "#1a4a1a" : "#888");">
+                                        @disp
+                                        @if (base_ > 0)
+                                        {
+                                            <div class="progress mt-1" style="height:3px;">
+                                                <div class="progress-bar"
+                                                     style="width:@pct%;background:#FF7A00;">
+                                                </div>
+                                            </div>
+                                        }
+                                    </td>
+                                    <td class="text-center px-3">
+                                        @if (disp >= 14)
+                                        {
+                                            <span style="background:#fff3e0;color:#c55000;
+                                                border:1px solid #FFB74D;border-radius:5px;
+                                                padding:2px 7px;font-size:0.68rem;font-weight:600;">
+                                                <i class="bi bi-exclamation-triangle"></i> Pendientes
+                                            </span>
+                                        }
+                                        else if (disp > 0)
+                                        {
+                                            <span style="background:#f0f0f0;color:#555;
+                                                border:1px solid #ccc;border-radius:5px;
+                                                padding:2px 7px;font-size:0.68rem;font-weight:600;">
+                                                Al día
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span style="background:#e8f5e9;color:#1a4a1a;
+                                                border:1px solid #a5d6a7;border-radius:5px;
+                                                padding:2px 7px;font-size:0.68rem;font-weight:600;">
+                                                <i class="bi bi-check-circle"></i> Sin saldo
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer py-2 px-3 d-flex justify-content-between align-items-center">
+                <span class="text-muted small">
+                    @reporteVac.Count empleado(s) activos
+                    · @totalVacAlerta con días pendientes
+                </span>
+                <a asp-controller="Vacaciones" asp-action="Index" asp-route-verTodos="true"
+                       class="small fw-bold" style="color:#FF7A00;text-decoration:none;">
+                    Ver módulo de vacaciones →
+                </a>
+            </div>
         </div>
     }
 
-    <div class="col-md-2">
-        <a asp-controller="Planilla" asp-action="Index"
-               class="btn w-100 py-3 text-white"
-               style="background-color:#FF7A00;">
-            <i class="bi bi-file-earmark-text fs-4 d-block mb-1"></i>
-            Ver Planilla
-        </a>
+    @* ── Accesos rápidos ── *@
+    <div class="section-label">Accesos rápidos</div>
+    <div class="row g-2 mb-4">
+        @if (rol == "RRHH")
+        {
+            <div class="col-6 col-md-2">
+                <a asp-controller="Empleados" asp-action="Create" class="qbtn2">
+                    <i class="bi bi-person-plus qbtn-icon2"></i>
+                    <span class="qbtn-label2">Nuevo empleado</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a asp-controller="Prestamos" asp-action="Create" class="qbtn2">
+                    <i class="bi bi-cash-coin qbtn-icon2"></i>
+                    <span class="qbtn-label2">Nuevo préstamo</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a asp-controller="HorasExtras" asp-action="Create" class="qbtn2">
+                    <i class="bi bi-clock-history qbtn-icon2"></i>
+                    <span class="qbtn-label2">Horas extras</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a asp-controller="Incapacidades" asp-action="Create" class="qbtn2">
+                    <i class="bi bi-hospital qbtn-icon2"></i>
+                    <span class="qbtn-label2">Nueva incapacidad</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a asp-controller="Comisiones" asp-action="Create" class="qbtn2">
+                    <i class="bi bi-graph-up-arrow qbtn-icon2"></i>
+                    <span class="qbtn-label2">Nueva comisión</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a asp-controller="Vacaciones" asp-action="Create" class="qbtn2">
+                    <i class="bi bi-umbrella qbtn-icon2"></i>
+                    <span class="qbtn-label2">Nueva vacación</span>
+                </a>
+            </div>
+        }
+        <div class="col-6 col-md-2">
+            <a asp-controller="Planilla" asp-action="Index" class="qbtn2">
+                <i class="bi bi-file-earmark-text qbtn-icon2"></i>
+                <span class="qbtn-label2">Ver planilla</span>
+            </a>
+        </div>
     </div>
 
 </div>
+
+@section Scripts {
+    @if (graficoLabels.Any())
+    {
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+        <script>
+            var ctx = document.getElementById('graficoPlanilla').getContext('2d');
+            new Chart(ctx, {
+            type: 'bar',
+            data: {
+            labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(graficoLabels)),
+            datasets: [{
+            label: 'Neto pagado (₡)',
+            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(graficoNetos)),
+            backgroundColor: 'rgba(255,122,0,0.75)',
+            borderColor: '#FF7A00',
+            borderWidth: 1,
+            borderRadius: 5
+            }]
+            },
+            options: {
+            responsive: true,
+            plugins: {
+            legend: { display: false },
+            tooltip: {
+            callbacks: {
+            label: ctx =>
+            '₡' + ctx.parsed.y.toLocaleString('es-CR',
+            { minimumFractionDigits: 0 })
+            }
+            }
+            },
+            scales: {
+            y: {
+            beginAtZero: true,
+            ticks: {
+            callback: v => '₡' + Number(v).toLocaleString('es-CR')
+            },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+            },
+            x: { grid: { display: false } }
+            }
+            }
+            });
+        </script>
+    }
+}

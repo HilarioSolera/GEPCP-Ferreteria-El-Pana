@@ -3,7 +3,6 @@ using System;
 using GEPCP_Ferreteria_El_Pana.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -16,44 +15,92 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.25")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.25");
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.AbonoCreditoFerreteria", b =>
+                {
+                    b.Property<int>("AbonoCreditoFerreteriaId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CreditoFerreteriaId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("FechaAbono")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Monto")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Observaciones")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("AbonoCreditoFerreteriaId");
+
+                    b.HasIndex("CreditoFerreteriaId");
+
+                    b.ToTable("AbonosCreditoFerreteria");
+                });
+
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.AbonoPrestamo", b =>
+                {
+                    b.Property<int>("AbonoPrestamoId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("FechaAbono")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Monto")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Observaciones")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PrestamoId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("AbonoPrestamoId");
+
+                    b.HasIndex("PrestamoId");
+
+                    b.ToTable("AbonosPrestamo");
+                });
 
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Aguinaldo", b =>
                 {
                     b.Property<int>("AguinaldoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AguinaldoId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Anio")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreadoEn")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("EmpleadoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("FechaFin")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("FechaInicio")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("FechaPago")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("MontoTotal")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Observaciones")
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("AguinaldoId");
 
@@ -67,27 +114,30 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 {
                     b.Property<int>("ComisionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ComisionId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("EmpleadoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("Fecha")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("Monto")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("PeriodoPagoId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("ComisionId");
 
                     b.HasIndex("EmpleadoId");
+
+                    b.HasIndex("PeriodoPagoId");
 
                     b.ToTable("Comisiones");
                 });
@@ -96,35 +146,33 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 {
                     b.Property<int>("CreditoFerreteriaId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CreditoFerreteriaId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.Property<decimal>("CuotaQuincenal")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("EmpleadoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("FechaCredito")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("MontoTotal")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("Saldo")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("CreditoFerreteriaId");
 
@@ -137,66 +185,97 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 {
                     b.Property<int>("EmpleadoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EmpleadoId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Cedula")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactoEmergenciaNombre")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactoEmergenciaTelefono")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CorreoElectronico")
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Departamento")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DireccionCanton")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DireccionDistrito")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DireccionExacta")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DireccionProvincia")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("FechaIngreso")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FechaNacimiento")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FechaVencimientoContrato")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("FormaPago")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("NumeroCuenta")
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("PrimerApellido")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Puesto")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("SalarioBase")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("SegundoApellido")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Telefono")
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TipoContrato")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("TipoJornada")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("EmpleadoId");
 
@@ -210,20 +289,18 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 {
                     b.Property<int>("FeriadoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FeriadoId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("Fecha")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Tipo")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("FeriadoId");
 
@@ -302,35 +379,71 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.HistorialSalario", b =>
+                {
+                    b.Property<int>("HistorialSalarioId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("EmpleadoId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("FechaCambio")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModificadoPor")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Motivo")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("SalarioAnterior")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("SalarioNuevo")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("HistorialSalarioId");
+
+                    b.HasIndex("EmpleadoId");
+
+                    b.ToTable("HistorialSalarios");
+                });
+
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.HorasExtras", b =>
                 {
                     b.Property<int>("HorasExtrasId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HorasExtrasId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("EmpleadoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("MontoTotal")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("PeriodoPagoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<decimal>("Porcentaje")
                         .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("TotalHoras")
                         .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("ValorHora")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("HorasExtrasId");
 
@@ -345,52 +458,53 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 {
                     b.Property<int>("IncapacidadId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IncapacidadId"));
+                    b.Property<int>("DiasPagadosPatrono")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("EmpleadoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Entidad")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("FechaFin")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("FechaInicio")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("MontoPorDia")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("MontoTotal")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Observaciones")
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("PorcentajePago")
                         .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("ResponsablePago")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("TipoIncapacidad")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("TiqueteCCSS")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("TotalDias")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("IncapacidadId");
 
@@ -403,22 +517,23 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 {
                     b.Property<int>("PagoFeriadoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PagoFeriadoId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("EmpleadoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("FeriadoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<decimal>("MontoTotal")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("PeriodoPagoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Trabajado")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("PagoFeriadoId");
 
@@ -435,27 +550,25 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 {
                     b.Property<int>("PeriodoPagoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PeriodoPagoId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Anio")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Estado")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("FechaFin")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("FechaInicio")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Mes")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Quincena")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("PeriodoPagoId");
 
@@ -466,24 +579,22 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 {
                     b.Property<int>("PlanillaId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PlanillaId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<decimal>("Deducciones")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("EmpleadoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("FechaFin")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("FechaInicio")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("Pagada")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.Property<decimal>("SalarioBruto")
                         .HasColumnType("decimal(18,2)");
@@ -502,91 +613,92 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 {
                     b.Property<int>("PlanillaEmpleadoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PlanillaEmpleadoId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<decimal>("AumentoAplicado")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("DeduccionCCSS")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("DeduccionCreditoFerreteria")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("DeduccionHorasNoLaboradas")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("DeduccionIncapacidad")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("DeduccionPrestamos")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("DeduccionVacaciones")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("EmpleadoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<decimal>("HorasExtras")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("HorasNoLaboradas")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("HorasOrdinarias")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("MontoFeriados")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("MontoHorasExtras")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("NetoAPagar")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("OtrasDeducciones")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("PeriodoPagoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<decimal>("PorcentajeCCSS")
                         .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("SalarioOrdinario")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("TotalDeducciones")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("TotalDevengado")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("ValorHora")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("ValorHoraExtra")
                         .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("PlanillaEmpleadoId");
 
@@ -602,29 +714,30 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 {
                     b.Property<int>("PrestamoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PrestamoId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.Property<decimal>("CuotaMensual")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Cuotas")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("EmpleadoId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("FechaPrestamo")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("Interes")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("Monto")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MontoOriginal")
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("PrestamoId");
@@ -638,17 +751,15 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 {
                     b.Property<int>("PuestoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PuestoId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("Activo")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("SalarioBase")
                         .HasColumnType("decimal(18,2)");
@@ -674,17 +785,47 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.RegistroAuditoria", b =>
+                {
+                    b.Property<int>("RegistroAuditoriaId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Accion")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Detalle")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaHora")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Modulo")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Usuario")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("RegistroAuditoriaId");
+
+                    b.ToTable("RegistrosAuditoria");
+                });
+
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Rol", b =>
                 {
                     b.Property<int>("RolId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RolId"));
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("RolId");
 
@@ -707,25 +848,32 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 {
                     b.Property<int>("UsuarioId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UsuarioId"));
+                    b.Property<string>("CorreoElectronico")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("NombreCompleto")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("NombreUsuario")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Rol")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("TokenExpiracion")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TokenRecuperacion")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UsuarioId");
 
@@ -735,6 +883,7 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         new
                         {
                             UsuarioId = 1,
+                            CorreoElectronico = "solerahilario207@gmail.com",
                             NombreCompleto = "Administrador RRHH",
                             NombreUsuario = "admin.rrhh",
                             PasswordHash = "$2a$11$/mJGbQrxHo3bDUtdY6MWoeaJc/6aYPE7EG9ukr6ln9mNupX3Y8Wz.",
@@ -743,11 +892,86 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         new
                         {
                             UsuarioId = 2,
+                            CorreoElectronico = "solerahilario207@gmail.com",
                             NombreCompleto = "Usuario Jefatura",
                             NombreUsuario = "jefatura",
                             PasswordHash = "$2a$11$T72F0Mu8ocYejSTck6bprueMSoi5WgVtSD.hIraw5PvhnjDde6rD6",
                             Rol = "Jefatura"
                         });
+                });
+
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Vacacion", b =>
+                {
+                    b.Property<int>("VacacionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("DiasDisponiblesAlRegistrar")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("DiasHabiles")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EmpleadoId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("FechaFin")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaInicio")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaRegistro")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("MontoDeducido")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Observaciones")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RegistradoPor")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("SalarioDiario")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("VacacionId");
+
+                    b.HasIndex("EmpleadoId");
+
+                    b.ToTable("Vacaciones");
+                });
+
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.AbonoCreditoFerreteria", b =>
+                {
+                    b.HasOne("GEPCP_Ferreteria_El_Pana.Models.CreditoFerreteria", "CreditoFerreteria")
+                        .WithMany("AbonosCreditoFerreteria")
+                        .HasForeignKey("CreditoFerreteriaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreditoFerreteria");
+                });
+
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.AbonoPrestamo", b =>
+                {
+                    b.HasOne("GEPCP_Ferreteria_El_Pana.Models.Prestamo", "Prestamo")
+                        .WithMany("AbonosPrestamo")
+                        .HasForeignKey("PrestamoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Prestamo");
                 });
 
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Aguinaldo", b =>
@@ -769,13 +993,30 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("GEPCP_Ferreteria_El_Pana.Models.PeriodoPago", "PeriodoPago")
+                        .WithMany()
+                        .HasForeignKey("PeriodoPagoId");
+
                     b.Navigation("Empleado");
+
+                    b.Navigation("PeriodoPago");
                 });
 
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.CreditoFerreteria", b =>
                 {
                     b.HasOne("GEPCP_Ferreteria_El_Pana.Models.Empleado", "Empleado")
                         .WithMany("CreditosFerreteria")
+                        .HasForeignKey("EmpleadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empleado");
+                });
+
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.HistorialSalario", b =>
+                {
+                    b.HasOne("GEPCP_Ferreteria_El_Pana.Models.Empleado", "Empleado")
+                        .WithMany("HistorialSalarios")
                         .HasForeignKey("EmpleadoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -881,11 +1122,29 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Navigation("Empleado");
                 });
 
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Vacacion", b =>
+                {
+                    b.HasOne("GEPCP_Ferreteria_El_Pana.Models.Empleado", "Empleado")
+                        .WithMany("Vacaciones")
+                        .HasForeignKey("EmpleadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empleado");
+                });
+
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.CreditoFerreteria", b =>
+                {
+                    b.Navigation("AbonosCreditoFerreteria");
+                });
+
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Empleado", b =>
                 {
                     b.Navigation("Comisiones");
 
                     b.Navigation("CreditosFerreteria");
+
+                    b.Navigation("HistorialSalarios");
 
                     b.Navigation("HorasExtras");
 
@@ -898,6 +1157,8 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Navigation("PlanillasEmpleado");
 
                     b.Navigation("Prestamos");
+
+                    b.Navigation("Vacaciones");
                 });
 
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Feriado", b =>
@@ -912,6 +1173,11 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Navigation("PagosFeriado");
 
                     b.Navigation("PlanillasEmpleado");
+                });
+
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Prestamo", b =>
+                {
+                    b.Navigation("AbonosPrestamo");
                 });
 #pragma warning restore 612, 618
         }

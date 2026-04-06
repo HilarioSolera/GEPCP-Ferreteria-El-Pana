@@ -28,8 +28,17 @@
                     <label asp-for="Cedula" class="form-label fw-bold">
                         <i class="bi bi-card-text"></i> Cédula <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Cedula" class="form-control form-control-lg"
-                           maxlength="20" placeholder="Ej: 1-1234-5678" autocomplete="off" />
+                    <div class="input-group">
+                        <input asp-for="Cedula" class="form-control form-control-lg"
+                               maxlength="20" placeholder="Ej: 1-1234-5678"
+                               autocomplete="off" id="Cedula" />
+                        <button type="button" class="btn btn-outline-secondary"
+                                id="btnBuscarCedula" title="Consultar padrón TSE">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                    <div id="alertaTSE" class="mt-1 small" style="display:none;"></div>
+                    <div class="form-text text-muted">Al ingresar la cédula se consultará el padrón del TSE.</div>
                     <span asp-validation-for="Cedula" class="text-danger small"></span>
                 </div>
 
@@ -38,7 +47,7 @@
                         <i class="bi bi-person"></i> Nombre <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Nombre" class="form-control form-control-lg"
-                           maxlength="100" placeholder="Ej: Juan" />
+                           maxlength="100" placeholder="Ej: Juan" id="Nombre" />
                     <span asp-validation-for="Nombre" class="text-danger small"></span>
                 </div>
 
@@ -47,7 +56,7 @@
                         <i class="bi bi-person"></i> Primer Apellido <span class="text-danger">*</span>
                     </label>
                     <input asp-for="PrimerApellido" class="form-control form-control-lg"
-                           maxlength="50" placeholder="Ej: Pérez" />
+                           maxlength="50" placeholder="Ej: Pérez" id="PrimerApellido" />
                     <span asp-validation-for="PrimerApellido" class="text-danger small"></span>
                 </div>
 
@@ -57,8 +66,18 @@
                         <span class="text-muted fw-normal small">(opcional)</span>
                     </label>
                     <input asp-for="SegundoApellido" class="form-control form-control-lg"
-                           maxlength="50" placeholder="Ej: González" />
+                           maxlength="50" placeholder="Ej: González" id="SegundoApellido" />
                     <span asp-validation-for="SegundoApellido" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="FechaNacimiento" class="form-label fw-bold">
+                        <i class="bi bi-calendar-heart"></i> Fecha de Nacimiento
+                        <span class="text-muted fw-normal small">(opcional)</span>
+                    </label>
+                    <input asp-for="FechaNacimiento" type="date"
+                           class="form-control form-control-lg" id="FechaNacimiento" />
+                    <span asp-validation-for="FechaNacimiento" class="text-danger small"></span>
                 </div>
 
                 @* ── Información Laboral ── *@
@@ -68,13 +87,21 @@
                     </h6>
                 </div>
 
-                <select asp-for="Departamento" class="form-select form-select-lg">
-                    <option value="Administrativo">Administrativo</option>
-                    <option value="Caja">Caja</option>
-                    <option value="Ventas">Ventas</option>
-                    <option value="Bodega">Bodega</option>
-                    <option value="Conductores">Conductores</option>
-                </select>
+                <div class="col-md-4">
+                    <label asp-for="Departamento" class="form-label fw-bold">
+                        <i class="bi bi-building"></i> Departamento <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="Departamento" class="form-select form-select-lg">
+                        <option value="">-- Seleccione departamento --</option>
+                        @foreach (var dept in GEPCP_Ferreteria_El_Pana.Models.Departamentos.Lista)
+                        {
+                            <option value="@dept" selected="@(Model.Departamento == dept ? "selected" : null)">
+                                @dept
+                            </option>
+                        }
+                    </select>
+                    <span asp-validation-for="Departamento" class="text-danger small"></span>
+                </div>
 
                 <div class="col-md-4">
                     <label asp-for="Puesto" class="form-label fw-bold">
@@ -91,8 +118,7 @@
                     <label asp-for="TipoJornada" class="form-label fw-bold">
                         <i class="bi bi-clock"></i> Tipo de Jornada <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="TipoJornada" class="form-select form-select-lg"
-                            id="selectJornada">
+                    <select asp-for="TipoJornada" class="form-select form-select-lg" id="selectJornada">
                         <option value="1">Completa (240 hrs/mes)</option>
                         <option value="2">Media Jornada (120 hrs/mes)</option>
                     </select>
@@ -113,8 +139,7 @@
                     <label asp-for="SalarioBase" class="form-label fw-bold">
                         <i class="bi bi-currency-dollar"></i> Salario Base (₡) <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="SalarioBase" type="number" step="0.01"
-                           min="0" max="9999999.99"
+                    <input asp-for="SalarioBase" type="number" step="0.01" min="0" max="9999999.99"
                            class="form-control form-control-lg" id="inputSalario"
                            placeholder="Se llena al elegir puesto" />
                     <div class="form-text" id="salarioHint"></div>
@@ -126,10 +151,110 @@
                         <i class="bi bi-calculator"></i> Valor Hora (referencia)
                     </label>
                     <div class="form-control form-control-lg bg-light text-center fw-bold"
-                         id="valorHoraRef" style="color: #0D6EFD;">
+                         id="valorHoraRef" style="color:#0D6EFD;">
                         —
                     </div>
                     <div class="form-text text-muted">Calculado: salario ÷ horas jornada</div>
+                </div>
+
+                @* ── Contrato ── *@
+                <div class="col-12 mt-2">
+                    <h6 class="text-muted fw-bold border-bottom pb-2">
+                        <i class="bi bi-file-text"></i> Contrato
+                    </h6>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="TipoContrato" class="form-label fw-bold">
+                        <i class="bi bi-file-earmark-text"></i> Tipo de Contrato <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="TipoContrato" class="form-select form-select-lg" id="selectTipoContrato">
+                        <option value="1">Indefinido</option>
+                        <option value="2">Plazo Fijo</option>
+                        <option value="3">Por Obra</option>
+                    </select>
+                    <span asp-validation-for="TipoContrato" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4" id="divFechaVencimiento" style="display:none;">
+                    <label asp-for="FechaVencimientoContrato" class="form-label fw-bold">
+                        <i class="bi bi-calendar-x"></i> Fecha de Vencimiento
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="FechaVencimientoContrato" type="date"
+                           class="form-control form-control-lg" id="FechaVencimientoContrato" />
+                    <span asp-validation-for="FechaVencimientoContrato" class="text-danger small"></span>
+                </div>
+
+                @* ── Dirección ── *@
+                <div class="col-12 mt-2">
+                    <h6 class="text-muted fw-bold border-bottom pb-2">
+                        <i class="bi bi-geo-alt"></i> Dirección
+                        <span class="text-muted fw-normal small">(opcional)</span>
+                    </h6>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="DireccionProvincia" class="form-label fw-bold">Provincia</label>
+                    <select asp-for="DireccionProvincia" class="form-select form-select-lg" id="selectProvincia">
+                        <option value="">-- Seleccione --</option>
+                        <option value="San José">San José</option>
+                        <option value="Alajuela">Alajuela</option>
+                        <option value="Cartago">Cartago</option>
+                        <option value="Heredia">Heredia</option>
+                        <option value="Guanacaste">Guanacaste</option>
+                        <option value="Puntarenas">Puntarenas</option>
+                        <option value="Limón">Limón</option>
+                    </select>
+                    <span asp-validation-for="DireccionProvincia" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="DireccionCanton" class="form-label fw-bold">Cantón</label>
+                    <input asp-for="DireccionCanton" class="form-control form-control-lg"
+                           maxlength="100" placeholder="Ej: Pérez Zeledón" />
+                    <span asp-validation-for="DireccionCanton" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="DireccionDistrito" class="form-label fw-bold">Distrito</label>
+                    <input asp-for="DireccionDistrito" class="form-control form-control-lg"
+                           maxlength="100" placeholder="Ej: San Isidro" />
+                    <span asp-validation-for="DireccionDistrito" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="DireccionExacta" class="form-label fw-bold">Dirección Exacta</label>
+                    <textarea asp-for="DireccionExacta" class="form-control" rows="2"
+                              maxlength="300"
+                              placeholder="Ej: De la iglesia 200m norte, casa azul con portón negro"></textarea>
+                    <span asp-validation-for="DireccionExacta" class="text-danger small"></span>
+                </div>
+
+                @* ── Contacto de Emergencia ── *@
+                <div class="col-12 mt-2">
+                    <h6 class="text-muted fw-bold border-bottom pb-2">
+                        <i class="bi bi-person-exclamation"></i> Contacto de Emergencia
+                        <span class="text-muted fw-normal small">(opcional)</span>
+                    </h6>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="ContactoEmergenciaNombre" class="form-label fw-bold">
+                        Nombre del Contacto
+                    </label>
+                    <input asp-for="ContactoEmergenciaNombre" class="form-control form-control-lg"
+                           maxlength="100" placeholder="Ej: María González (madre)" />
+                    <span asp-validation-for="ContactoEmergenciaNombre" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="ContactoEmergenciaTelefono" class="form-label fw-bold">
+                        Teléfono del Contacto
+                    </label>
+                    <input asp-for="ContactoEmergenciaTelefono" class="form-control form-control-lg"
+                           maxlength="20" placeholder="Ej: 8888-8888" />
+                    <span asp-validation-for="ContactoEmergenciaTelefono" class="text-danger small"></span>
                 </div>
 
                 @* ── Contacto y Pago ── *@
@@ -164,8 +289,7 @@
                     <label asp-for="FormaPago" class="form-label fw-bold">
                         <i class="bi bi-credit-card"></i> Forma de Pago <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="FormaPago" class="form-select form-select-lg"
-                            id="selectFormaPago">
+                    <select asp-for="FormaPago" class="form-select form-select-lg" id="selectFormaPago">
                         <option value="1">Transferencia Banco Nacional</option>
                         <option value="2">Efectivo</option>
                     </select>
@@ -179,9 +303,7 @@
                     </label>
                     <input asp-for="NumeroCuenta" class="form-control form-control-lg"
                            maxlength="30" placeholder="Ej: 100-01-000-000000-0" />
-                    <div class="form-text text-muted">
-                        Número de cuenta Banco Nacional para depósito del salario.
-                    </div>
+                    <div class="form-text text-muted">Número de cuenta Banco Nacional para depósito del salario.</div>
                     <span asp-validation-for="NumeroCuenta" class="text-danger small"></span>
                 </div>
 
@@ -202,54 +324,89 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
+        // ── TSE ───────────────────────────────────────────────────────────────
+        async function consultarTSE() {
+            var cedula = document.getElementById('Cedula').value.trim();
+            if (cedula.length < 8) return;
+            var btn = document.getElementById('btnBuscarCedula');
+            var alerta = document.getElementById('alertaTSE');
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+            btn.disabled = true;
+            try {
+                var res = await fetch('/Empleados/ConsultarCedulaTSE?cedula=' + encodeURIComponent(cedula));
+                var data = await res.json();
+                if (data.exito) {
+                    var nombreCompleto = [data.nombre, data.nombre2].filter(Boolean).join(' ');
+                    document.getElementById('Nombre').value = nombreCompleto.trim();
+                    document.getElementById('PrimerApellido').value = data.apellido1 || '';
+                    document.getElementById('SegundoApellido').value = data.apellido2 || '';
+                    alerta.className = 'mt-1 small text-success';
+                    alerta.innerHTML = '<i class="bi bi-check-circle"></i> Datos encontrados en el padrón del TSE.';
+                    alerta.style.display = 'block';
+                } else {
+                    alerta.className = 'mt-1 small text-muted';
+                    alerta.innerHTML = '<i class="bi bi-info-circle"></i> ' + data.mensaje;
+                    alerta.style.display = 'block';
+                }
+            } catch {
+                alerta.className = 'mt-1 small text-muted';
+                alerta.innerHTML = '<i class="bi bi-info-circle"></i> No se pudo consultar el TSE.';
+                alerta.style.display = 'block';
+            } finally {
+                btn.innerHTML = '<i class="bi bi-search"></i>';
+                btn.disabled = false;
+                setTimeout(() => alerta.style.display = 'none', 5000);
+            }
+        }
+        document.getElementById('btnBuscarCedula').addEventListener('click', consultarTSE);
+        document.getElementById('Cedula').addEventListener('blur', consultarTSE);
+
+        // ── Tipo de contrato → mostrar fecha vencimiento ──────────────────────
+        function toggleFechaVencimiento() {
+            var tipo = parseInt(document.getElementById('selectTipoContrato').value);
+            document.getElementById('divFechaVencimiento').style.display =
+                (tipo === 2 || tipo === 3) ? 'block' : 'none';
+        }
+        document.getElementById('selectTipoContrato').addEventListener('change', toggleFechaVencimiento);
+        toggleFechaVencimiento();
+
+        // ── Salario y jornada ─────────────────────────────────────────────────
         function calcularValorHora() {
             var salario = parseFloat(document.getElementById('inputSalario').value) || 0;
             var jornada = parseInt(document.getElementById('selectJornada').value);
-            var horas   = jornada === 1 ? 240 : 120;
-            var vHora   = salario > 0 ? (salario / horas) : 0;
-            var vExtra  = vHora * 1.5;
-            var ref     = document.getElementById('valorHoraRef');
-
-            if (vHora > 0) {
-                ref.innerHTML =
-                    '&#8353;' + vHora.toLocaleString('es-CR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) +
-                    ' <small class="text-muted fw-normal">(extra: &#8353;' +
-                    vExtra.toLocaleString('es-CR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) +
-                    ')</small>';
-            } else {
-                ref.innerHTML = '—';
-            }
+            var horas = jornada === 1 ? 240 : 120;
+            var vHora = salario > 0 ? (salario / horas) : 0;
+            var vExtra = vHora * 1.5;
+            var ref = document.getElementById('valorHoraRef');
+            ref.innerHTML = vHora > 0
+                ? '₡' + vHora.toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+                ' <small class="text-muted fw-normal">(extra: ₡' +
+                vExtra.toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ')</small>'
+                : '—';
         }
 
-        // Mostrar/ocultar cuenta según forma de pago
         function toggleCuenta() {
             var forma = parseInt(document.getElementById('selectFormaPago').value);
-            var div   = document.getElementById('divNumeroCuenta');
-            div.style.display = forma === 1 ? 'block' : 'none';
+            document.getElementById('divNumeroCuenta').style.display = forma === 1 ? 'block' : 'none';
         }
-
         document.getElementById('selectFormaPago').addEventListener('change', toggleCuenta);
         toggleCuenta();
 
-        // Auto-completar salario al seleccionar puesto
-        document.getElementById('selectPuesto').addEventListener('change', async function () {
+        document.getElementById('selectPuesto').addEventListener('change', async function() {
             var puesto = this.value;
-            var hint   = document.getElementById('salarioHint');
+            var hint = document.getElementById('salarioHint');
             if (!puesto) { hint.textContent = ''; return; }
             try {
-                var res  = await fetch('/Empleados/ObtenerSalarioPuesto?nombre=' + encodeURIComponent(puesto));
+                var res = await fetch('/Empleados/ObtenerSalarioPuesto?nombre=' + encodeURIComponent(puesto));
                 var data = await res.json();
                 if (data.salario !== null) {
                     document.getElementById('inputSalario').value = data.salario;
-                    hint.innerHTML =
-                        '<i class="bi bi-info-circle text-success"></i> ' +
-                        'Salario base del puesto: <strong>&#8353;' +
-                        Number(data.salario).toLocaleString('es-CR') +
-                        '</strong>. Podés modificarlo.';
+                    hint.innerHTML = '<i class="bi bi-info-circle text-success"></i> Salario base del puesto: <strong>₡' +
+                        Number(data.salario).toLocaleString('es-CR') + '</strong>. Podés modificarlo.';
                     hint.className = 'form-text text-success';
                     calcularValorHora();
                 }
-            } catch (e) { console.error('Error al obtener salario:', e); }
+            } catch (e) { console.error(e); }
         });
 
         document.getElementById('inputSalario').addEventListener('input', calcularValorHora);

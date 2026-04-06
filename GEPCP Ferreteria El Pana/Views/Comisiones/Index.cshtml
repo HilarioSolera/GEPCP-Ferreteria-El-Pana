@@ -2,76 +2,108 @@
 @{
     ViewData["Title"] = "Comisiones - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var verTodos = (bool)(ViewBag.VerTodos ?? false);
+    var periodos = ViewBag.Periodos as List<GEPCP_Ferreteria_El_Pana.Models.PeriodoPago>
+                    ?? new List<GEPCP_Ferreteria_El_Pana.Models.PeriodoPago>();
+    var periodoId = ViewBag.PeriodoId as int?;
+
+    var totalComisiones = (int)(ViewBag.TotalComisiones ?? 0);
+    var montoTotal = (decimal)(ViewBag.MontoTotal ?? 0m);
+    var promedioMonto = (decimal)(ViewBag.PromedioMonto ?? 0m);
+    var empleadosConComision = (int)(ViewBag.EmpleadosConComision ?? 0);
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0"><i class="bi bi-graph-up-arrow"></i> Comisiones</h2>
-    <a asp-action="Create" class="btn btn-success btn-lg">
+    <a asp-action="Create" class="btn btn-success">
         <i class="bi bi-plus-circle"></i> Nueva Comisión
     </a>
 </div>
 
 @* KPIs *@
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-primary">@ViewBag.TotalComisiones</div>
-            <div class="text-muted small">Total Registros</div>
+<div class="row g-2 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-2">
+            <div class="fs-4 fw-bold" style="color:#111;">@totalComisiones</div>
+            <div class="text-muted" style="font-size:0.72rem;">Total Registros</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-success">₡@ViewBag.MontoTotal.ToString("N0")</div>
-            <div class="text-muted small">Monto Total</div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-2"
+             style="border-left:3px solid #1a4a1a !important;">
+            <div class="fw-bold" style="color:#1a4a1a;font-size:0.92rem;">
+                ₡@montoTotal.ToString("N0")
+            </div>
+            <div class="text-muted" style="font-size:0.72rem;">Monto Total</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-warning">₡@ViewBag.PromedioMonto.ToString("N0")</div>
-            <div class="text-muted small">Promedio por Comisión</div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-2">
+            <div class="fw-bold" style="font-size:0.92rem;color:#FF7A00;">
+                ₡@promedioMonto.ToString("N0")
+            </div>
+            <div class="text-muted" style="font-size:0.72rem;">Promedio</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-info">@ViewBag.EmpleadosConComision</div>
-            <div class="text-muted small">Empleados con Comisión</div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-2">
+            <div class="fs-4 fw-bold" style="color:#111;">@empleadosConComision</div>
+            <div class="text-muted" style="font-size:0.72rem;">Empleados</div>
         </div>
     </div>
 </div>
 
 @* Filtros *@
-<form asp-action="Index" method="get" class="mb-4">
+<form asp-action="Index" method="get" class="mb-3">
     <div class="row g-2">
-        <div class="col-md-5">
+        <div class="col-md-4">
             <div class="input-group shadow-sm">
                 <span class="input-group-text bg-white">
                     <i class="bi bi-search text-muted"></i>
                 </span>
                 <input type="text" name="busqueda" value="@ViewBag.Busqueda"
                        class="form-control border-start-0"
-                       placeholder="Buscar por nombre, cédula o descripción..." />
+                       placeholder="Nombre, cédula o descripción..." />
             </div>
         </div>
-        <div class="col-md-2">
-            <input type="date" name="desde" value="@ViewBag.Desde"
-                   class="form-control shadow-sm" title="Desde" />
-        </div>
-        <div class="col-md-2">
-            <input type="date" name="hasta" value="@ViewBag.Hasta"
-                   class="form-control shadow-sm" title="Hasta" />
+        <div class="col-md-4">
+            <select name="periodoId" class="form-select shadow-sm"
+                    onchange="this.form.submit()">
+                <option value="">— Todos los períodos —</option>
+                @foreach (var p in periodos)
+                {
+                    <option value="@p.PeriodoPagoId"
+                            selected="@(p.PeriodoPagoId == periodoId ? "selected" : null)">
+                        @p.Descripcion
+                    </option>
+                }
+            </select>
         </div>
         <div class="col-md-1">
             <button type="submit" class="btn btn-primary w-100">
                 <i class="bi bi-funnel"></i>
             </button>
         </div>
-        <div class="col-md-2">
-            @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string) ||
-                        !string.IsNullOrEmpty(ViewBag.Desde as string) ||
-                        !string.IsNullOrEmpty(ViewBag.Hasta as string))
+        <div class="col-md-1">
+            @if (!string.IsNullOrEmpty(ViewBag.Busqueda as string) || periodoId.HasValue)
             {
                 <a asp-action="Index" class="btn btn-outline-secondary w-100">
-                    <i class="bi bi-x-circle"></i> Limpiar
+                    <i class="bi bi-x-circle"></i>
+                </a>
+            }
+        </div>
+        <div class="col-md-2">
+            @if (!verTodos)
+            {
+                <a asp-action="Index" asp-route-verTodos="true"
+                       class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-list-ul"></i> Ver todos
+                </a>
+            }
+            else
+            {
+                <a asp-action="Index" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-x-circle"></i> Volver
                 </a>
             }
         </div>
@@ -82,16 +114,17 @@
 {
     <div class="alert alert-info text-center py-4">
         <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-        No se encontraron comisiones con los filtros aplicados.
+        No se encontraron comisiones. Usá los filtros o registrá una nueva.
     </div>
 }
 else
 {
     <div class="table-responsive shadow-sm rounded">
-        <table class="table table-hover align-middle mb-0">
-            <thead style="background-color: #FF7A00; color: white;">
+        <table class="table table-hover align-middle mb-0" style="font-size:0.88rem;">
+            <thead style="background-color:#FF7A00;color:white;">
                 <tr>
                     <th>Empleado</th>
+                    <th>Período</th>
                     <th>Fecha</th>
                     <th class="text-end">Monto</th>
                     <th>Descripción</th>
@@ -103,32 +136,51 @@ else
                 {
                     <tr>
                         <td>
-                            <strong>@c.Empleado.PrimerApellido @c.Empleado.Nombre</strong>
-                            <div class="small text-muted">
-                                <span class="badge bg-secondary">@c.Empleado.Puesto</span>
+                            <div class="fw-bold">
+                                @c.Empleado.PrimerApellido @c.Empleado.Nombre
                             </div>
+                            <div class="text-muted small">@c.Empleado.Puesto</div>
+                        </td>
+                        <td>
+                            @if (c.PeriodoPago != null)
+                            {
+                                <div class="fw-bold small">@c.PeriodoPago.Descripcion</div>
+                                <div class="text-muted" style="font-size:0.72rem;">
+                                    @c.PeriodoPago.FechaInicio.ToString("dd/MM/yyyy")
+                                    al @c.PeriodoPago.FechaFin.ToString("dd/MM/yyyy")
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
                         </td>
                         <td>@c.Fecha.ToString("dd/MM/yyyy")</td>
-                        <td class="text-end fw-bold text-success">
+                        <td class="text-end fw-bold" style="color:#1a4a1a;">
                             ₡@c.Monto.ToString("N0")
                         </td>
                         <td>
-                            <span class="text-truncate d-inline-block" style="max-width: 250px;"
-                                  title="@c.Descripcion">
+                            <span class="text-truncate d-inline-block"
+                                  style="max-width:220px;" title="@c.Descripcion">
                                 @c.Descripcion
                             </span>
                         </td>
                         <td class="text-center">
                             <div class="d-flex gap-1 justify-content-center">
                                 <a asp-action="Edit" asp-route-id="@c.ComisionId"
-                                   class="btn btn-sm btn-warning" title="Editar">
+                                       class="btn btn-sm btn-warning" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                <a asp-action="DescargarPDF" asp-route-id="@c.ComisionId"
+                                       class="btn btn-sm btn-outline-danger" title="PDF">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                </a>
                                 <form asp-action="Delete" method="post" class="d-inline"
-                                      onsubmit="return confirm('¿Eliminar la comisión de ₡@c.Monto.ToString("N0") de @c.Empleado.PrimerApellido @c.Empleado.Nombre?')">
+                                      onsubmit="return confirm('¿Eliminar comisión de ₡@c.Monto.ToString("N0") de @c.Empleado.PrimerApellido?')">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@c.ComisionId" />
-                                    <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
+                                    <button type="submit"
+                                            class="btn btn-sm btn-danger" title="Eliminar">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
@@ -137,17 +189,18 @@ else
                     </tr>
                 }
             </tbody>
-            <tfoot class="table-light fw-bold">
+            <tfoot class="fw-bold" style="background:#f5f5f5;">
                 <tr>
-                    <td colspan="2" class="text-end text-muted">Total:</td>
-                    <td class="text-end text-success">₡@Model.Sum(c => c.Monto).ToString("N0")</td>
+                    <td colspan="3" class="text-end text-muted px-3">Total:</td>
+                    <td class="text-end px-3" style="color:#1a4a1a;">
+                        ₡@Model.Sum(c => c.Monto).ToString("N0")
+                    </td>
                     <td colspan="2"></td>
                 </tr>
             </tfoot>
         </table>
     </div>
-
     <div class="text-muted small mt-2 text-end">
-        Mostrando <strong>@Model.Count</strong> comisión(es)
+        @Model.Count comisión(es)
     </div>
 }

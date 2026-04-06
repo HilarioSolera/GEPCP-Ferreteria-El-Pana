@@ -15,6 +15,9 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Required]
         public int PeriodoPagoId { get; set; }
 
+        [Display(Name = "¿Trabajó ese día?")]
+        public bool Trabajado { get; set; } = true; // Por defecto se asume trabajado → pago doble
+
         [Display(Name = "Monto Total (₡)")]
         public decimal MontoTotal { get; set; }
 

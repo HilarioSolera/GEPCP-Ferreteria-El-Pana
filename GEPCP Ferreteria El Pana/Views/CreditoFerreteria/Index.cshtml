@@ -13,25 +13,25 @@
 
 @* KPIs *@
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm text-center py-3">
             <div class="fs-4 fw-bold text-primary">@ViewBag.TotalCreditos</div>
             <div class="text-muted small">Total Créditos</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm text-center py-3">
             <div class="fs-4 fw-bold text-success">@ViewBag.TotalActivos</div>
             <div class="text-muted small">Créditos Activos</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm text-center py-3">
             <div class="fs-4 fw-bold text-warning">₡@ViewBag.TotalSaldo.ToString("N0")</div>
             <div class="text-muted small">Saldo Total Pendiente</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm text-center py-3">
             <div class="fs-4 fw-bold text-info">₡@ViewBag.TotalCuotasQuinc.ToString("N0")</div>
             <div class="text-muted small">Cuotas Quincenales</div>
@@ -90,8 +90,9 @@ else
 {
     <div class="table-responsive shadow-sm rounded">
         <table class="table table-hover align-middle mb-0">
-            <thead style="background-color: #FF7A00; color: white;">
+            <thead style="background-color:#FF7A00;color:white;">
                 <tr>
+                    <th></th>
                     <th>Empleado</th>
                     <th>Descripción</th>
                     <th class="text-end">Monto Original</th>
@@ -109,17 +110,28 @@ else
                         ? (int)(((c.MontoTotal - c.Saldo) / c.MontoTotal) * 100)
                         : 0;
                     pct = Math.Max(0, Math.Min(100, pct));
+                    var tieneAbonos = c.AbonosCreditoFerreteria != null && c.AbonosCreditoFerreteria.Any();
 
                     <tr class="@(!c.Activo ? "table-light text-muted" : "")">
+                        <td class="text-center" style="width:36px;">
+                            @if (tieneAbonos)
+                            {
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-1"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#hist-c-@c.CreditoFerreteriaId"
+                                        title="Ver historial de abonos">
+                                    <i class="bi bi-chevron-down" style="font-size:0.7rem;"></i>
+                                </button>
+                            }
+                        </td>
                         <td>
                             <strong>@c.Empleado.PrimerApellido @c.Empleado.Nombre</strong>
                             <div class="small text-muted">@c.Empleado.Cedula</div>
                         </td>
                         <td>
-                            <span class="text-truncate d-inline-block" style="max-width:200px;"
-                                  title="@c.Descripcion">
-                                @c.Descripcion
-                            </span>
+                            <span class="text-truncate d-inline-block" style="max-width:180px;"
+                                  title="@c.Descripcion">@c.Descripcion</span>
                         </td>
                         <td class="text-end">₡@c.MontoTotal.ToString("N0")</td>
                         <td class="text-end fw-bold @(c.Activo ? "text-warning" : "text-success")">
@@ -134,21 +146,15 @@ else
                         <td class="text-end">₡@c.CuotaQuincenal.ToString("N0")</td>
                         <td>@c.FechaCredito.ToString("dd/MM/yyyy")</td>
                         <td class="text-center">
-                            @if (c.Activo)
-                            {
-                                <span class="badge bg-success">Activo</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">Cerrado</span>
-                            }
+                            <span class="badge @(c.Activo ? "bg-success" : "bg-secondary")">
+                                @(c.Activo ? "Activo" : "Cerrado")
+                            </span>
                         </td>
                         <td class="text-center">
                             <div class="d-flex gap-1 justify-content-center">
                                 @if (c.Activo)
                                 {
-                                    <button type="button"
-                                            class="btn btn-sm btn-primary"
+                                    <button type="button" class="btn btn-sm btn-primary"
                                             title="Registrar Abono"
                                             data-bs-toggle="modal"
                                             data-bs-target="#modalAbono"
@@ -158,13 +164,11 @@ else
                                             data-desc="@c.Descripcion">
                                         <i class="bi bi-cash-stack"></i>
                                     </button>
-
                                     <form asp-action="Cerrar" method="post" class="d-inline"
                                           onsubmit="return confirm('¿Cerrar el crédito de @c.Empleado.PrimerApellido @c.Empleado.Nombre?')">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@c.CreditoFerreteriaId" />
-                                        <button type="submit" class="btn btn-sm btn-secondary"
-                                                title="Cerrar crédito">
+                                        <button type="submit" class="btn btn-sm btn-secondary" title="Cerrar">
                                             <i class="bi bi-x-circle"></i>
                                         </button>
                                     </form>
@@ -175,8 +179,7 @@ else
                                           onsubmit="return confirm('¿Reabrir el crédito de @c.Empleado.PrimerApellido @c.Empleado.Nombre?')">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@c.CreditoFerreteriaId" />
-                                        <button type="submit" class="btn btn-sm btn-warning"
-                                                title="Reabrir crédito">
+                                        <button type="submit" class="btn btn-sm btn-warning" title="Reabrir">
                                             <i class="bi bi-arrow-counterclockwise"></i>
                                         </button>
                                     </form>
@@ -184,6 +187,60 @@ else
                             </div>
                         </td>
                     </tr>
+
+                    @* Fila expandible con historial *@
+                    @if (tieneAbonos)
+                    {
+                        <tr class="collapse" id="hist-c-@c.CreditoFerreteriaId">
+                            <td colspan="9" class="p-0">
+                                <div class="px-4 py-3" style="background:#f8f8f8;border-top:0.5px solid #eee;">
+                                    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;
+                                        letter-spacing:0.8px;color:#888;margin-bottom:8px;">
+                                        <i class="bi bi-clock-history"></i>
+                                        Historial de abonos — @c.AbonosCreditoFerreteria.Count() abono(s)
+                                    </div>
+                                    <table class="table table-sm mb-0" style="font-size:0.82rem;">
+                                        <thead style="background:#111;color:#fff;">
+                                            <tr>
+                                                <th style="padding:5px 10px;">#</th>
+                                                <th style="padding:5px 10px;">Fecha</th>
+                                                <th style="padding:5px 10px;text-align:right;">Monto</th>
+                                                <th style="padding:5px 10px;">Observaciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @{
+                                                int nb = 1;
+                                            }
+                                            @foreach (var a in c.AbonosCreditoFerreteria.OrderByDescending(x => x.FechaAbono))
+                                            {
+                                                <tr style="background:@(nb % 2 == 0 ? "#f0f0f0" : "#fff");">
+                                                    <td style="padding:5px 10px;color:#888;">@nb</td>
+                                                    <td style="padding:5px 10px;">@a.FechaAbono.ToString("dd/MM/yyyy HH:mm")</td>
+                                                    <td style="padding:5px 10px;text-align:right;font-weight:600;">
+                                                        ₡@a.Monto.ToString("N0")
+                                                    </td>
+                                                    <td style="padding:5px 10px;color:#666;">
+                                                        @(a.Observaciones ?? "—")
+                                                    </td>
+                                                </tr>
+                                                nb++;
+                                            }
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style="background:#111;color:#fff;font-weight:700;">
+                                                <td colspan="2" style="padding:5px 10px;">Total abonado</td>
+                                                <td style="padding:5px 10px;text-align:right;">
+                                                    ₡@c.AbonosCreditoFerreteria.Sum(a => a.Monto).ToString("N0")
+                                                </td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    }
                 }
             </tbody>
         </table>
@@ -200,25 +257,23 @@ else
 <div class="modal fade" id="modalAbono" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header text-white" style="background-color: #FF7A00;">
+            <div class="modal-header text-white" style="background-color:#FF7A00;">
                 <h5 class="modal-title">
                     <i class="bi bi-cash-stack"></i> Registrar Abono
                 </h5>
-                <button type="button" class="btn-close btn-close-white"
-                        data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form asp-action="RegistrarAbono" method="post" id="formAbono">
+            <form asp-action="RegistrarAbono" method="post">
                 @Html.AntiForgeryToken()
                 <div class="modal-body p-4">
                     <input type="hidden" name="creditoId" id="abonoCreditoId" />
-
                     <div class="alert alert-info py-2 small">
                         <i class="bi bi-person-circle"></i>
                         <strong id="abonoNombre"></strong><br />
-                        <i class="bi bi-tag"></i> <span id="abonoDesc" class="text-muted"></span><br />
+                        <i class="bi bi-tag"></i>
+                        <span id="abonoDesc" class="text-muted"></span><br />
                         Saldo actual: <strong id="abonoSaldoTexto" class="text-warning"></strong>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label fw-bold">
                             Monto del Abono (₡) <span class="text-danger">*</span>
@@ -231,12 +286,8 @@ else
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary"
-                            data-bs-dismiss="modal">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-primary px-4"
-                            onclick="return validarAbono()">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4" onclick="return validarAbono()">
                         <i class="bi bi-check-circle"></i> Registrar Abono
                     </button>
                 </div>
@@ -248,32 +299,30 @@ else
 @section Scripts {
     <script>
         var modalAbono = document.getElementById('modalAbono');
-        modalAbono.addEventListener('show.bs.modal', function (e) {
-            var btn   = e.relatedTarget;
-            var id    = btn.getAttribute('data-id');
+        modalAbono.addEventListener('show.bs.modal', function(e) {
+            var btn = e.relatedTarget;
+            var id = btn.getAttribute('data-id');
             var saldo = parseFloat(btn.getAttribute('data-saldo'));
-            var nom   = btn.getAttribute('data-nombre');
-            var desc  = btn.getAttribute('data-desc');
-
-            document.getElementById('abonoCreditoId').value  = id;
-            document.getElementById('abonoMonto').value      = '';
-            document.getElementById('abonoMonto').max        = saldo;
+            var nom = btn.getAttribute('data-nombre');
+            var desc = btn.getAttribute('data-desc');
+            document.getElementById('abonoCreditoId').value = id;
+            document.getElementById('abonoMonto').value = '';
+            document.getElementById('abonoMonto').max = saldo;
             document.getElementById('abonoNombre').textContent = nom;
-            document.getElementById('abonoDesc').textContent   = desc;
+            document.getElementById('abonoDesc').textContent = desc;
             document.getElementById('abonoSaldoTexto').textContent =
-                '&#8353;' + saldo.toLocaleString('es-CR', {minimumFractionDigits: 2});
+                '₡' + saldo.toLocaleString('es-CR', { minimumFractionDigits: 2 });
             document.getElementById('abonoHint').textContent =
-                'Máximo permitido: ₡' + saldo.toLocaleString('es-CR', {minimumFractionDigits: 2});
+                'Máximo permitido: ₡' + saldo.toLocaleString('es-CR', { minimumFractionDigits: 2 });
         });
 
         function validarAbono() {
             var monto = parseFloat(document.getElementById('abonoMonto').value);
-            var max   = parseFloat(document.getElementById('abonoMonto').max);
-            var hint  = document.getElementById('abonoHint');
-
+            var max = parseFloat(document.getElementById('abonoMonto').max);
+            var hint = document.getElementById('abonoHint');
             if (isNaN(monto) || monto <= 0) {
                 hint.textContent = '⚠ El monto debe ser mayor a cero.';
-                hint.className   = 'form-text text-danger';
+                hint.className = 'form-text text-danger';
                 return false;
             }
             if (monto > max) {

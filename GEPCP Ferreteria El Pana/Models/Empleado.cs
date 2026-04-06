@@ -1,8 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
+
     public enum TipoJornada
     {
         Completa = 1,   // 240 horas mensuales
@@ -13,9 +16,17 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         Transferencia = 1,
         Efectivo = 2
     }
+    public enum TipoContrato
+    {
+        Indefinido = 1,
+        PlazoFijo = 2,
+        PorObra = 3
+    }
+
 
     public class Empleado
     {
+        public ICollection<HistorialSalario> HistorialSalarios { get; set; } = new List<HistorialSalario>();
         public int EmpleadoId { get; set; }
 
         [Required]
@@ -58,6 +69,39 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Salario Base Mensual (₡)")]
         public decimal SalarioBase { get; set; }
 
+        // ── Tipo de contrato ────────────────────────────────────────
+        [Display(Name = "Tipo de Contrato")]
+        public TipoContrato TipoContrato { get; set; } = TipoContrato.Indefinido;
+
+        [Display(Name = "Fecha de Vencimiento de Contrato")]
+        public DateTime? FechaVencimientoContrato { get; set; }
+
+        // ── Dirección ───────────────────────────────────────────────
+        [StringLength(100)]
+        [Display(Name = "Provincia")]
+        public string? DireccionProvincia { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "Cantón")]
+        public string? DireccionCanton { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "Distrito")]
+        public string? DireccionDistrito { get; set; }
+
+        [StringLength(300)]
+        [Display(Name = "Dirección Exacta")]
+        public string? DireccionExacta { get; set; }
+
+        // ── Contacto de emergencia ──────────────────────────────────
+        [StringLength(100)]
+        [Display(Name = "Contacto de Emergencia")]
+        public string? ContactoEmergenciaNombre { get; set; }
+
+        [StringLength(20)]
+        [Display(Name = "Teléfono de Emergencia")]
+        public string? ContactoEmergenciaTelefono { get; set; }
+
         // ── CALCULADO: Valor hora = SalarioBase / HorasMensuales ──
         [NotMapped]
         public int HorasMensuales => TipoJornada == TipoJornada.Completa ? 240 : 120;
@@ -92,7 +136,12 @@ namespace GEPCP_Ferreteria_El_Pana.Models
 
         [Required]
         [Display(Name = "Forma de Pago")]
+
         public FormaPago FormaPago { get; set; } = FormaPago.Transferencia;
+        [Display(Name = "Fecha de Nacimiento")]
+        [DataType(DataType.Date)]
+        public DateTime? FechaNacimiento { get; set; }
+
 
         // ── Navegación ─────────────────────────────────
         public ICollection<Comision> Comisiones { get; set; } = new List<Comision>();
@@ -103,5 +152,6 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         public ICollection<Incapacidad> Incapacidades { get; set; } = new List<Incapacidad>();
         public ICollection<HorasExtras> HorasExtras { get; set; } = new List<HorasExtras>();
         public ICollection<PagoFeriado> PagosFeriado { get; set; } = new List<PagoFeriado>();
+        public ICollection<Vacacion> Vacaciones { get; set; } = new List<Vacacion>();
     }
 }

@@ -3,6 +3,10 @@
     ViewData["Title"] = "Aguinaldo - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var rol = Context.Session.GetString("Rol");
+    var totalEmpleados = (int)(ViewBag.TotalEmpleados ?? 0);
+    var totalMonto = (decimal)(ViewBag.TotalMonto ?? 0m);
+    var sinAguinaldo = (int)(ViewBag.SinAguinaldo ?? 0);
+    var anios = ViewBag.Anios as List<int> ?? new List<int> { DateTime.Today.Year };
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -10,7 +14,6 @@
     @if (rol == "RRHH")
     {
         <div class="d-flex gap-2">
-            @* Calcular automáticamente desde planillas *@
             <form asp-action="CalcularTodos" method="post" class="d-inline"
                   onsubmit="return confirm('¿Calcular aguinaldo @ViewBag.AnioActual para todos los empleados activos? Se usarán las planillas cerradas del período dic @((int)ViewBag.AnioActual - 1) - nov @ViewBag.AnioActual.')">
                 @Html.AntiForgeryToken()
@@ -19,7 +22,6 @@
                     <i class="bi bi-calculator"></i> Calcular Automático
                 </button>
             </form>
-            @* Registro manual *@
             <a asp-action="Create" class="btn btn-success btn-lg">
                 <i class="bi bi-plus-circle"></i> Registrar Manual
             </a>
@@ -39,20 +41,20 @@
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-primary">@ViewBag.TotalEmpleados</div>
+            <div class="fs-4 fw-bold text-primary">@totalEmpleados</div>
             <div class="text-muted small">Empleados con Aguinaldo</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold text-success">₡@ViewBag.TotalMonto.ToString("N0")</div>
+            <div class="fs-4 fw-bold text-success">₡@totalMonto.ToString("N0")</div>
             <div class="text-muted small">Total a Pagar</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card border-0 shadow-sm text-center py-3">
-            <div class="fs-4 fw-bold @(ViewBag.SinAguinaldo > 0 ? "text-warning" : "text-success")">
-                @ViewBag.SinAguinaldo
+            <div class="fs-4 fw-bold @(sinAguinaldo > 0 ? "text-warning" : "text-success")">
+                @sinAguinaldo
             </div>
             <div class="text-muted small">Empleados Pendientes</div>
         </div>
@@ -64,7 +66,7 @@
     <div class="row g-2">
         <div class="col-md-3">
             <select name="anio" class="form-select shadow-sm" onchange="this.form.submit()">
-                @foreach (var a in ViewBag.Anios as List<int>)
+                @foreach (var a in anios)
                 {
                     <option value="@a"
                             selected="@(a == (int)ViewBag.AnioActual ? "selected" : null)">
@@ -104,7 +106,7 @@
 {
     <div class="alert alert-warning text-center py-4">
         <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-        No hay aguinaldos registrados para el año @ViewBag.AnioActual.
+        Usá los filtros para buscar aguinaldos registrados.
         @if (rol == "RRHH")
         {
             <div class="mt-2 d-flex gap-2 justify-content-center">

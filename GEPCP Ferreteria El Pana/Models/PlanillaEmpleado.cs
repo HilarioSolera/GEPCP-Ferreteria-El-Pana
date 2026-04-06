@@ -70,6 +70,8 @@ namespace GEPCP_Ferreteria_El_Pana.Models
 
         [Display(Name = "Neto a Pagar (₡)")]
         public decimal NetoAPagar { get; set; }
+        [Display(Name = "Deducción Vacaciones Sin Pago (₡)")]
+        public decimal DeduccionVacaciones { get; set; }
 
         // ── Navegación ─────────────────────────────────
         public PeriodoPago PeriodoPago { get; set; } = null!;

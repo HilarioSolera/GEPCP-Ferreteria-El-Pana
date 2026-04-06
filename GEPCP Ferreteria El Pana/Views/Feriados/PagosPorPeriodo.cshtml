@@ -1,0 +1,249 @@
+﻿@model List<GEPCP_Ferreteria_El_Pana.Models.PagoFeriado>
+@{
+    ViewData["Title"] = "Pagos de Feriado - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var periodos = ViewBag.Periodos as List<GEPCP_Ferreteria_El_Pana.Models.PeriodoPago>;
+    var periodo = ViewBag.Periodo as GEPCP_Ferreteria_El_Pana.Models.PeriodoPago;
+    var feriadosEnPeriodo = ViewBag.FeriadosEnPeriodo as List<GEPCP_Ferreteria_El_Pana.Models.Feriado> ?? new();
+    int? periodoId = ViewBag.PeriodoId;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-calendar-check"></i> Pagos de Feriado por Período</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a Feriados
+    </a>
+</div>
+
+@* Selector de período *@
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form asp-action="PagosPorPeriodo" method="get" class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label fw-bold">
+                    <i class="bi bi-calendar-range"></i> Seleccionar Período
+                </label>
+                <select name="periodoId" class="form-select form-select-lg"
+                        onchange="this.form.submit()">
+                    <option value="">-- Seleccioná un período --</option>
+                    @if (periodos != null)
+                    {
+                        @foreach (var p in periodos)
+                        {
+                            <option value="@p.PeriodoPagoId"
+                                    selected="@(p.PeriodoPagoId == periodoId ? "selected" : null)">
+                                @p.Descripcion
+                                @if (p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado)
+                                {
+                                    <text> — Cerrado</text>
+                                }
+                                else if (p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Abierto)
+                                {
+
+                                    <text> — Abierto</text>
+                                }
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (periodoId == null)
+{
+    <div class="alert alert-info text-center py-4">
+        <i class="bi bi-arrow-up-circle fs-3 d-block mb-2"></i>
+        Seleccioná un período para ver los pagos de feriado.
+    </div>
+}
+else if (periodo != null)
+{
+    @* Info del período *@
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="fw-bold mb-1">@periodo.Descripcion</h5>
+                    <div class="text-muted small">
+                        <i class="bi bi-calendar3"></i>
+                        @periodo.FechaInicio.ToString("dd/MM/yyyy") al @periodo.FechaFin.ToString("dd/MM/yyyy")
+                    </div>
+                    @if (feriadosEnPeriodo.Any())
+                    {
+                        <div class="mt-2">
+                            <span class="text-muted small fw-bold">Feriados obligatorios en este período:</span>
+                            @foreach (var f in feriadosEnPeriodo)
+                            {
+                                <span class="badge bg-danger ms-1">
+                                    @f.Fecha.ToString("dd/MM") — @f.Nombre
+                                </span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mt-2">
+                            <span class="badge bg-secondary">Sin feriados obligatorios en este período</span>
+                        </div>
+                    }
+                </div>
+                <div class="col-md-4 text-end">
+                    @if (periodo.Estado != GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado && feriadosEnPeriodo.Any())
+                    {
+                        <form asp-action="GenerarPagosFeriado" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="periodoId" value="@periodoId" />
+                            <button type="submit" class="btn btn-primary btn-lg"
+                                    onclick="return confirm('¿Generar pagos de feriado para todos los empleados activos?')">
+                                <i class="bi bi-lightning-charge"></i> Generar Pagos
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* KPIs *@
+    @if (Model.Any())
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm text-center py-3">
+                    <div class="fs-4 fw-bold text-primary">@Model.Count</div>
+                    <div class="text-muted small">Registros de Pago</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm text-center py-3">
+                    <div class="fs-4 fw-bold text-success">@Model.Count(p => p.Trabajado)</div>
+                    <div class="text-muted small">Trabajaron (pago doble)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm text-center py-3">
+                    <div class="fs-4 fw-bold text-warning">@Model.Count(p => !p.Trabajado)</div>
+                    <div class="text-muted small">No Trabajaron (pago normal)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-hover align-middle mb-0">
+                <thead style="background-color: #FF7A00; color: white;">
+                    <tr>
+                        <th>Empleado</th>
+                        <th>Feriado</th>
+                        <th class="text-center">Fecha</th>
+                        <th class="text-center">¿Trabajó?</th>
+                        <th class="text-end">Monto Extra</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pago in Model)
+                    {
+                        <tr class="@(!pago.Trabajado ? "table-warning" : "")">
+                            <td class="fw-bold">
+                                @pago.Empleado.PrimerApellido @pago.Empleado.Nombre
+                            </td>
+                            <td>@pago.Feriado.Nombre</td>
+                            <td class="text-center text-muted">
+                                @pago.Feriado.Fecha.ToString("dd/MM/yyyy")
+                            </td>
+                            <td class="text-center">
+                                @if (pago.Trabajado)
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Sí — Pago doble
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-x-circle"></i> No — Pago normal
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-end fw-bold">
+                                @if (pago.MontoTotal > 0)
+                                {
+                                    <span class="text-success">₡@pago.MontoTotal.ToString("N0")</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">₡0</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (periodo.Estado != GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado)
+                                {
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <form asp-action="MarcarNoTrabajado" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="pagoFeriadoId" value="@pago.PagoFeriadoId" />
+                                            <input type="hidden" name="periodoId" value="@periodoId" />
+                                            <button type="submit"
+                                                    class="btn btn-sm @(pago.Trabajado ? "btn-outline-warning" : "btn-outline-success")"
+                                                    title="@(pago.Trabajado ? "Marcar como no trabajado" : "Marcar como trabajado")">
+                                                @if (pago.Trabajado)
+                                                {
+                                                    <i class="bi bi-toggle-on"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-toggle-off"></i>
+                                                }
+                                            </button>
+                                        </form>
+                                        <form asp-action="EliminarPago" method="post" class="d-inline"
+                                              onsubmit="return confirm('¿Eliminar este pago de feriado?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="pagoFeriadoId" value="@pago.PagoFeriadoId" />
+                                            <input type="hidden" name="periodoId" value="@periodoId" />
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Cerrado</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot style="background-color: #FF7A00; color: white;">
+                    <tr>
+                        <td colspan="4" class="fw-bold">TOTAL EXTRA A PAGAR</td>
+                        <td class="text-end fw-bold">₡@Model.Sum(p => p.MontoTotal).ToString("N0")</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info text-center py-4">
+            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+            No hay pagos de feriado registrados para este período.
+            @if (feriadosEnPeriodo.Any() && periodo.Estado != GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado)
+            {
+                <div class="mt-2">
+                    <form asp-action="GenerarPagosFeriado" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="periodoId" value="@periodoId" />
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-lightning-charge"></i> Generar Pagos Automáticamente
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+    }
+}

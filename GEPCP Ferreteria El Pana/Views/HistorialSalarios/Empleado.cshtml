@@ -1,0 +1,83 @@
+﻿@model List<GEPCP_Ferreteria_El_Pana.Models.HistorialSalario>
+@{
+    var emp = ViewBag.Empleado as GEPCP_Ferreteria_El_Pana.Models.Empleado;
+    ViewData["Title"] = $"Historial Salarios — {emp?.PrimerApellido} {emp?.Nombre}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">
+            <i class="bi bi-clock-history"></i> Historial de Salarios
+        </h2>
+        <small class="text-muted">
+            @emp?.PrimerApellido @emp?.SegundoApellido @emp?.Nombre —
+            <code>@emp?.Cedula</code>
+        </small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Empleados" asp-action="Details"
+               asp-route-id="@emp?.EmpleadoId"
+               class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al empleado
+        </a>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info text-center py-4">
+        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+        No hay cambios de salario registrados para este empleado.
+    </div>
+}
+else
+{
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body py-3 d-flex gap-4">
+            <div class="text-center">
+                <div class="text-muted small">Salario Actual</div>
+                <div class="fw-bold text-success fs-5">₡@emp?.SalarioBase.ToString("N0")</div>
+            </div>
+            <div class="text-center">
+                <div class="text-muted small">Total Cambios</div>
+                <div class="fw-bold fs-5">@Model.Count</div>
+            </div>
+            <div class="text-center">
+                <div class="text-muted small">Primer Registro</div>
+                <div class="fw-bold fs-5">@Model.Last().FechaCambio.ToString("dd/MM/yyyy")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-hover align-middle mb-0">
+            <thead style="background-color: #FF7A00; color: white;">
+                <tr>
+                    <th>Fecha</th>
+                    <th class="text-end">Salario Anterior</th>
+                    <th class="text-end">Salario Nuevo</th>
+                    <th class="text-end">Diferencia</th>
+                    <th>Modificado por</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var h in Model)
+                {
+                    var dif = h.SalarioNuevo - h.SalarioAnterior;
+                    <tr>
+                        <td>@h.FechaCambio.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="text-end text-muted">₡@h.SalarioAnterior.ToString("N0")</td>
+                        <td class="text-end fw-bold">₡@h.SalarioNuevo.ToString("N0")</td>
+                        <td class="text-end fw-bold @(dif >= 0 ? "text-success" : "text-danger")">
+                            @(dif >= 0 ? "+" : "")₡@dif.ToString("N0")
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">@(h.ModificadoPor ?? "—")</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

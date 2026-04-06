@@ -10,6 +10,7 @@ namespace GEPCP_Ferreteria_El_Pana.Data
             : base(options) { }
 
         // ── DbSets existentes ───────────────────────────────────────────────
+        public DbSet<HistorialSalario> HistorialSalarios { get; set; } = null!;
         public DbSet<Empleado> Empleados { get; set; } = null!;
         public DbSet<Puesto> Puestos { get; set; } = null!;
         public DbSet<Comision> Comisiones { get; set; } = null!;
@@ -18,6 +19,10 @@ namespace GEPCP_Ferreteria_El_Pana.Data
         public DbSet<Usuario> Usuarios { get; set; } = null!;
         public DbSet<Rol> Roles { get; set; } = null!;
         public DbSet<Aguinaldo> Aguinaldos { get; set; }
+        public DbSet<RegistroAuditoria> RegistrosAuditoria { get; set; } = null!;
+        public DbSet<AbonoCreditoFerreteria> AbonosCreditoFerreteria { get; set; } = null!;
+        public DbSet<Vacacion> Vacaciones { get; set; }
+
 
         // ── DbSets nuevos ───────────────────────────────────────────────────
         public DbSet<PeriodoPago> PeriodosPago { get; set; } = null!;
@@ -27,6 +32,8 @@ namespace GEPCP_Ferreteria_El_Pana.Data
         public DbSet<HorasExtras> HorasExtras { get; set; } = null!;
         public DbSet<Feriado> Feriados { get; set; } = null!;
         public DbSet<PagoFeriado> PagosFeriado { get; set; } = null!;
+        public DbSet<AbonoPrestamo> AbonosPrestamo { get; set; }
+     
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -113,9 +120,39 @@ namespace GEPCP_Ferreteria_El_Pana.Data
                 .HasForeignKey(pf => pf.PeriodoPagoId)
                 .OnDelete(DeleteBehavior.NoAction);
 
+
             modelBuilder.Entity<Aguinaldo>()
     .HasIndex(a => new { a.EmpleadoId, a.Anio })
     .IsUnique();
+            modelBuilder.Entity<HistorialSalario>()
+    .HasOne(h => h.Empleado)
+    .WithMany(e => e.HistorialSalarios)
+    .HasForeignKey(h => h.EmpleadoId)
+    .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<HistorialSalario>()
+                .Property(h => h.SalarioAnterior).HasPrecision(18, 2);
+
+            modelBuilder.Entity<HistorialSalario>()
+                .Property(h => h.SalarioNuevo).HasPrecision(18, 2);
+
+            modelBuilder.Entity<AbonoPrestamo>()
+    .HasOne(a => a.Prestamo)
+    .WithMany(p => p.AbonosPrestamo)
+    .HasForeignKey(a => a.PrestamoId)
+    .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<AbonoPrestamo>()
+                .Property(a => a.Monto).HasPrecision(18, 2);
+
+            modelBuilder.Entity<AbonoCreditoFerreteria>()
+                .HasOne(a => a.CreditoFerreteria)
+                .WithMany(c => c.AbonosCreditoFerreteria)
+                .HasForeignKey(a => a.CreditoFerreteriaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<AbonoCreditoFerreteria>()
+                .Property(a => a.Monto).HasPrecision(18, 2);
 
             // ── PRECISIÓN DECIMAL ───────────────────────────────────────────
 
@@ -193,11 +230,8 @@ namespace GEPCP_Ferreteria_El_Pana.Data
                 .IsUnique();
 
             // ── SEED: Puestos ───────────────────────────────────────────────
-            modelBuilder.Entity<Puesto>().HasData(
-    new Puesto { PuestoId = 1, Nombre = "Encargada de RR.H.H.", SalarioBase = 450000, Activo = true },
-    new Puesto { PuestoId = 2, Nombre = "Vendedor", SalarioBase = 380000, Activo = true }
-
-);
+            modelBuilder.Entity<Puesto>().HasData(new Puesto { PuestoId = 1, Nombre = "Encargada de RR.H.H.", SalarioBase = 450000, Activo = true },
+                                                  new Puesto { PuestoId = 2, Nombre = "Vendedor", SalarioBase = 380000, Activo = true });
             // ── SEED: Roles ─────────────────────────────────────────────────
             modelBuilder.Entity<Rol>().HasData(
                 new Rol { RolId = 1, Nombre = "RRHH" },
@@ -220,23 +254,26 @@ namespace GEPCP_Ferreteria_El_Pana.Data
 
             // ── SEED: Usuarios ──────────────────────────────────────────────
             modelBuilder.Entity<Usuario>().HasData(
-                new Usuario
-                {
-                    UsuarioId = 1,
-                    NombreUsuario = "admin.rrhh",
-                    NombreCompleto = "Administrador RRHH",
-                    PasswordHash = "$2a$11$/mJGbQrxHo3bDUtdY6MWoeaJc/6aYPE7EG9ukr6ln9mNupX3Y8Wz.",
-                    Rol = "RRHH"
-                },
-                new Usuario
-                {
-                    UsuarioId = 2,
-                    NombreUsuario = "jefatura",
-                    NombreCompleto = "Usuario Jefatura",
-                    PasswordHash = "$2a$11$T72F0Mu8ocYejSTck6bprueMSoi5WgVtSD.hIraw5PvhnjDde6rD6",
-                    Rol = "Jefatura"
-                }
-            );
+    new Usuario
+    {
+        UsuarioId = 1,
+        NombreUsuario = "admin.rrhh",
+        NombreCompleto = "Administrador RRHH",
+        PasswordHash = "$2a$11$/mJGbQrxHo3bDUtdY6MWoeaJc/6aYPE7EG9ukr6ln9mNupX3Y8Wz.",
+        Rol = "RRHH",
+        CorreoElectronico = "solerahilario207@gmail.com"
+    },
+    new Usuario
+    {
+        UsuarioId = 2,
+        NombreUsuario = "jefatura",
+        NombreCompleto = "Usuario Jefatura",
+        PasswordHash = "$2a$11$T72F0Mu8ocYejSTck6bprueMSoi5WgVtSD.hIraw5PvhnjDde6rD6",
+        Rol = "Jefatura",
+        CorreoElectronico = "solerahilario207@gmail.com"
+    }
+);
+
         }
     }
 }

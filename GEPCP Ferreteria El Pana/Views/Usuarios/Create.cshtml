@@ -39,6 +39,17 @@
                     <span asp-validation-for="NombreCompleto" class="text-danger small"></span>
                 </div>
 
+                <div class="col-12">
+                    <label asp-for="CorreoElectronico" class="form-label fw-bold">
+                        <i class="bi bi-envelope"></i> Correo Electrónico
+                        <span class="text-muted fw-normal small">(requerido para recuperar contraseña)</span>
+                    </label>
+                    <input asp-for="CorreoElectronico" type="email"
+                           class="form-control form-control-lg"
+                           maxlength="150" placeholder="Ej: maria@ferreteria.com" />
+                    <span asp-validation-for="CorreoElectronico" class="text-danger small"></span>
+                </div>
+
                 <div class="col-md-6">
                     <label asp-for="Password" class="form-label fw-bold">
                         <i class="bi bi-lock"></i> Contraseña <span class="text-danger">*</span>
@@ -105,12 +116,9 @@
             var labels = ['Muy débil', 'Débil', 'Regular', 'Buena', 'Fuerte'];
             var colors = ['text-danger', 'text-danger', 'text-warning', 'text-info', 'text-success'];
 
-            if (pwd.length === 0) {
-                hint.textContent = '';
-                return;
-            }
+            if (pwd.length === 0) { hint.textContent = ''; return; }
 
-            var idx   = Math.max(0, score - 1);
+            var idx = Math.max(0, score - 1);
             hint.className = 'form-text ' + colors[idx];
             hint.innerHTML = '<i class="bi bi-shield"></i> Fortaleza: <strong>'
                            + labels[idx]

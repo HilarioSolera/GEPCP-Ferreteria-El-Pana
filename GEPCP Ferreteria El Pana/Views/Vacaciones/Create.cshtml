@@ -1,0 +1,381 @@
+﻿@model GEPCP_Ferreteria_El_Pana.Models.Vacacion
+@{
+    ViewData["Title"] = "Registrar Vacación - GEPCP Ferretería El Pana";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-umbrella"></i> Registrar Vacación</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-4">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>No se pudo registrar:</strong>
+                    <ul class="mb-0 mt-1">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@error.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <div class="row g-3">
+
+                @* ── Empleado ── *@
+                <div class="col-12">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-person-search"></i> Empleado <span class="text-danger">*</span>
+                    </label>
+                    <input type="hidden" asp-for="EmpleadoId" id="EmpleadoId" />
+                    <div class="input-group mb-1">
+                        <span class="input-group-text bg-white">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" id="buscarEmpleado"
+                               class="form-control form-control-lg border-start-0"
+                               placeholder="Buscar por nombre, apellido o cédula..."
+                               autocomplete="off" />
+                        <button type="button" class="btn btn-outline-secondary" id="btnMostrarTodos">
+                            <i class="bi bi-list-ul"></i> Todos
+                        </button>
+                    </div>
+
+                    <div id="empleadoSeleccionado" class="d-none">
+                        <div class="alert alert-success py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-person-check-fill"></i>
+                                <strong id="empNombre"></strong>
+                                <span class="text-muted ms-2 small" id="empCedula"></span>
+                                <span class="badge bg-secondary ms-1" id="empPuesto"></span>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="text-end small">
+                                    <div>Salario diario: <strong id="empSalarioDiario"></strong></div>
+                                    <div id="empDisponibles" class="fw-bold"></div>
+                                    <div class="text-muted" id="empDetalleDias"></div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        id="btnLimpiarEmpleado">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="resultadosBusqueda" class="border rounded shadow-sm"
+                         style="display:none;max-height:280px;overflow-y:auto;
+                        background:#fff;z-index:100;position:relative;">
+                    </div>
+                    <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
+                </div>
+
+                @* ── Fechas ── *@
+                <div class="col-md-5">
+                    <label asp-for="FechaInicio" class="form-label fw-bold">
+                        <i class="bi bi-calendar-check"></i> Fecha Inicio <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="FechaInicio" type="date"
+                           class="form-control form-control-lg" id="inputFechaInicio" />
+                    <span asp-validation-for="FechaInicio" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-5">
+                    <label asp-for="FechaFin" class="form-label fw-bold">
+                        <i class="bi bi-calendar-x"></i> Fecha Fin <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="FechaFin" type="date"
+                           class="form-control form-control-lg" id="inputFechaFin" />
+                    <span asp-validation-for="FechaFin" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-2 d-flex flex-column justify-content-end">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox"
+                               id="chkExcluirFds" checked />
+                        <label class="form-check-label small fw-bold" for="chkExcluirFds">
+                            Excluir sáb/dom
+                        </label>
+                    </div>
+                    <div class="form-text text-muted" style="font-size:0.7rem;">
+                        Desmarcá si trabajan fines de semana
+                    </div>
+                </div>
+
+                @* ── Días hábiles ── *@
+                <div class="col-md-4">
+                    <label asp-for="DiasHabiles" class="form-label fw-bold">
+                        <i class="bi bi-calendar2-week"></i> Días <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="DiasHabiles" type="number" step="0.5" min="0.5"
+                           class="form-control form-control-lg" id="inputDias" />
+                    <div class="form-text" id="diasHint">
+                        <span class="text-muted">Calculado automáticamente. Podés editarlo.</span>
+                    </div>
+                    <span asp-validation-for="DiasHabiles" class="text-danger small"></span>
+                </div>
+
+                @* ── Tipo ── *@
+                <div class="col-md-4">
+                    <label asp-for="Tipo" class="form-label fw-bold">
+                        <i class="bi bi-toggle-on"></i> Tipo <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="Tipo" class="form-select form-select-lg" id="selectTipo">
+                        <option value="1">Con Pago</option>
+                        <option value="2">Sin Pago</option>
+                    </select>
+                    <span asp-validation-for="Tipo" class="text-danger small"></span>
+                </div>
+
+                @* ── Estado ── *@
+                <div class="col-md-4">
+                    <label asp-for="Estado" class="form-label fw-bold">
+                        <i class="bi bi-check2-circle"></i> Estado <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="Estado" class="form-select form-select-lg">
+                        <option value="1">Pendiente</option>
+                        <option value="2">Aprobada</option>
+                        <option value="3">Rechazada</option>
+                    </select>
+                    <span asp-validation-for="Estado" class="text-danger small"></span>
+                </div>
+
+                @* ── Deducción y días disponibles ── *@
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted">
+                        <i class="bi bi-calculator"></i> Deducción Estimada
+                    </label>
+                    <div class="form-control form-control-lg bg-light text-center fw-bold"
+                         id="montoRef">
+                        —
+                    </div>
+                    <div class="form-text text-muted" id="montoHint">
+                        Solo aplica si el tipo es Sin Pago.
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-muted">
+                        <i class="bi bi-calendar-heart"></i> Días Disponibles (Ley CR)
+                    </label>
+                    <div class="form-control form-control-lg bg-light text-center fw-bold text-primary"
+                         id="diasDisponiblesRef">
+                        —
+                    </div>
+                    <div class="form-text text-muted" id="diasDisponiblesDetalle">
+                        14 días por cada 50 semanas trabajadas.
+                    </div>
+                </div>
+
+                @* ── Observaciones ── *@
+                <div class="col-12">
+                    <label asp-for="Observaciones" class="form-label fw-bold">
+                        <i class="bi bi-chat-text"></i> Observaciones
+                        <span class="text-muted fw-normal small">(opcional)</span>
+                    </label>
+                    <textarea asp-for="Observaciones" class="form-control"
+                              rows="2" maxlength="300"
+                              placeholder="Ej: Vacaciones anuales aprobadas"></textarea>
+                    <span asp-validation-for="Observaciones" class="text-danger small"></span>
+                </div>
+
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-lg px-5"
+                        id="btnGuardar" disabled>
+                    <i class="bi bi-check-circle"></i> Registrar
+                </button>
+                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        var empleadoActual = null;
+
+        // ── Buscador ──────────────────────────────────────────────────────────
+        async function buscarEmpleados(termino, mostrarTodos = false) {
+            var url = mostrarTodos
+                ? '/Vacaciones/TodosLosEmpleados'
+                : '/Vacaciones/BuscarEmpleados?termino=' + encodeURIComponent(termino);
+            var res = await fetch(url);
+            var empleados = await res.json();
+            var div = document.getElementById('resultadosBusqueda');
+
+            if (!empleados.length) {
+                div.innerHTML = '<div class="p-3 text-muted small text-center">No se encontraron empleados.</div>';
+                div.style.display = 'block';
+                return;
+            }
+
+            div.innerHTML = empleados.map(e =>
+                `<div class="p-2 border-bottom"
+                              style="cursor:pointer;"
+                              onmouseover="this.style.background='#f8f8f8'"
+                              onmouseout="this.style.background='#fff'"
+                              onclick="seleccionarEmpleado(${e.id},
+                                       '${e.nombre.replace(/'/g, "\\'")}',
+                                       '${e.cedula}',
+                                       '${e.puesto.replace(/'/g, "\\'")}',
+                                       ${e.salarioDiario},
+                                       '${e.fechaIngreso}')">
+                            <div class="fw-bold small">${e.nombre}</div>
+                            <div class="text-muted" style="font-size:0.78rem;">
+                                ${e.cedula} — ${e.puesto}
+                                <span class="float-end">
+                                    ₡${e.salarioDiario.toLocaleString('es-CR', { minimumFractionDigits: 2 })}/día
+                                </span>
+                            </div>
+                         </div>`
+            ).join('');
+            div.style.display = 'block';
+        }
+
+        async function seleccionarEmpleado(id, nombre, cedula, puesto, salarioDiario, fechaIngreso) {
+            empleadoActual = { id, nombre, cedula, puesto, salarioDiario };
+
+            document.getElementById('EmpleadoId').value = id;
+            document.getElementById('empNombre').textContent = nombre;
+            document.getElementById('empCedula').textContent = cedula;
+            document.getElementById('empPuesto').textContent = puesto;
+            document.getElementById('empSalarioDiario').textContent =
+                '₡' + salarioDiario.toLocaleString('es-CR', { minimumFractionDigits: 2 }) + '/día';
+
+            document.getElementById('empleadoSeleccionado').classList.remove('d-none');
+            document.getElementById('resultadosBusqueda').style.display = 'none';
+            document.getElementById('buscarEmpleado').value = '';
+            document.getElementById('btnGuardar').disabled = false;
+
+            // Obtener días disponibles
+            try {
+                var res = await fetch('/Vacaciones/CalcularDisponibles?empleadoId=' + id);
+                var data = await res.json();
+                if (data.ok) {
+                    var dispEl = document.getElementById('empDisponibles');
+                    var detalleEl = document.getElementById('empDetalleDias');
+                    dispEl.textContent = `${data.disponibles} días disponibles`;
+                    dispEl.className = data.disponibles > 0
+                        ? 'fw-bold text-success' : 'fw-bold text-danger';
+                    detalleEl.textContent = `${data.diasBase} acumulados — ${data.diasTomados} tomados`;
+
+                    var refEl = document.getElementById('diasDisponiblesRef');
+                    refEl.textContent = `${data.disponibles} días`;
+                    refEl.className = `form-control form-control-lg bg-light text-center fw-bold ` +
+                        (data.disponibles > 0 ? 'text-primary' : 'text-danger');
+
+                    document.getElementById('diasDisponiblesDetalle').textContent =
+                        `${data.diasBase} días acumulados — ${data.diasTomados} tomados — ` +
+                        `Antigüedad: ${data.antiguedad} año(s)`;
+                }
+            } catch (e) { console.error(e); }
+
+            actualizarDias();
+            calcularMonto();
+        }
+
+        document.getElementById('btnLimpiarEmpleado').addEventListener('click', function() {
+            empleadoActual = null;
+            document.getElementById('EmpleadoId').value = '';
+            document.getElementById('empleadoSeleccionado').classList.add('d-none');
+            document.getElementById('buscarEmpleado').value = '';
+            document.getElementById('montoRef').textContent = '—';
+            document.getElementById('diasDisponiblesRef').textContent = '—';
+            document.getElementById('inputDias').value = '';
+            document.getElementById('btnGuardar').disabled = true;
+        });
+
+        var timerBusqueda;
+        document.getElementById('buscarEmpleado').addEventListener('input', function() {
+            clearTimeout(timerBusqueda);
+            var val = this.value.trim();
+            if (val.length < 2) {
+                document.getElementById('resultadosBusqueda').style.display = 'none';
+                return;
+            }
+            timerBusqueda = setTimeout(() => buscarEmpleados(val), 300);
+        });
+
+        document.getElementById('btnMostrarTodos').addEventListener('click', function() {
+            buscarEmpleados('', true);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#resultadosBusqueda') &&
+                !e.target.closest('#buscarEmpleado') &&
+                !e.target.closest('#btnMostrarTodos'))
+                document.getElementById('resultadosBusqueda').style.display = 'none';
+        });
+
+        // ── Calcular días automáticamente ─────────────────────────────────────
+        async function actualizarDias() {
+            var fi = document.getElementById('inputFechaInicio').value;
+            var ff = document.getElementById('inputFechaFin').value;
+            var fds = document.getElementById('chkExcluirFds').checked;
+            var hint = document.getElementById('diasHint');
+
+            if (!fi || !ff || ff < fi) return;
+
+            try {
+                var url = `/Vacaciones/CalcularDias?fechaInicio=${fi}&fechaFin=${ff}&excluirFds=${fds}`;
+                var res = await fetch(url);
+                var data = await res.json();
+
+                if (data.ok) {
+                    document.getElementById('inputDias').value = data.dias;
+                    hint.innerHTML = `<span class="text-success">
+                                <i class="bi bi-calculator"></i>
+                                Calculado: <strong>${data.dias} días</strong>
+                                ${fds ? '(excluyendo sáb/dom)' : '(incluyendo todos los días)'}.
+                                Podés editarlo manualmente.
+                            </span>`;
+                    calcularMonto();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // ── Calcular monto deducción ──────────────────────────────────────────
+        function calcularMonto() {
+            var dias = parseFloat(document.getElementById('inputDias').value) || 0;
+            var tipo = parseInt(document.getElementById('selectTipo').value);
+            var montoRef = document.getElementById('montoRef');
+            var hint = document.getElementById('montoHint');
+            var salDiario = empleadoActual?.salarioDiario || 0;
+
+            if (tipo === 2 && dias > 0 && salDiario > 0) {
+                var monto = dias * salDiario;
+                montoRef.textContent = '₡' + monto.toLocaleString('es-CR', { minimumFractionDigits: 2 });
+                montoRef.className = 'form-control form-control-lg bg-light text-center fw-bold text-danger';
+                hint.textContent = `${dias} días × ₡${salDiario.toLocaleString('es-CR', { minimumFractionDigits: 2 })}/día`;
+            } else {
+                montoRef.textContent = tipo === 1 ? 'Sin deducción' : '—';
+                montoRef.className = 'form-control form-control-lg bg-light text-center fw-bold text-muted';
+                hint.textContent = 'Solo aplica si el tipo es Sin Pago.';
+            }
+        }
+
+        document.getElementById('inputFechaInicio').addEventListener('change', actualizarDias);
+        document.getElementById('inputFechaFin').addEventListener('change', actualizarDias);
+        document.getElementById('chkExcluirFds').addEventListener('change', actualizarDias);
+        document.getElementById('inputDias').addEventListener('input', calcularMonto);
+        document.getElementById('selectTipo').addEventListener('change', calcularMonto);
+
+        if (parseInt(document.getElementById('EmpleadoId').value) > 0)
+            document.getElementById('btnGuardar').disabled = false;
+    </script>
+}

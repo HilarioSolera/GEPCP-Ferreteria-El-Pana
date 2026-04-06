@@ -3,6 +3,9 @@
     ViewData["Title"] = "Períodos de Pago - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
     int anio = ViewBag.AnioActual;
+    var rol = Context.Session.GetString("Rol") ?? "";
+    var conteos = ViewBag.ConteosEmpleados as Dictionary<int, int> ?? new Dictionary<int, int>();
+    var netos = ViewBag.NetosPorPeriodo as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -10,6 +13,15 @@
     <a asp-action="Create" class="btn btn-success btn-lg">
         <i class="bi bi-plus-circle"></i> Nuevo Período
     </a>
+</div>
+
+@* Nota legal *@
+<div class="alert alert-info d-flex align-items-center gap-2 py-2 mb-4">
+    <i class="bi bi-shield-lock"></i>
+    <small>
+        <strong>Protección de registros:</strong> Los períodos cerrados son inmutables por ley
+        (Ley 8968, CR). Solo Jefatura puede reabrirlos en casos excepcionales.
+    </small>
 </div>
 
 @* KPIs *@
@@ -36,13 +48,11 @@
 
 @* Navegación por año *@
 <div class="d-flex align-items-center gap-3 mb-4">
-    <a asp-action="Index" asp-route-anio="@ViewBag.AnioAnterior"
-           class="btn btn-outline-secondary">
+    <a asp-action="Index" asp-route-anio="@ViewBag.AnioAnterior" class="btn btn-outline-secondary">
         <i class="bi bi-chevron-left"></i> @ViewBag.AnioAnterior
     </a>
     <h5 class="mb-0 fw-bold">@anio</h5>
-    <a asp-action="Index" asp-route-anio="@ViewBag.AnioSiguiente"
-           class="btn btn-outline-secondary">
+    <a asp-action="Index" asp-route-anio="@ViewBag.AnioSiguiente" class="btn btn-outline-secondary">
         @ViewBag.AnioSiguiente <i class="bi bi-chevron-right"></i>
     </a>
 </div>
@@ -63,12 +73,14 @@ else
 {
     <div class="table-responsive shadow-sm rounded">
         <table class="table table-hover align-middle mb-0">
-            <thead style="background-color: #FF7A00; color: white;">
+            <thead style="background-color:#FF7A00;color:white;">
                 <tr>
                     <th>Período</th>
-                    <th>Quincena</th>
+                    <th class="text-center">Quincena</th>
                     <th>Fecha Inicio</th>
                     <th>Fecha Fin</th>
+                    <th class="text-center">Empleados</th>
+                    <th class="text-end">Neto Pagado</th>
                     <th class="text-center">Estado</th>
                     <th class="text-center">Acciones</th>
                 </tr>
@@ -76,37 +88,70 @@ else
             <tbody>
                 @foreach (var p in Model)
                 {
-                    <tr class="@(p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado ? "table-light text-muted" : "")">
-                        <td class="fw-bold">
-                            @p.Descripcion
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary">
-                                Q@((int)p.Quincena)
-                            </span>
+                    var esCerrado = p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado;
+                    var empCount = conteos.ContainsKey(p.PeriodoPagoId) ? conteos[p.PeriodoPagoId] : 0;
+                    var neto = netos.ContainsKey(p.PeriodoPagoId) ? netos[p.PeriodoPagoId] : 0m;
+
+                    <tr class="@(esCerrado ? "table-light text-muted" : "")">
+                        <td class="fw-bold">@p.Descripcion</td>
+                        <td class="text-center">
+                            <span class="badge bg-secondary">Q@((int)p.Quincena)</span>
                         </td>
                         <td>@p.FechaInicio.ToString("dd/MM/yyyy")</td>
                         <td>@p.FechaFin.ToString("dd/MM/yyyy")</td>
                         <td class="text-center">
-                            @if (p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Abierto)
+                            @if (empCount > 0)
                             {
-                                <span class="badge bg-success fs-6">
-                                    <i class="bi bi-unlock"></i> Abierto
+                                <span class="badge bg-secondary">@empCount empleado(s)</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Sin planilla</span>
+                            }
+                        </td>
+                        <td class="text-end fw-bold">
+                            @if (neto > 0)
+                            {
+                                <span>₡@neto.ToString("N0")</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">—</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            @if (esCerrado)
+                            {
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-lock-fill"></i> Cerrado
                                 </span>
                             }
                             else
                             {
-                                <span class="badge bg-secondary fs-6">
-                                    <i class="bi bi-lock"></i> Cerrado
+                                <span class="badge bg-success">
+                                    <i class="bi bi-unlock"></i> Abierto
                                 </span>
                             }
                         </td>
                         <td class="text-center">
                             <div class="d-flex gap-1 justify-content-center">
-                                @if (p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Abierto)
+
+                                @* Ver planilla — solo si tiene empleados *@
+                                @if (empCount > 0)
                                 {
+                                    <a asp-controller="Planilla" asp-action="Index"
+                                           asp-route-periodoId="@p.PeriodoPagoId"
+                                           class="btn btn-sm btn-outline-info"
+                                           title="Ver planilla de este período">
+                                        <i class="bi bi-file-earmark-text"></i>
+                                    </a>
+                                }
+
+                                @if (!esCerrado)
+                                {
+                                    @* Cerrar *@
                                     <form asp-action="Cerrar" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Cerrar el período @p.Descripcion? Esta acción bloqueará los registros.')">
+                                          onsubmit="return confirm('¿Cerrar el período @p.Descripcion?\n\nEsta acción consolida los registros. Los períodos cerrados son inmutables.')">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@p.PeriodoPagoId" />
                                         <button type="submit" class="btn btn-sm btn-secondary"
@@ -114,18 +159,42 @@ else
                                             <i class="bi bi-lock"></i> Cerrar
                                         </button>
                                     </form>
+
+                                    @* Eliminar — solo si no tiene planilla *@
+                                    @if (empCount == 0)
+                                    {
+                                        <form asp-action="Eliminar" method="post" class="d-inline"
+                                              onsubmit="return confirm('¿Eliminar el período @p.Descripcion?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@p.PeriodoPagoId" />
+                                            <button type="submit" class="btn btn-sm btn-danger"
+                                                    title="Eliminar período">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    }
                                 }
                                 else
                                 {
-                                    <form asp-action="Reabrir" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Reabrir el período @p.Descripcion?')">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@p.PeriodoPagoId" />
-                                        <button type="submit" class="btn btn-sm btn-warning"
-                                                title="Reabrir período">
-                                            <i class="bi bi-unlock"></i> Reabrir
-                                        </button>
-                                    </form>
+                                    @* Reabrir — solo Jefatura *@
+                                    @if (rol == "Jefatura")
+                                    {
+                                        <form asp-action="Reabrir" method="post" class="d-inline"
+                                              onsubmit="return confirm('⚠️ ¿Reabrir el período CERRADO @p.Descripcion?\n\nEsta acción es excepcional. Los saldos de préstamos ya descontados NO se revierten.\n\n¿Confirmar?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@p.PeriodoPagoId" />
+                                            <button type="submit" class="btn btn-sm btn-warning"
+                                                    title="Reabrir período (solo Jefatura)">
+                                                <i class="bi bi-unlock"></i> Reabrir
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">
+                                            <i class="bi bi-shield-lock"></i> Inmutable
+                                        </span>
+                                    }
                                 }
                             </div>
                         </td>
@@ -133,5 +202,11 @@ else
                 }
             </tbody>
         </table>
+    </div>
+
+    <div class="text-muted small mt-2 text-end">
+        @Model.Count período(s) en @anio —
+        Abiertos: <strong>@Model.Count(p => p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Abierto)</strong> /
+        Cerrados: <strong>@Model.Count(p => p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado)</strong>
     </div>
 }
