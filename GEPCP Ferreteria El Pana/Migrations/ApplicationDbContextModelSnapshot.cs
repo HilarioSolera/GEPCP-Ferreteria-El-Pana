@@ -245,6 +245,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("NumHijos")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("NumeroCuenta")
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
@@ -271,10 +274,16 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("TieneConyuge")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("TipoContrato")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("TipoJornada")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TipoPago")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("EmpleadoId");
@@ -564,10 +573,67 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Property<DateTime>("FechaInicio")
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("ISR_CreditoConyuge")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_CreditoHijo")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo1_Hasta")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo2_Desde")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo2_Hasta")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo2_Porcentaje")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo3_Desde")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo3_Hasta")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo3_Porcentaje")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo4_Desde")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo4_Hasta")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo4_Porcentaje")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo5_Desde")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo5_Porcentaje")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Mes")
                         .HasColumnType("INTEGER");
 
+                    b.Property<decimal>("PorcentajeBP")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PorcentajeCCSS")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PorcentajeIVM")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PorcentajeSEM")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Quincena")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TipoPeriodo")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("PeriodoPagoId");
@@ -619,6 +685,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("BaseImponibleRenta")
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("DeduccionCCSS")
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
@@ -639,7 +708,13 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("DeduccionRenta")
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("DeduccionVacaciones")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DescripcionOtrasDeducciones")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("EmpleadoId")

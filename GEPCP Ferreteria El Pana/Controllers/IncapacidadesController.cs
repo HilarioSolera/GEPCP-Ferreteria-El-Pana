@@ -1,12 +1,10 @@
 ﻿using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
-using GEPCP_Ferreteria_El_Pana.Migrations;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Options;
 
 namespace GEPCP_Ferreteria_El_Pana.Controllers
@@ -34,86 +32,59 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _auditoria = auditoria;
         }
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
-
-        public async Task<IActionResult> Index(string? busqueda, string? entidad)
+        // ====================== INDEX ======================
+        public async Task<IActionResult> Index(string? busqueda, string? entidad, bool verTodos = false)
         {
-            try
-            {
-                ViewBag.Busqueda = busqueda;
-                ViewBag.EntidadFiltro = entidad;
-                ViewBag.TotalRegistros = 0;
-                ViewBag.TotalDias = 0;
-                ViewBag.TotalMonto = 0m;
-                ViewBag.TotalPatrono = 0m;
+            ViewBag.Busqueda = busqueda;
+            ViewBag.EntidadFiltro = entidad;
+            ViewBag.VerTodos = verTodos;
 
-                if (string.IsNullOrWhiteSpace(busqueda) && string.IsNullOrWhiteSpace(entidad))
-                    return View(new List<Incapacidad>());
-
-                var query = _context.Incapacidades
-                    .Include(i => i.Empleado)
-                    .AsNoTracking()
-                    .AsQueryable();
-
-                if (!string.IsNullOrWhiteSpace(entidad) &&
-                    Enum.TryParse<EntidadIncapacidad>(entidad, out var entidadEnum))
-                    query = query.Where(i => i.Entidad == entidadEnum);
-
-                if (!string.IsNullOrWhiteSpace(busqueda))
-                {
-                    var termino = busqueda.Trim().ToLower();
-                    query = query.Where(i =>
-                        i.Empleado.Nombre.ToLower().Contains(termino) ||
-                        i.Empleado.PrimerApellido.ToLower().Contains(termino) ||
-                        i.Empleado.Cedula.Contains(termino) ||
-                        i.TipoIncapacidad.ToLower().Contains(termino) ||
-                        (i.TiqueteCCSS != null && i.TiqueteCCSS.Contains(termino)));
-                }
-
-                var incapacidades = await query
-                    .OrderByDescending(i => i.FechaInicio)
-                    .ThenBy(i => i.Empleado.PrimerApellido)
-                    .ToListAsync();
-
-                ViewBag.TotalRegistros = incapacidades.Count;
-                ViewBag.TotalDias = incapacidades.Sum(i => i.TotalDias);
-                ViewBag.TotalMonto = incapacidades.Sum(i => i.MontoTotal);
-                ViewBag.TotalPatrono = incapacidades
-                    .Where(i => i.MontoTotal > 0)
-                    .Sum(i => i.MontoTotal);
-
-                return View(incapacidades);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al cargar incapacidades");
-                TempData["Error"] = "Error al cargar las incapacidades.";
+            if (!verTodos && string.IsNullOrWhiteSpace(busqueda) && string.IsNullOrWhiteSpace(entidad))
                 return View(new List<Incapacidad>());
+
+            var query = _context.Incapacidades
+                .Include(i => i.Empleado)
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(entidad) && Enum.TryParse<EntidadIncapacidad>(entidad, out var ent))
+                query = query.Where(i => i.Entidad == ent);
+
+            if (!string.IsNullOrWhiteSpace(busqueda))
+            {
+                var t = busqueda.Trim().ToLower();
+                query = query.Where(i =>
+                    i.Empleado.Nombre.ToLower().Contains(t) ||
+                    i.Empleado.PrimerApellido.ToLower().Contains(t) ||
+                    i.Empleado.Cedula.Contains(t) ||
+                    i.TipoIncapacidad.ToLower().Contains(t) ||
+                    (i.TiqueteCCSS != null && i.TiqueteCCSS.ToLower().Contains(t)));
             }
+
+            var incapacidades = await query
+                .OrderByDescending(i => i.FechaInicio)
+                .ThenBy(i => i.Empleado.PrimerApellido)
+                .ToListAsync();
+
+            ViewBag.TotalRegistros = incapacidades.Count;
+            ViewBag.TotalDias = incapacidades.Sum(i => i.TotalDias);
+            ViewBag.TotalMonto = incapacidades.Sum(i => i.MontoTotal);
+            ViewBag.TotalPatrono = incapacidades.Sum(i => i.MontoTotal);
+
+            return View(incapacidades);
         }
 
-        // ── CREATE ────────────────────────────────────────────────────────────
-
+        // ====================== CREATE ======================
         public async Task<IActionResult> Create()
         {
-            try
+            await CargarEmpleadosViewBag();
+            return View(new Incapacidad
             {
-                await CargarEmpleadosViewBag();
-                return View(new Incapacidad
-                {
-                    FechaInicio = DateTime.Today,
-                    FechaFin = DateTime.Today,
-                    PorcentajePago = 50,
-                    ResponsablePago = ResponsablePago.Patrono,
-                    Entidad = EntidadIncapacidad.CCSS
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al cargar formulario de incapacidad");
-                TempData["Error"] = "Error al cargar el formulario. Intentá de nuevo.";
-                return RedirectToAction(nameof(Index));
-            }
+                FechaInicio = DateTime.Today,
+                FechaFin = DateTime.Today.AddDays(1),
+                PorcentajePago = 50,
+                Entidad = EntidadIncapacidad.CCSS
+            });
         }
 
         [HttpPost]
@@ -123,7 +94,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             try
             {
                 ModelState.Remove("Empleado");
-                AplicarValidaciones(model);
+                await AplicarValidacionesAsync(model);
 
                 if (!ModelState.IsValid)
                 {
@@ -146,8 +117,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (solapamiento)
                 {
-                    ModelState.AddModelError(string.Empty,
-                        "Ya existe una incapacidad en ese período para este empleado.");
+                    ModelState.AddModelError("", "Ya existe una incapacidad que se solapa con estas fechas.");
                     await CargarEmpleadosViewBag(model.EmpleadoId);
                     return View(model);
                 }
@@ -157,18 +127,16 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 var salarioDiario = Math.Round(empleado.SalarioBase / divisor, 2);
                 model.MontoPorDia = Math.Round(salarioDiario * (model.PorcentajePago / 100m), 2);
 
-                // CCSS: patrono paga primeros 3 días al 50%
-                // INS:  patrono no paga nada, el INS cubre desde el día 1
                 if (model.Entidad == EntidadIncapacidad.CCSS)
                 {
                     model.DiasPagadosPatrono = Math.Min(model.TotalDias, 3);
                     model.MontoTotal = Math.Round(model.MontoPorDia * model.DiasPagadosPatrono, 2);
                     model.ResponsablePago = ResponsablePago.CCSS;
                 }
-                else // INS
+                else
                 {
                     model.DiasPagadosPatrono = 0;
-                    model.MontoTotal = 0m;
+                    model.MontoTotal = 0;
                     model.ResponsablePago = ResponsablePago.INS;
                 }
 
@@ -178,58 +146,35 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 await _auditoria.RegistrarAsync(
                     HttpContext.Session.GetString("Usuario") ?? "",
                     "Registrar incapacidad", "Incapacidades",
-                    $"{empleado.PrimerApellido} {empleado.Nombre} — Días: {model.TotalDias} — " +
-                    $"Días patrono: {model.DiasPagadosPatrono} — Monto: ₡{model.MontoTotal:N0}");
+                    $"{empleado.PrimerApellido} {empleado.Nombre} — {model.TotalDias} días");
 
-                _logger.LogInformation("Incapacidad registrada: EmpleadoId {EId} Días {D} Monto {M}",
-                    model.EmpleadoId, model.TotalDias, model.MontoTotal);
-
-                TempData["Success"] = $"Incapacidad de {model.TotalDias} día(s) registrada. " +
-                    (model.Entidad == EntidadIncapacidad.CCSS
-                        ? $"El patrono paga {model.DiasPagadosPatrono} día(s): ₡{model.MontoTotal:N0}."
-                        : "El INS cubre el pago desde el día 1.");
-
+                TempData["Success"] = $"Incapacidad de {model.TotalDias} días registrada correctamente.";
                 return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Error de BD al registrar incapacidad");
-                ModelState.AddModelError(string.Empty, "Error al guardar. Intentá de nuevo.");
-                await CargarEmpleadosViewBag(model.EmpleadoId);
-                return View(model);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error inesperado al registrar incapacidad");
-                ModelState.AddModelError(string.Empty, "Ocurrió un error inesperado. Intentá de nuevo.");
+                _logger.LogError(ex, "Error al registrar incapacidad");
                 await CargarEmpleadosViewBag(model.EmpleadoId);
                 return View(model);
             }
         }
 
-        // ── EDIT ──────────────────────────────────────────────────────────────
-
+        // ====================== EDIT ======================
         public async Task<IActionResult> Edit(int? id)
         {
-            try
-            {
-                if (id == null || id <= 0) return NotFound();
+            if (id == null || id <= 0) return NotFound();
 
-                var incapacidad = await _context.Incapacidades
-                    .Include(i => i.Empleado)
-                    .FirstOrDefaultAsync(i => i.IncapacidadId == id);
+            var incapacidad = await _context.Incapacidades
+                .Include(i => i.Empleado)
+                .FirstOrDefaultAsync(i => i.IncapacidadId == id);
 
-                if (incapacidad == null) return NotFound();
+            if (incapacidad == null) return NotFound();
 
-                await CargarEmpleadosViewBag(incapacidad.EmpleadoId);
-                return View(incapacidad);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al cargar edición incapacidad ID: {Id}", id);
-                TempData["Error"] = "Error al cargar el formulario de edición.";
-                return RedirectToAction(nameof(Index));
-            }
+            ViewBag.EmpleadoNombre = $"{incapacidad.Empleado.PrimerApellido} {incapacidad.Empleado.Nombre}";
+            ViewBag.EmpleadoCedula = incapacidad.Empleado.Cedula;
+
+            await CargarEmpleadosViewBag(incapacidad.EmpleadoId);
+            return View(incapacidad);
         }
 
         [HttpPost]
@@ -241,10 +186,16 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (id != model.IncapacidadId) return NotFound();
 
                 ModelState.Remove("Empleado");
-                AplicarValidaciones(model);
+                await AplicarValidacionesAsync(model);
 
                 if (!ModelState.IsValid)
                 {
+                    var reg = await _context.Incapacidades.Include(i => i.Empleado)
+                        .FirstOrDefaultAsync(i => i.IncapacidadId == id);
+
+                    ViewBag.EmpleadoNombre = reg != null ? $"{reg.Empleado.PrimerApellido} {reg.Empleado.Nombre}" : "";
+                    ViewBag.EmpleadoCedula = reg?.Empleado.Cedula;
+
                     await CargarEmpleadosViewBag(model.EmpleadoId);
                     return View(model);
                 }
@@ -257,14 +208,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 var solapamiento = await _context.Incapacidades.AnyAsync(i =>
                     i.EmpleadoId == model.EmpleadoId &&
-                    i.IncapacidadId != model.IncapacidadId &&
+                    i.IncapacidadId != id &&
                     i.FechaInicio <= model.FechaFin &&
                     i.FechaFin >= model.FechaInicio);
 
                 if (solapamiento)
                 {
-                    ModelState.AddModelError(string.Empty,
-                        "Ya existe una incapacidad en ese período para este empleado.");
+                    ModelState.AddModelError("", "Ya existe una incapacidad que se solapa con estas fechas.");
                     await CargarEmpleadosViewBag(model.EmpleadoId);
                     return View(model);
                 }
@@ -277,7 +227,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 registro.TiqueteCCSS = model.TiqueteCCSS;
                 registro.PorcentajePago = model.PorcentajePago;
                 registro.Observaciones = model.Observaciones;
-                registro.TotalDias = (registro.FechaFin - registro.FechaInicio).Days + 1;
+                registro.TotalDias = (model.FechaFin - model.FechaInicio).Days + 1;
 
                 var empleado = await _context.Empleados.FindAsync(model.EmpleadoId);
                 if (empleado != null)
@@ -295,7 +245,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     else
                     {
                         registro.DiasPagadosPatrono = 0;
-                        registro.MontoTotal = 0m;
+                        registro.MontoTotal = 0;
                         registro.ResponsablePago = ResponsablePago.INS;
                     }
                 }
@@ -306,32 +256,20 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 await _auditoria.RegistrarAsync(
                     HttpContext.Session.GetString("Usuario") ?? "",
                     "Editar incapacidad", "Incapacidades",
-                    $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre} — " +
-                    $"Días: {registro.TotalDias} — Monto patrono: ₡{registro.MontoTotal:N0}");
+                    $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre}");
 
-                _logger.LogInformation("Incapacidad editada: ID {Id}", id);
                 TempData["Success"] = "Incapacidad actualizada correctamente.";
                 return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                _logger.LogError(ex, "Error de concurrencia incapacidad ID: {Id}", id);
-                ModelState.AddModelError(string.Empty,
-                    "El registro fue modificado. Recargá e intentá de nuevo.");
-                await CargarEmpleadosViewBag(model.EmpleadoId);
-                return View(model);
-            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error inesperado al editar incapacidad ID: {Id}", id);
-                ModelState.AddModelError(string.Empty, "Ocurrió un error inesperado. Intentá de nuevo.");
+                _logger.LogError(ex, "Error al editar incapacidad");
                 await CargarEmpleadosViewBag(model.EmpleadoId);
                 return View(model);
             }
         }
 
-        // ── DELETE ────────────────────────────────────────────────────────────
-
+        // ====================== DELETE ======================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -354,112 +292,19 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 await _auditoria.RegistrarAsync(
                     HttpContext.Session.GetString("Usuario") ?? "",
                     "Eliminar incapacidad", "Incapacidades",
-                    $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre} — Días: {registro.TotalDias}");
+                    $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre}");
 
-                _logger.LogInformation("Incapacidad eliminada: ID {Id}", id);
-                TempData["Success"] = $"Incapacidad de {registro.Empleado.PrimerApellido} " +
-                    $"{registro.Empleado.Nombre} eliminada.";
+                TempData["Success"] = "Incapacidad eliminada correctamente.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al eliminar incapacidad ID: {Id}", id);
-                TempData["Error"] = "Error al eliminar el registro. Intentá de nuevo.";
+                _logger.LogError(ex, "Error al eliminar incapacidad");
+                TempData["Error"] = "Error al eliminar el registro.";
             }
-
             return RedirectToAction(nameof(Index));
         }
 
-        // ── API ───────────────────────────────────────────────────────────────
-
-        [HttpGet]
-        public async Task<IActionResult> CalcularMonto(
-            int empleadoId, string fechaInicio, string fechaFin,
-            decimal porcentaje, string entidad = "CCSS")
-        {
-            try
-            {
-                if (empleadoId <= 0 || porcentaje <= 0)
-                    return Json(new
-                    {
-                        montoPorDia = 0m,
-                        montoTotal = 0m,
-                        totalDias = 0,
-                        salarioDiario = 0m,
-                        diasPatrono = 0
-                    });
-
-                if (!DateTime.TryParse(fechaInicio, out var fi) ||
-                    !DateTime.TryParse(fechaFin, out var ff))
-                    return Json(new
-                    {
-                        montoPorDia = 0m,
-                        montoTotal = 0m,
-                        totalDias = 0,
-                        salarioDiario = 0m,
-                        diasPatrono = 0
-                    });
-
-                var totalDias = (ff - fi).Days + 1;
-                if (totalDias <= 0)
-                    return Json(new
-                    {
-                        montoPorDia = 0m,
-                        montoTotal = 0m,
-                        totalDias = 0,
-                        salarioDiario = 0m,
-                        diasPatrono = 0
-                    });
-
-                var empleado = await _context.Empleados
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(e => e.EmpleadoId == empleadoId);
-
-                if (empleado == null)
-                    return Json(new
-                    {
-                        montoPorDia = 0m,
-                        montoTotal = 0m,
-                        totalDias = 0,
-                        salarioDiario = 0m,
-                        diasPatrono = 0
-                    });
-
-                var divisor = _reglas.SalarioDivisorMensual > 0 ? _reglas.SalarioDivisorMensual : 30;
-                var salarioDiario = Math.Round(empleado.SalarioBase / divisor, 2);
-                var montoPorDia = Math.Round(salarioDiario * (porcentaje / 100m), 2);
-
-                int diasPatrono;
-                decimal montoTotal;
-
-                if (entidad == "CCSS")
-                {
-                    diasPatrono = Math.Min(totalDias, 3);
-                    montoTotal = Math.Round(montoPorDia * diasPatrono, 2);
-                }
-                else // INS
-                {
-                    diasPatrono = 0;
-                    montoTotal = 0m;
-                }
-
-                return Json(new { montoPorDia, montoTotal, totalDias, salarioDiario, diasPatrono });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al calcular monto incapacidad");
-                return Json(new
-                {
-                    montoPorDia = 0m,
-                    montoTotal = 0m,
-                    totalDias = 0,
-                    salarioDiario = 0m,
-                    diasPatrono = 0
-                });
-            }
-        }
-
-        // ── DESCARGAR PDF ─────────────────────────────────────────────────────
-
+        // ====================== PDF ======================
         [HttpGet]
         public async Task<IActionResult> DescargarPDF(int id)
         {
@@ -472,26 +317,185 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (registro == null) return NotFound();
 
                 var pdfBytes = _servicioPDF.GenerarPDFIncapacidad(registro);
-                var nombreArchivo = $"Incapacidad_{registro.Empleado.PrimerApellido}_" +
-                    $"{registro.FechaInicio:ddMMyyyy}_al_{registro.FechaFin:ddMMyyyy}.pdf";
+                var nombre = $"Incapacidad_{registro.Empleado.PrimerApellido}_{registro.FechaInicio:ddMMyyyy}.pdf";
 
                 await _auditoria.RegistrarAsync(
                     HttpContext.Session.GetString("Usuario") ?? "",
                     "Descargar PDF incapacidad", "Incapacidades",
                     $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre}");
 
-                return File(pdfBytes, "application/pdf", nombreArchivo);
+                return File(pdfBytes, "application/pdf", nombre);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al generar PDF incapacidad ID: {Id}", id);
-                TempData["Error"] = "Error al generar el PDF. Intentá de nuevo.";
+                _logger.LogError(ex, "Error al generar PDF");
+                TempData["Error"] = "Error al generar el PDF.";
                 return RedirectToAction(nameof(Index));
             }
         }
 
-        // ── HELPERS ───────────────────────────────────────────────────────────
+        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EnviarPorEmail(int id)
+        {
+            try
+            {
+                var registro = await _context.Incapacidades
+                    .Include(i => i.Empleado)
+                    .FirstOrDefaultAsync(i => i.IncapacidadId == id);
+
+                if (registro == null)
+                {
+                    TempData["Error"] = "Incapacidad no encontrada.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var correo = registro.Empleado.CorreoElectronico;
+                if (string.IsNullOrWhiteSpace(correo))
+                {
+                    TempData["Error"] =
+                        $"{registro.Empleado.PrimerApellido} " +
+                        $"{registro.Empleado.Nombre} no tiene correo registrado.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var pdfBytes = _servicioPDF.GenerarPDFIncapacidadSinFirmas(registro);
+                var nombreArchivo =
+                    $"Incapacidad_{registro.Empleado.PrimerApellido}_{registro.FechaInicio:ddMMyyyy}.pdf";
+
+                var emailSvc = HttpContext.RequestServices
+                    .GetRequiredService<EmailService>();
+
+                var asunto = $"Boleta de Incapacidad — {registro.FechaInicio:dd/MM/yyyy}";
+                var cuerpo = $@"
+<div style='font-family:Arial,sans-serif;max-width:600px;'>
+    <div style='background:#1A1A2E;padding:20px;'>
+        <h2 style='color:#FF7A00;margin:0;'>Ferretería El Pana SRL</h2>
+        <p style='color:#888;margin:4px 0 0;font-size:13px;'>
+            Departamento de Recursos Humanos
+        </p>
+    </div>
+    <div style='padding:20px;border:1px solid #eee;'>
+        <p>Estimado(a) <strong>{registro.Empleado.PrimerApellido}
+           {registro.Empleado.Nombre}</strong>,</p>
+        <p>Adjunto encontrará su boleta de incapacidad correspondiente al
+           período <strong>{registro.FechaInicio:dd/MM/yyyy} - {registro.FechaFin:dd/MM/yyyy}</strong>.</p>
+        <table style='width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;'>
+            <tr style='background:#f9f9f9;'>
+                <td style='padding:8px;border:1px solid #eee;'>Período</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {registro.FechaInicio:dd/MM/yyyy} - {registro.FechaFin:dd/MM/yyyy}
+                </td>
+            </tr>
+            <tr>
+                <td style='padding:8px;border:1px solid #eee;'>Tipo</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {registro.TipoIncapacidad}
+                </td>
+            </tr>
+            <tr>
+                <td style='padding:8px;border:1px solid #eee;'>Días</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {registro.TotalDias}
+                </td>
+            </tr>
+            <tr style='background:#fff9f0;'>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    Monto Total
+                </td>
+                <td style='padding:8px;border:1px solid #eee;
+                           font-weight:bold;font-size:16px;color:#FF7A00;'>
+                    ₡{registro.MontoTotal:N2}
+                </td>
+            </tr>
+        </table>
+        <p style='color:#888;font-size:12px;'>
+            Documento generado automáticamente por el Sistema GEPCP.
+            No responder a este correo.
+        </p>
+    </div>
+    <div style='background:#f5f5f5;padding:12px;text-align:center;
+                font-size:11px;color:#888;'>
+        Ferretería El Pana SRL · Cédula Jurídica: 3-102-745359
+    </div>
+</div>";
+
+                var enviado = await emailSvc.EnviarPDFAsync(
+                    correo,
+                    $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre}",
+                    asunto, cuerpo, pdfBytes, nombreArchivo);
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Enviar boleta por email", "Incapacidades",
+                    $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre} " +
+                    $"→ {correo}");
+
+                TempData[enviado ? "Success" : "Error"] = enviado
+                    ? $"Boleta enviada a {correo}."
+                    : "Error al enviar el correo. Verificá la configuración SMTP.";
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar email incapacidad ID: {Id}", id);
+                TempData["Error"] = "Error al enviar el correo. Intentá de nuevo.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // ====================== BUSCADOR EMPLEADOS ======================
+        [HttpGet]
+        public async Task<IActionResult> BuscarEmpleados(string? termino)
+        {
+            if (string.IsNullOrWhiteSpace(termino) || termino.Length < 2)
+                return Json(new List<object>());
+
+            var t = termino.Trim().ToLower();
+            var empleados = await _context.Empleados
+                .AsNoTracking()
+                .Where(e => e.Activo && (
+                    e.Nombre.ToLower().Contains(t) ||
+                    e.PrimerApellido.ToLower().Contains(t) ||
+                    (e.SegundoApellido != null && e.SegundoApellido.ToLower().Contains(t)) ||
+                    e.Cedula.Contains(t)))
+                .OrderBy(e => e.PrimerApellido)
+                .Take(10)
+                .Select(e => new
+                {
+                    id = e.EmpleadoId,
+                    nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
+                    cedula = e.Cedula,
+                    puesto = e.Puesto
+                })
+                .ToListAsync();
+
+            return Json(empleados);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> TodosLosEmpleados()
+        {
+            var empleados = await _context.Empleados
+                .AsNoTracking()
+                .Where(e => e.Activo)
+                .OrderBy(e => e.PrimerApellido)
+                .Select(e => new
+                {
+                    id = e.EmpleadoId,
+                    nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
+                    cedula = e.Cedula,
+                    puesto = e.Puesto
+                })
+                .ToListAsync();
+
+            return Json(empleados);
+        }
+
+        // ====================== HELPERS ======================
         private async Task CargarEmpleadosViewBag(int? selectedId = null)
         {
             ViewBag.Empleados = await _context.Empleados
@@ -506,13 +510,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 .ToListAsync();
         }
 
-        private void AplicarValidaciones(Incapacidad model)
+        private async Task AplicarValidacionesAsync(Incapacidad model)
         {
             if (model.EmpleadoId <= 0)
-                ModelState.AddModelError("EmpleadoId", "Seleccioná un empleado válido.");
+                ModelState.AddModelError("EmpleadoId", "Debe seleccionar un empleado.");
 
             if (string.IsNullOrWhiteSpace(model.TipoIncapacidad))
-                ModelState.AddModelError("TipoIncapacidad", "El tipo de incapacidad es obligatorio.");
+                ModelState.AddModelError("TipoIncapacidad", "Debe seleccionar el tipo de incapacidad.");
 
             if (model.FechaInicio == default)
                 ModelState.AddModelError("FechaInicio", "La fecha de inicio es obligatoria.");
@@ -520,23 +524,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             if (model.FechaFin == default)
                 ModelState.AddModelError("FechaFin", "La fecha de fin es obligatoria.");
 
-            if (model.FechaInicio != default && model.FechaFin != default)
-            {
-                if (model.FechaFin < model.FechaInicio)
-                    ModelState.AddModelError("FechaFin",
-                        "La fecha de fin no puede ser anterior a la fecha de inicio.");
-                if (model.FechaInicio > DateTime.Today.AddDays(1))
-                    ModelState.AddModelError("FechaInicio",
-                        "La fecha de inicio no puede ser futura.");
-            }
+            if (model.FechaInicio > model.FechaFin)
+                ModelState.AddModelError("FechaFin", "La fecha de fin no puede ser anterior a la de inicio.");
 
-            if (model.PorcentajePago <= 0 || model.PorcentajePago > 100)
-                ModelState.AddModelError("PorcentajePago", "El porcentaje debe estar entre 1 y 100.");
-
-            if (model.Entidad == EntidadIncapacidad.CCSS &&
-                string.IsNullOrWhiteSpace(model.TiqueteCCSS))
-                ModelState.AddModelError("TiqueteCCSS",
-                    "El tiquete CCSS es obligatorio para incapacidades de la CCSS.");
+            if (model.Entidad == EntidadIncapacidad.CCSS && string.IsNullOrWhiteSpace(model.TiqueteCCSS))
+                ModelState.AddModelError("TiqueteCCSS", "El tiquete CCSS es obligatorio.");
         }
     }
 }

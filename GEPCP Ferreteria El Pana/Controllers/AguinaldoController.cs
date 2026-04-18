@@ -269,16 +269,36 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         {
             try
             {
-                if (id == null || id <= 0) return NotFound();
-                var aguinaldo = await _context.Aguinaldos.FindAsync(id);
-                if (aguinaldo == null) return NotFound();
+                if (id == null || id <= 0)
+                    return NotFound();
+
+                var aguinaldo = await _context.Aguinaldos
+                    .Include(a => a.Empleado)           // Relación principal
+                    .FirstOrDefaultAsync(a => a.AguinaldoId == id);
+
+                if (aguinaldo == null)
+                {
+                    TempData["Error"] = "Aguinaldo no encontrado.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Diagnóstico
+                if (aguinaldo.Empleado == null)
+                {
+                    _logger.LogWarning("Aguinaldo ID {Id} no tiene Empleado cargado. EmpleadoId = {EmpId}",
+                        id, aguinaldo.EmpleadoId);
+
+                    TempData["Error"] = $"No se encontró el empleado asociado (ID: {aguinaldo.EmpleadoId}).";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 await CargarEmpleadosViewBag(aguinaldo.EmpleadoId);
                 return View(aguinaldo);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al cargar edición aguinaldo ID: {Id}", id);
-                TempData["Error"] = "Error al cargar el formulario.";
+                _logger.LogError(ex, "Error al cargar Edit Aguinaldo ID: {Id}", id);
+                TempData["Error"] = "Error al cargar el aguinaldo.";
                 return RedirectToAction(nameof(Index));
             }
         }
@@ -418,6 +438,113 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
+        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EnviarPorEmail(int id)
+        {
+            try
+            {
+                var aguinaldo = await _context.Aguinaldos
+                    .Include(a => a.Empleado)
+                    .FirstOrDefaultAsync(a => a.AguinaldoId == id);
+
+                if (aguinaldo == null)
+                {
+                    TempData["Error"] = "Aguinaldo no encontrado.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var correo = aguinaldo.Empleado.CorreoElectronico;
+                if (string.IsNullOrWhiteSpace(correo))
+                {
+                    TempData["Error"] =
+                        $"{aguinaldo.Empleado.PrimerApellido} " +
+                        $"{aguinaldo.Empleado.Nombre} no tiene correo registrado.";
+                    return RedirectToAction(nameof(Index), new { anio = aguinaldo.Anio });
+                }
+
+                var pdfBytes = _servicioPDF.GenerarPDFAguinaldoSinFirmas(aguinaldo);
+                var nombreArchivo =
+                    $"Aguinaldo_{aguinaldo.Empleado.PrimerApellido}_{aguinaldo.Anio}.pdf";
+
+                var emailSvc = HttpContext.RequestServices
+                    .GetRequiredService<EmailService>();
+
+                var asunto = $"Boleta de Aguinaldo — Año {aguinaldo.Anio}";
+                var cuerpo = $@"
+<div style='font-family:Arial,sans-serif;max-width:600px;'>
+    <div style='background:#1A1A2E;padding:20px;'>
+        <h2 style='color:#FF7A00;margin:0;'>Ferretería El Pana SRL</h2>
+        <p style='color:#888;margin:4px 0 0;font-size:13px;'>
+            Departamento de Recursos Humanos
+        </p>
+    </div>
+    <div style='padding:20px;border:1px solid #eee;'>
+        <p>Estimado(a) <strong>{aguinaldo.Empleado.PrimerApellido}
+           {aguinaldo.Empleado.Nombre}</strong>,</p>
+        <p>Adjunto encontrará su boleta de aguinaldo correspondiente al
+           año <strong>{aguinaldo.Anio}</strong>.</p>
+        <table style='width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;'>
+            <tr style='background:#f9f9f9;'>
+                <td style='padding:8px;border:1px solid #eee;'>Período</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {aguinaldo.FechaInicio:dd/MM/yyyy} - {aguinaldo.FechaFin:dd/MM/yyyy}
+                </td>
+            </tr>
+            <tr>
+                <td style='padding:8px;border:1px solid #eee;'>Fecha de Pago</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {aguinaldo.FechaPago:dd/MM/yyyy}
+                </td>
+            </tr>
+            <tr style='background:#fff9f0;'>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    Monto Total
+                </td>
+                <td style='padding:8px;border:1px solid #eee;
+                           font-weight:bold;font-size:16px;color:#FF7A00;'>
+                    ₡{aguinaldo.MontoTotal:N2}
+                </td>
+            </tr>
+        </table>
+        <p style='color:#888;font-size:12px;'>
+            Documento generado automáticamente por el Sistema GEPCP.
+            No responder a este correo.
+        </p>
+    </div>
+    <div style='background:#f5f5f5;padding:12px;text-align:center;
+                font-size:11px;color:#888;'>
+        Ferretería El Pana SRL · Cédula Jurídica: 3-102-745359
+    </div>
+</div>";
+
+                var enviado = await emailSvc.EnviarPDFAsync(
+                    correo,
+                    $"{aguinaldo.Empleado.PrimerApellido} {aguinaldo.Empleado.Nombre}",
+                    asunto, cuerpo, pdfBytes, nombreArchivo);
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Enviar boleta por email", "Aguinaldo",
+                    $"{aguinaldo.Empleado.PrimerApellido} {aguinaldo.Empleado.Nombre} " +
+                    $"→ {correo}");
+
+                TempData[enviado ? "Success" : "Error"] = enviado
+                    ? $"Boleta enviada a {correo}."
+                    : "Error al enviar el correo. Verificá la configuración SMTP.";
+
+                return RedirectToAction(nameof(Index), new { anio = aguinaldo.Anio });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar email aguinaldo ID: {Id}", id);
+                TempData["Error"] = "Error al enviar el correo. Intentá de nuevo.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
         // ── HELPERS ───────────────────────────────────────────────────────────
 
         private async Task CargarEmpleadosViewBag(int? selectedId = null)
@@ -460,6 +587,57 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
             if (model.FechaPago == default)
                 ModelState.AddModelError("FechaPago", "La fecha de pago es obligatoria.");
+        }
+        // ── APIs PARA BUSCADOR ───────────────────────────────────────────────────
+
+        [HttpGet]
+        public async Task<IActionResult> BuscarEmpleados(string? termino)
+        {
+            if (string.IsNullOrWhiteSpace(termino) || termino.Length < 2)
+                return Json(new List<object>());
+
+            var t = termino.Trim().ToLower();
+
+            var empleados = await _context.Empleados
+                .AsNoTracking()
+                .Where(e => e.Activo && (
+                    e.Nombre.ToLower().Contains(t) ||
+                    e.PrimerApellido.ToLower().Contains(t) ||
+                    (e.SegundoApellido != null && e.SegundoApellido.ToLower().Contains(t)) ||
+                    e.Cedula.Contains(t)))
+                .OrderBy(e => e.PrimerApellido)
+                .Take(12)
+                .Select(e => new
+                {
+                    id = e.EmpleadoId,
+                    nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
+                    cedula = e.Cedula,
+                    puesto = e.Puesto,
+                    departamento = e.Departamento
+                })
+                .ToListAsync();
+
+            return Json(empleados);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> TodosLosEmpleados()
+        {
+            var empleados = await _context.Empleados
+                .AsNoTracking()
+                .Where(e => e.Activo)
+                .OrderBy(e => e.PrimerApellido)
+                .Select(e => new
+                {
+                    id = e.EmpleadoId,
+                    nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
+                    cedula = e.Cedula,
+                    puesto = e.Puesto,
+                    departamento = e.Departamento
+                })
+                .ToListAsync();
+
+            return Json(empleados);
         }
     }
 }

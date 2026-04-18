@@ -40,32 +40,31 @@
     @if (totalVacAlerta > 0)
     {
         <div class="d-flex align-items-start gap-3 mb-4 p-3 rounded"
-             style="background:#fff8e1;border-left:3px solid #FF7A00;">
+             style="background:#2d2d2d;border-left:3px solid #fff;">
             <i class="bi bi-umbrella-fill flex-shrink-0 mt-1"
-               style="color:#FF7A00;font-size:1.15rem;"></i>
+               style="color:#fff;font-size:1.15rem;"></i>
             <div class="w-100">
-                <div class="fw-bold mb-1" style="color:#c55000;font-size:0.85rem;">
-                    @totalVacAlerta empleado(s) con vacaciones acumuladas sin tomar
-                    <span class="fw-normal text-muted">(≥ 14 días disponibles)</span>
+                <div class="fw-bold mb-1" style="color:#fff;font-size:0.85rem;">
+                    @totalVacAlerta empleado(s) con vacaciones pendientes por tomar en su período actual
                 </div>
                 <div class="d-flex flex-wrap gap-2 mb-1">
                     @foreach (var v in vacAlerta.Take(6))
                     {
                         var dv = (dynamic)v;
-                        <span style="background:#fff3e0;color:#c55000;border:1px solid #FFB74D;
+                        <span style="background:#fff;color:#2d2d2d;border:1px solid #fff;
                             border-radius:5px;padding:2px 8px;font-size:0.72rem;font-weight:600;">
-                            @dv.Nombre — @dv.Disponibles días
+                            @dv.Nombre — @dv.Disponibles días disp. (vence en @dv.DiasParaFinPeriodo d)
                         </span>
                     }
                     @if (vacAlerta.Count > 6)
                     {
-                        <span class="text-muted" style="font-size:0.72rem;">
+                        <span class="text-muted" style="font-size:0.72rem;color:#aaa;">
                             y @(vacAlerta.Count - 6) más...
                         </span>
                     }
                 </div>
                 <a asp-controller="Vacaciones" asp-action="Index" asp-route-verTodos="true"
-                       style="color:#FF7A00;font-size:0.78rem;font-weight:600;text-decoration:none;">
+                       style="color:#fff;font-size:0.78rem;font-weight:600;text-decoration:none;">
                     Ver módulo de vacaciones →
                 </a>
             </div>
@@ -326,8 +325,8 @@
                             <tr>
                                 <th class="px-3 py-2">Empleado</th>
                                 <th class="px-3 py-2">Puesto</th>
-                                <th class="text-center px-3 py-2">Semanas</th>
-                                <th class="text-center px-3 py-2">Acumulados</th>
+                                <th class="text-center px-3 py-2">Período</th>
+                                <th class="text-center px-3 py-2">Base</th>
                                 <th class="text-center px-3 py-2">Tomados</th>
                                 <th class="text-center px-3 py-2">Disponibles</th>
                                 <th class="text-center px-3 py-2">Estado</th>
@@ -340,23 +339,25 @@
                                 decimal disp = dv.Disponibles;
                                 decimal base_ = dv.DiasBase;
                                 decimal tomados = dv.Tomados;
-                                decimal sem = dv.Semanas;
+                                int periodo = dv.Periodo;
+                                DateTime inicioPer = dv.InicioPeriodo;
+                                DateTime finPer = dv.FinPeriodo;
                                 string nombre = dv.Nombre;
                                 string puesto = dv.Puesto;
                                 int pct = base_ > 0
                                     ? (int)Math.Min(100, (tomados / base_) * 100)
                                     : 0;
 
-                                <tr class="@(disp >= 14 ? "table-warning" : "")">
+                                <tr class="@(disp >= 12 ? "table-warning" : "")">
                                     <td class="px-3 fw-bold">@nombre</td>
                                     <td class="px-3 text-muted" style="font-size:0.75rem;">
                                         @puesto
                                     </td>
-                                    <td class="text-center px-3">@sem</td>
+                                    <td class="text-center px-3" title="@inicioPer.ToString("dd/MM/yyyy") — @finPer.ToString("dd/MM/yyyy")">@periodo</td>
                                     <td class="text-center px-3">@base_</td>
                                     <td class="text-center px-3">@tomados</td>
                                     <td class="text-center px-3 fw-bold"
-                                        style="color:@(disp >= 14 ? "#c55000" : disp > 0 ? "#1a4a1a" : "#888");">
+                                        style="color:@(disp >= 12 ? "#c55000" : disp > 0 ? "#1a4a1a" : "#888");">
                                         @disp
                                         @if (base_ > 0)
                                         {
@@ -368,7 +369,7 @@
                                         }
                                     </td>
                                     <td class="text-center px-3">
-                                        @if (disp >= 14)
+                                        @if (disp >= 12)
                                         {
                                             <span style="background:#fff3e0;color:#c55000;
                                                 border:1px solid #FFB74D;border-radius:5px;

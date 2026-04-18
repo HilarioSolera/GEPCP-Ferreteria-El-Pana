@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     /// <inheritdoc />
-    public partial class SQLite_Initial : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -28,12 +28,21 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     TipoJornada = table.Column<int>(type: "INTEGER", nullable: false),
                     FechaIngreso = table.Column<DateTime>(type: "TEXT", nullable: false),
                     SalarioBase = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
+                    TipoContrato = table.Column<int>(type: "INTEGER", nullable: false),
+                    FechaVencimientoContrato = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    DireccionProvincia = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    DireccionCanton = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    DireccionDistrito = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    DireccionExacta = table.Column<string>(type: "TEXT", maxLength: 300, nullable: true),
+                    ContactoEmergenciaNombre = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    ContactoEmergenciaTelefono = table.Column<string>(type: "TEXT", maxLength: 20, nullable: true),
                     Activo = table.Column<bool>(type: "INTEGER", nullable: false),
                     Telefono = table.Column<string>(type: "TEXT", maxLength: 20, nullable: true),
                     CorreoElectronico = table.Column<string>(type: "TEXT", maxLength: 150, nullable: true),
                     NumeroCuenta = table.Column<string>(type: "TEXT", maxLength: 30, nullable: true),
                     FormaPago = table.Column<int>(type: "INTEGER", nullable: false),
-                    FechaNacimiento = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    FechaNacimiento = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    TipoPago = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -66,7 +75,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     Quincena = table.Column<int>(type: "INTEGER", nullable: false),
                     Mes = table.Column<int>(type: "INTEGER", nullable: false),
                     Anio = table.Column<int>(type: "INTEGER", nullable: false),
-                    Estado = table.Column<int>(type: "INTEGER", nullable: false)
+                    TipoPeriodo = table.Column<int>(type: "INTEGER", nullable: false),
+                    Estado = table.Column<int>(type: "INTEGER", nullable: false),
+                    PorcentajeCCSS = table.Column<decimal>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -165,28 +176,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Comisiones",
-                columns: table => new
-                {
-                    ComisionId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    EmpleadoId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Monto = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Fecha = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Descripcion = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Comisiones", x => x.ComisionId);
-                    table.ForeignKey(
-                        name: "FK_Comisiones_Empleados_EmpleadoId",
-                        column: x => x.EmpleadoId,
-                        principalTable: "Empleados",
-                        principalColumn: "EmpleadoId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "CreditosFerreteria",
                 columns: table => new
                 {
@@ -252,7 +241,8 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     ResponsablePago = table.Column<int>(type: "INTEGER", nullable: false),
                     MontoPorDia = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
                     MontoTotal = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
-                    Observaciones = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true)
+                    Observaciones = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    DiasPagadosPatrono = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -302,7 +292,8 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     Interes = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Cuotas = table.Column<int>(type: "INTEGER", nullable: false),
                     CuotaMensual = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Activo = table.Column<bool>(type: "INTEGER", nullable: false)
+                    Activo = table.Column<bool>(type: "INTEGER", nullable: false),
+                    MontoOriginal = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -313,6 +304,64 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         principalTable: "Empleados",
                         principalColumn: "EmpleadoId",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Vacaciones",
+                columns: table => new
+                {
+                    VacacionId = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    EmpleadoId = table.Column<int>(type: "INTEGER", nullable: false),
+                    FechaInicio = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    FechaFin = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Tipo = table.Column<int>(type: "INTEGER", nullable: false),
+                    Estado = table.Column<int>(type: "INTEGER", nullable: false),
+                    DiasHabiles = table.Column<decimal>(type: "TEXT", nullable: false),
+                    DiasDisponiblesAlRegistrar = table.Column<decimal>(type: "TEXT", nullable: false),
+                    MontoDeducido = table.Column<decimal>(type: "TEXT", nullable: false),
+                    SalarioDiario = table.Column<decimal>(type: "TEXT", nullable: false),
+                    Observaciones = table.Column<string>(type: "TEXT", maxLength: 300, nullable: true),
+                    FechaRegistro = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    RegistradoPor = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Vacaciones", x => x.VacacionId);
+                    table.ForeignKey(
+                        name: "FK_Vacaciones_Empleados_EmpleadoId",
+                        column: x => x.EmpleadoId,
+                        principalTable: "Empleados",
+                        principalColumn: "EmpleadoId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Comisiones",
+                columns: table => new
+                {
+                    ComisionId = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    EmpleadoId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Monto = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Fecha = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Descripcion = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    PeriodoPagoId = table.Column<int>(type: "INTEGER", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Comisiones", x => x.ComisionId);
+                    table.ForeignKey(
+                        name: "FK_Comisiones_Empleados_EmpleadoId",
+                        column: x => x.EmpleadoId,
+                        principalTable: "Empleados",
+                        principalColumn: "EmpleadoId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Comisiones_PeriodosPago_PeriodoPagoId",
+                        column: x => x.PeriodoPagoId,
+                        principalTable: "PeriodosPago",
+                        principalColumn: "PeriodoPagoId");
                 });
 
             migrationBuilder.CreateTable(
@@ -354,6 +403,7 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     EmpleadoId = table.Column<int>(type: "INTEGER", nullable: false),
                     FeriadoId = table.Column<int>(type: "INTEGER", nullable: false),
                     PeriodoPagoId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Trabajado = table.Column<bool>(type: "INTEGER", nullable: false),
                     MontoTotal = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false)
                 },
                 constraints: table =>
@@ -404,7 +454,8 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     DeduccionHorasNoLaboradas = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
                     OtrasDeducciones = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
                     TotalDeducciones = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
-                    NetoAPagar = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false)
+                    NetoAPagar = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
+                    DeduccionVacaciones = table.Column<decimal>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -424,7 +475,7 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "AbonoCreditoFerreteria",
+                name: "AbonosCreditoFerreteria",
                 columns: table => new
                 {
                     AbonoCreditoFerreteriaId = table.Column<int>(type: "INTEGER", nullable: false)
@@ -436,9 +487,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AbonoCreditoFerreteria", x => x.AbonoCreditoFerreteriaId);
+                    table.PrimaryKey("PK_AbonosCreditoFerreteria", x => x.AbonoCreditoFerreteriaId);
                     table.ForeignKey(
-                        name: "FK_AbonoCreditoFerreteria_CreditosFerreteria_CreditoFerreteriaId",
+                        name: "FK_AbonosCreditoFerreteria_CreditosFerreteria_CreditoFerreteriaId",
                         column: x => x.CreditoFerreteriaId,
                         principalTable: "CreditosFerreteria",
                         principalColumn: "CreditoFerreteriaId",
@@ -446,7 +497,7 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "AbonoPrestamo",
+                name: "AbonosPrestamo",
                 columns: table => new
                 {
                     AbonoPrestamoId = table.Column<int>(type: "INTEGER", nullable: false)
@@ -458,9 +509,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AbonoPrestamo", x => x.AbonoPrestamoId);
+                    table.PrimaryKey("PK_AbonosPrestamo", x => x.AbonoPrestamoId);
                     table.ForeignKey(
-                        name: "FK_AbonoPrestamo_Prestamos_PrestamoId",
+                        name: "FK_AbonosPrestamo_Prestamos_PrestamoId",
                         column: x => x.PrestamoId,
                         principalTable: "Prestamos",
                         principalColumn: "PrestamoId",
@@ -507,18 +558,18 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 columns: new[] { "UsuarioId", "CorreoElectronico", "NombreCompleto", "NombreUsuario", "PasswordHash", "Rol", "TokenExpiracion", "TokenRecuperacion" },
                 values: new object[,]
                 {
-                    { 1, null, "Administrador RRHH", "admin.rrhh", "$2a$11$/mJGbQrxHo3bDUtdY6MWoeaJc/6aYPE7EG9ukr6ln9mNupX3Y8Wz.", "RRHH", null, null },
-                    { 2, null, "Usuario Jefatura", "jefatura", "$2a$11$T72F0Mu8ocYejSTck6bprueMSoi5WgVtSD.hIraw5PvhnjDde6rD6", "Jefatura", null, null }
+                    { 1, "solerahilario207@gmail.com", "Administrador RRHH", "admin.rrhh", "$2a$11$/mJGbQrxHo3bDUtdY6MWoeaJc/6aYPE7EG9ukr6ln9mNupX3Y8Wz.", "RRHH", null, null },
+                    { 2, "solerahilario207@gmail.com", "Usuario Jefatura", "jefatura", "$2a$11$T72F0Mu8ocYejSTck6bprueMSoi5WgVtSD.hIraw5PvhnjDde6rD6", "Jefatura", null, null }
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_AbonoCreditoFerreteria_CreditoFerreteriaId",
-                table: "AbonoCreditoFerreteria",
+                name: "IX_AbonosCreditoFerreteria_CreditoFerreteriaId",
+                table: "AbonosCreditoFerreteria",
                 column: "CreditoFerreteriaId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_AbonoPrestamo_PrestamoId",
-                table: "AbonoPrestamo",
+                name: "IX_AbonosPrestamo_PrestamoId",
+                table: "AbonosPrestamo",
                 column: "PrestamoId");
 
             migrationBuilder.CreateIndex(
@@ -531,6 +582,11 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 name: "IX_Comisiones_EmpleadoId",
                 table: "Comisiones",
                 column: "EmpleadoId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comisiones_PeriodoPagoId",
+                table: "Comisiones",
+                column: "PeriodoPagoId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CreditosFerreteria_EmpleadoId",
@@ -598,16 +654,21 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                 name: "IX_Prestamos_EmpleadoId",
                 table: "Prestamos",
                 column: "EmpleadoId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Vacaciones_EmpleadoId",
+                table: "Vacaciones",
+                column: "EmpleadoId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "AbonoCreditoFerreteria");
+                name: "AbonosCreditoFerreteria");
 
             migrationBuilder.DropTable(
-                name: "AbonoPrestamo");
+                name: "AbonosPrestamo");
 
             migrationBuilder.DropTable(
                 name: "Aguinaldos");
@@ -644,6 +705,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
 
             migrationBuilder.DropTable(
                 name: "Usuarios");
+
+            migrationBuilder.DropTable(
+                name: "Vacaciones");
 
             migrationBuilder.DropTable(
                 name: "CreditosFerreteria");

@@ -29,7 +29,7 @@
                         <i class="bi bi-card-text"></i> Cédula <span class="text-danger">*</span>
                     </label>
                     <div class="input-group">
-                        <input asp-for="Cedula" class="form-control form-control-lg"
+                        <input asp-for="Cedula" class="form-control"
                                maxlength="20" placeholder="Ej: 1-1234-5678"
                                autocomplete="off" id="Cedula" />
                         <button type="button" class="btn btn-outline-secondary"
@@ -46,7 +46,7 @@
                     <label asp-for="Nombre" class="form-label fw-bold">
                         <i class="bi bi-person"></i> Nombre <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Nombre" class="form-control form-control-lg"
+                    <input asp-for="Nombre" class="form-control"
                            maxlength="100" placeholder="Ej: Juan" id="Nombre" />
                     <span asp-validation-for="Nombre" class="text-danger small"></span>
                 </div>
@@ -55,7 +55,7 @@
                     <label asp-for="PrimerApellido" class="form-label fw-bold">
                         <i class="bi bi-person"></i> Primer Apellido <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="PrimerApellido" class="form-control form-control-lg"
+                    <input asp-for="PrimerApellido" class="form-control"
                            maxlength="50" placeholder="Ej: Pérez" id="PrimerApellido" />
                     <span asp-validation-for="PrimerApellido" class="text-danger small"></span>
                 </div>
@@ -65,7 +65,7 @@
                         <i class="bi bi-person"></i> Segundo Apellido
                         <span class="text-muted fw-normal small">(opcional)</span>
                     </label>
-                    <input asp-for="SegundoApellido" class="form-control form-control-lg"
+                    <input asp-for="SegundoApellido" class="form-control"
                            maxlength="50" placeholder="Ej: González" id="SegundoApellido" />
                     <span asp-validation-for="SegundoApellido" class="text-danger small"></span>
                 </div>
@@ -76,7 +76,7 @@
                         <span class="text-muted fw-normal small">(opcional)</span>
                     </label>
                     <input asp-for="FechaNacimiento" type="date"
-                           class="form-control form-control-lg" id="FechaNacimiento" />
+                           class="form-control" id="FechaNacimiento" />
                     <span asp-validation-for="FechaNacimiento" class="text-danger small"></span>
                 </div>
 
@@ -91,7 +91,7 @@
                     <label asp-for="Departamento" class="form-label fw-bold">
                         <i class="bi bi-building"></i> Departamento <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Departamento" class="form-select form-select-lg">
+                    <select asp-for="Departamento" class="form-select">
                         <option value="">-- Seleccione departamento --</option>
                         @foreach (var dept in GEPCP_Ferreteria_El_Pana.Models.Departamentos.Lista)
                         {
@@ -102,12 +102,28 @@
                     </select>
                     <span asp-validation-for="Departamento" class="text-danger small"></span>
                 </div>
+                <div class="col-md-4">
+                    <label asp-for="TipoPago" class="form-label fw-bold">
+                        <i class="bi bi-calendar2-week"></i> Tipo de Pago
+                        <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="TipoPago" class="form-select"
+                            id="selectTipoPago">
+                        <option value="1">Quincenal</option>
+                        <option value="2">Semanal</option>
+                        <option value="3">Mensual</option>
+                    </select>
+                    <div class="form-text text-muted" id="tipoPagoHint">
+                        Los camioneros y choferes generalmente tienen pago semanal.
+                    </div>
+                    <span asp-validation-for="TipoPago" class="text-danger small"></span>
+                </div>
 
                 <div class="col-md-4">
                     <label asp-for="Puesto" class="form-label fw-bold">
                         <i class="bi bi-briefcase"></i> Puesto <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Puesto" class="form-select form-select-lg"
+                    <select asp-for="Puesto" class="form-select"
                             asp-items="ViewBag.Puestos" id="selectPuesto">
                         <option value="">-- Seleccione un puesto --</option>
                     </select>
@@ -118,7 +134,7 @@
                     <label asp-for="TipoJornada" class="form-label fw-bold">
                         <i class="bi bi-clock"></i> Tipo de Jornada <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="TipoJornada" class="form-select form-select-lg" id="selectJornada">
+                    <select asp-for="TipoJornada" class="form-select" id="selectJornada">
                         <option value="1">Completa (240 hrs/mes)</option>
                         <option value="2">Media Jornada (120 hrs/mes)</option>
                     </select>
@@ -130,7 +146,7 @@
                         <i class="bi bi-calendar-check"></i> Fecha de Ingreso <span class="text-danger">*</span>
                     </label>
                     <input asp-for="FechaIngreso" type="date"
-                           class="form-control form-control-lg"
+                           class="form-control"
                            max="@DateTime.Today.ToString("yyyy-MM-dd")" />
                     <span asp-validation-for="FechaIngreso" class="text-danger small"></span>
                 </div>
@@ -140,7 +156,7 @@
                         <i class="bi bi-currency-dollar"></i> Salario Base (₡) <span class="text-danger">*</span>
                     </label>
                     <input asp-for="SalarioBase" type="number" step="0.01" min="0" max="9999999.99"
-                           class="form-control form-control-lg" id="inputSalario"
+                           class="form-control" id="inputSalario"
                            placeholder="Se llena al elegir puesto" />
                     <div class="form-text" id="salarioHint"></div>
                     <span asp-validation-for="SalarioBase" class="text-danger small"></span>
@@ -150,7 +166,7 @@
                     <label class="form-label fw-bold text-muted">
                         <i class="bi bi-calculator"></i> Valor Hora (referencia)
                     </label>
-                    <div class="form-control form-control-lg bg-light text-center fw-bold"
+                    <div class="form-control bg-light text-center fw-bold"
                          id="valorHoraRef" style="color:#0D6EFD;">
                         —
                     </div>
@@ -168,7 +184,7 @@
                     <label asp-for="TipoContrato" class="form-label fw-bold">
                         <i class="bi bi-file-earmark-text"></i> Tipo de Contrato <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="TipoContrato" class="form-select form-select-lg" id="selectTipoContrato">
+                    <select asp-for="TipoContrato" class="form-select" id="selectTipoContrato">
                         <option value="1">Indefinido</option>
                         <option value="2">Plazo Fijo</option>
                         <option value="3">Por Obra</option>
@@ -182,7 +198,7 @@
                         <span class="text-danger">*</span>
                     </label>
                     <input asp-for="FechaVencimientoContrato" type="date"
-                           class="form-control form-control-lg" id="FechaVencimientoContrato" />
+                           class="form-control" id="FechaVencimientoContrato" />
                     <span asp-validation-for="FechaVencimientoContrato" class="text-danger small"></span>
                 </div>
 
@@ -196,7 +212,7 @@
 
                 <div class="col-md-4">
                     <label asp-for="DireccionProvincia" class="form-label fw-bold">Provincia</label>
-                    <select asp-for="DireccionProvincia" class="form-select form-select-lg" id="selectProvincia">
+                    <select asp-for="DireccionProvincia" class="form-select" id="selectProvincia">
                         <option value="">-- Seleccione --</option>
                         <option value="San José">San José</option>
                         <option value="Alajuela">Alajuela</option>
@@ -211,14 +227,14 @@
 
                 <div class="col-md-4">
                     <label asp-for="DireccionCanton" class="form-label fw-bold">Cantón</label>
-                    <input asp-for="DireccionCanton" class="form-control form-control-lg"
+                    <input asp-for="DireccionCanton" class="form-control"
                            maxlength="100" placeholder="Ej: Pérez Zeledón" />
                     <span asp-validation-for="DireccionCanton" class="text-danger small"></span>
                 </div>
 
                 <div class="col-md-4">
                     <label asp-for="DireccionDistrito" class="form-label fw-bold">Distrito</label>
-                    <input asp-for="DireccionDistrito" class="form-control form-control-lg"
+                    <input asp-for="DireccionDistrito" class="form-control"
                            maxlength="100" placeholder="Ej: San Isidro" />
                     <span asp-validation-for="DireccionDistrito" class="text-danger small"></span>
                 </div>
@@ -243,7 +259,7 @@
                     <label asp-for="ContactoEmergenciaNombre" class="form-label fw-bold">
                         Nombre del Contacto
                     </label>
-                    <input asp-for="ContactoEmergenciaNombre" class="form-control form-control-lg"
+                    <input asp-for="ContactoEmergenciaNombre" class="form-control"
                            maxlength="100" placeholder="Ej: María González (madre)" />
                     <span asp-validation-for="ContactoEmergenciaNombre" class="text-danger small"></span>
                 </div>
@@ -252,7 +268,7 @@
                     <label asp-for="ContactoEmergenciaTelefono" class="form-label fw-bold">
                         Teléfono del Contacto
                     </label>
-                    <input asp-for="ContactoEmergenciaTelefono" class="form-control form-control-lg"
+                    <input asp-for="ContactoEmergenciaTelefono" class="form-control"
                            maxlength="20" placeholder="Ej: 8888-8888" />
                     <span asp-validation-for="ContactoEmergenciaTelefono" class="text-danger small"></span>
                 </div>
@@ -269,7 +285,7 @@
                         <i class="bi bi-phone"></i> Teléfono / Celular
                         <span class="text-muted fw-normal small">(opcional)</span>
                     </label>
-                    <input asp-for="Telefono" class="form-control form-control-lg"
+                    <input asp-for="Telefono" class="form-control"
                            maxlength="20" placeholder="Ej: 8888-8888" />
                     <span asp-validation-for="Telefono" class="text-danger small"></span>
                 </div>
@@ -280,7 +296,7 @@
                         <span class="text-muted fw-normal small">(opcional)</span>
                     </label>
                     <input asp-for="CorreoElectronico" type="email"
-                           class="form-control form-control-lg"
+                           class="form-control"
                            maxlength="150" placeholder="Ej: empleado@correo.com" />
                     <span asp-validation-for="CorreoElectronico" class="text-danger small"></span>
                 </div>
@@ -289,8 +305,8 @@
                     <label asp-for="FormaPago" class="form-label fw-bold">
                         <i class="bi bi-credit-card"></i> Forma de Pago <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="FormaPago" class="form-select form-select-lg" id="selectFormaPago">
-                        <option value="1">Transferencia Banco Nacional</option>
+                    <select asp-for="FormaPago" class="form-select" id="selectFormaPago">
+                        <option value="1">Transferencia Bancaria</option>
                         <option value="2">Efectivo</option>
                     </select>
                     <span asp-validation-for="FormaPago" class="text-danger small"></span>
@@ -301,7 +317,7 @@
                         <i class="bi bi-bank"></i> Número de Cuenta BN
                         <span class="text-muted fw-normal small">(opcional)</span>
                     </label>
-                    <input asp-for="NumeroCuenta" class="form-control form-control-lg"
+                    <input asp-for="NumeroCuenta" class="form-control"
                            maxlength="30" placeholder="Ej: 100-01-000-000000-0" />
                     <div class="form-text text-muted">Número de cuenta Banco Nacional para depósito del salario.</div>
                     <span asp-validation-for="NumeroCuenta" class="text-danger small"></span>
@@ -310,10 +326,10 @@
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn-lg px-5">
+                <button type="submit" class="btn btn-success btn px-5">
                     <i class="bi bi-check-circle"></i> Guardar Empleado
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn px-5">Cancelar</a>
             </div>
         </form>
     </div>

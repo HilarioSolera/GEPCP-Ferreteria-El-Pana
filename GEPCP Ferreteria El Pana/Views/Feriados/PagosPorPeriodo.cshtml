@@ -23,7 +23,7 @@
                 <label class="form-label fw-bold">
                     <i class="bi bi-calendar-range"></i> Seleccionar Período
                 </label>
-                <select name="periodoId" class="form-select form-select-lg"
+                <select name="periodoId" class="form-select"
                         onchange="this.form.submit()">
                     <option value="">-- Seleccioná un período --</option>
                     @if (periodos != null)
@@ -95,7 +95,7 @@ else if (periodo != null)
                         <form asp-action="GenerarPagosFeriado" method="post" class="d-inline">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="periodoId" value="@periodoId" />
-                            <button type="submit" class="btn btn-primary btn-lg"
+                            <button type="submit" class="btn btn-primary btn"
                                     onclick="return confirm('¿Generar pagos de feriado para todos los empleados activos?')">
                                 <i class="bi bi-lightning-charge"></i> Generar Pagos
                             </button>
@@ -207,6 +207,21 @@ else if (periodo != null)
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
+                                        <a asp-action="DescargarBoletaFeriado" asp-route-id="@pago.PagoFeriadoId"
+                                           class="btn btn-sm btn-outline-danger" title="Descargar PDF">
+                                            <i class="bi bi-file-earmark-pdf"></i>
+                                        </a>
+                                        @if (!string.IsNullOrEmpty(pago.Empleado.CorreoElectronico))
+                                        {
+                                            <form asp-action="EnviarPorEmail" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@pago.PagoFeriadoId" />
+                                                <input type="hidden" name="periodoId" value="@periodoId" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar correo">
+                                                    <i class="bi bi-envelope"></i>
+                                                </button>
+                                            </form>
+                                        }
                                     </div>
                                 }
                                 else

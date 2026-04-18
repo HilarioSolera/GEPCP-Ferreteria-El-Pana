@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260405031848_AgregarPeriodoPagoComision")]
-    partial class AgregarPeriodoPagoComision
+    [Migration("20260416000218_AgregarDescripcionOtrasDeducciones")]
+    partial class AgregarDescripcionOtrasDeducciones
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -133,9 +133,14 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Property<decimal>("Monto")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("PeriodoPagoId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("ComisionId");
 
                     b.HasIndex("EmpleadoId");
+
+                    b.HasIndex("PeriodoPagoId");
 
                     b.ToTable("Comisiones");
                 });
@@ -273,6 +278,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("TipoJornada")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TipoPago")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("EmpleadoId");
@@ -565,7 +573,13 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Property<int>("Mes")
                         .HasColumnType("INTEGER");
 
+                    b.Property<decimal>("PorcentajeCCSS")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Quincena")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TipoPeriodo")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("PeriodoPagoId");
@@ -733,6 +747,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("Monto")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MontoOriginal")
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("PrestamoId");
@@ -988,7 +1005,13 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("GEPCP_Ferreteria_El_Pana.Models.PeriodoPago", "PeriodoPago")
+                        .WithMany()
+                        .HasForeignKey("PeriodoPagoId");
+
                     b.Navigation("Empleado");
+
+                    b.Navigation("PeriodoPago");
                 });
 
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.CreditoFerreteria", b =>

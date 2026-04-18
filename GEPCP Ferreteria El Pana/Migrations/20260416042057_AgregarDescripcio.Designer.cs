@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260405032906_AgregarPeriodoPagoComision2")]
-    partial class AgregarPeriodoPagoComision2
+    [Migration("20260416042057_AgregarDescripcio")]
+    partial class AgregarDescripcio
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -278,6 +278,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("TipoJornada")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TipoPago")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("EmpleadoId");
@@ -570,7 +573,13 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Property<int>("Mes")
                         .HasColumnType("INTEGER");
 
+                    b.Property<decimal>("PorcentajeCCSS")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Quincena")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TipoPeriodo")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("PeriodoPagoId");
@@ -622,6 +631,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("BaseImponibleRenta")
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("DeduccionCCSS")
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
@@ -642,7 +654,13 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("DeduccionRenta")
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("DeduccionVacaciones")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DescripcionOtrasDeducciones")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("EmpleadoId")
@@ -738,6 +756,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("Monto")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MontoOriginal")
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("PrestamoId");

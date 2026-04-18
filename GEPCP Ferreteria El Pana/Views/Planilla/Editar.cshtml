@@ -108,15 +108,29 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label asp-for="AumentoAplicado" class="form-label fw-bold">
-                                <i class="bi bi-graph-up-arrow text-success"></i>
-                                Aumento / Comisión (₡)
+                            <label asp-for="OtrasDeducciones" class="form-label fw-bold">
+                                <i class="bi bi-dash-circle text-danger"></i>
+                                Otras Deducciones (₡)
                             </label>
-                            <input asp-for="AumentoAplicado" type="number"
+                            <input asp-for="OtrasDeducciones" type="number"
                                    step="0.01" min="0"
-                                   class="form-control form-control-lg" />
+                                   class="form-control" />
                             <div class="form-text text-muted">
-                                Ingresá el aumento o comisión adicional del período.
+                                Cualquier deducción adicional no contemplada.
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="DescripcionOtrasDeducciones" class="form-label fw-bold">
+                                <i class="bi bi-card-text text-secondary"></i>
+                                Descripción de la deducción
+                            </label>
+                            <input asp-for="DescripcionOtrasDeducciones"
+                                   class="form-control"
+                                   maxlength="150"
+                                   placeholder="Ej: Uniforme, multa, anticipo..." />
+                            <div class="form-text text-muted">
+                                Aparecerá en la boleta PDF del empleado.
                             </div>
                         </div>
 
@@ -127,7 +141,7 @@
                             </label>
                             <input asp-for="HorasNoLaboradas" type="number"
                                    step="0.01" min="0"
-                                   class="form-control form-control-lg" />
+                                   class="form-control" />
                             <div class="form-text text-muted">
                                 Se deducirá: horas × ₡@Model.ValorHora.ToString("N2")/hr
                             </div>
@@ -140,7 +154,7 @@
                             </label>
                             <input asp-for="OtrasDeducciones" type="number"
                                    step="0.01" min="0"
-                                   class="form-control form-control-lg" />
+                                   class="form-control" />
                             <div class="form-text text-muted">
                                 Cualquier deducción adicional no contemplada.
                             </div>
@@ -149,11 +163,11 @@
                     </div>
 
                     <div class="mt-4 d-flex gap-2">
-                        <button type="submit" class="btn btn-warning btn-lg px-5">
+                        <button type="submit" class="btn btn-warning btn px-5">
                             <i class="bi bi-check-circle"></i> Guardar Ajustes
                         </button>
                         <a asp-action="Index" asp-route-periodoId="@Model.PeriodoPagoId"
-                           class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                           class="btn btn-secondary btn px-5">Cancelar</a>
                     </div>
                 </form>
             </div>

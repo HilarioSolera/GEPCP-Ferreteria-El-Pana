@@ -15,7 +15,7 @@
     @if (!periodoCerrado && !verTodos)
     {
         <a asp-action="Create" asp-route-periodoId="@ViewBag.PeriodoId"
-               class="btn btn-success btn-lg">
+               class="btn btn-success btn">
             <i class="bi bi-plus-circle"></i> Registrar Horas Extras
         </a>
     }
@@ -220,6 +220,16 @@ else
                                        class="btn btn-sm btn-outline-danger" title="Descargar PDF">
                                     <i class="bi bi-file-earmark-pdf"></i>
                                 </a>
+                                @if (!string.IsNullOrEmpty(h.Empleado.CorreoElectronico))
+                                {
+                                    <form asp-action="EnviarPorEmail" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@h.HorasExtrasId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar correo">
+                                            <i class="bi bi-envelope"></i>
+                                        </button>
+                                    </form>
+                                }
                                 @if (!cerradoFila)
                                 {
                                     <a asp-action="Edit" asp-route-id="@h.HorasExtrasId"

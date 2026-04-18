@@ -15,7 +15,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         private readonly AuditoriaService _auditoria;
         private readonly ComprobantePlanillaService _servicioPDF; // ← agregá esta línea
 
-        private const decimal DiasLey = 14m;
+        private const decimal DiasLey = 12m;
         private const decimal SemanasLey = 50m;
         private const decimal DiasSalarioMensual = 30m;
 
@@ -443,43 +443,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
         // ── API: Calcular días disponibles ────────────────────────────────────
 
-        [HttpGet]
-        public async Task<IActionResult> CalcularDisponibles(int empleadoId)
-        {
-            try
-            {
-                var empleado = await _context.Empleados
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(e => e.EmpleadoId == empleadoId);
-
-                if (empleado == null)
-                    return Json(new { ok = false });
-
-                var (diasBase, diasTomados, disponibles) =
-                    await CalcularDisponiblesInterno(empleadoId);
-
-                var salarioDiario = Math.Round(empleado.SalarioBase / DiasSalarioMensual, 2);
-                var semanas = (decimal)(DateTime.Today - empleado.FechaIngreso).TotalDays / 7;
-                var antiguedad = (DateTime.Today - empleado.FechaIngreso).TotalDays / 365;
-
-                return Json(new
-                {
-                    ok = true,
-                    diasBase,
-                    diasTomados,
-                    disponibles,
-                    salarioDiario,
-                    semanas = Math.Round(semanas, 1),
-                    antiguedad = Math.Round((decimal)antiguedad, 1)
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al calcular disponibles");
-                return Json(new { ok = false });
-            }
-        }
-
+      [HttpGet]
         // ── API: Calcular días entre fechas ───────────────────────────────────
 
         [HttpGet]
@@ -517,6 +481,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
         // ── HELPERS ───────────────────────────────────────────────────────────
 
+        // ── HELPER: Calcular disponibles ──────────────────────────────────────
         private async Task<(decimal diasBase, decimal diasTomados, decimal disponibles)>
             CalcularDisponiblesInterno(int empleadoId, int? excluirId = null)
         {
@@ -526,24 +491,108 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
             if (empleado == null) return (0, 0, 0);
 
-            var semanas = (decimal)(DateTime.Today - empleado.FechaIngreso).TotalDays / 7;
-            var periodos = Math.Floor(semanas / SemanasLey);
-            var diasBase = periodos * DiasLey;
+            // Regla CR: 12 días de vacaciones por cada período de 50 semanas (350 días)
+            var hoy = DateTime.Today;
+            var ingreso = empleado.FechaIngreso;
+            var diasTrabajados = (decimal)(hoy - ingreso).TotalDays;
 
+            // Determinar inicio del período actual (cada 350 días = 50 semanas)
+            var periodosCompletos = (int)(diasTrabajados / 350);
+            var inicioPeriodoActual = ingreso.AddDays(periodosCompletos * 350);
+
+            // Días base por período = 12
+            var diasBase = DiasLey;
+
+            // Vacaciones tomadas solo en el período actual
             var query = _context.Vacaciones
                 .Where(v => v.EmpleadoId == empleadoId &&
                             v.Estado == EstadoVacacion.Aprobada &&
-                            v.Tipo == TipoVacacion.ConPago);
+                            v.Tipo == TipoVacacion.ConPago &&
+                            v.FechaInicio >= inicioPeriodoActual);
 
             if (excluirId.HasValue)
                 query = query.Where(v => v.VacacionId != excluirId.Value);
 
-            var diasTomados = (await query.Select(v => v.DiasHabiles).ToListAsync()).Sum();
-            var disponibles = diasBase - diasTomados;
+            var diasTomados = (await query
+                .Select(v => v.DiasHabiles)
+                .ToListAsync()).Sum();
+
+            var disponibles = Math.Max(0, diasBase - diasTomados);
 
             return (diasBase, diasTomados, disponibles);
         }
 
+        // ── API: Calcular días disponibles ────────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> CalcularDisponibles(int empleadoId)
+        {
+            try
+            {
+                var empleado = await _context.Empleados
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(e => e.EmpleadoId == empleadoId);
+
+                if (empleado == null)
+                    return Json(new { ok = false });
+
+                var (diasBase, diasTomados, disponibles) =
+                    await CalcularDisponiblesInterno(empleadoId);
+
+                // Historial de vacaciones por período
+                var ingreso = empleado.FechaIngreso;
+                var hoy = DateTime.Today;
+                var diasTrabajados = (decimal)(hoy - ingreso).TotalDays;
+                var periodosCompletos = (int)(diasTrabajados / 350);
+
+                var todasVacaciones = await _context.Vacaciones
+                    .Where(v => v.EmpleadoId == empleadoId &&
+                                v.Estado == EstadoVacacion.Aprobada &&
+                                v.Tipo == TipoVacacion.ConPago)
+                    .OrderBy(v => v.FechaInicio)
+                    .Select(v => new { v.FechaInicio, v.FechaFin, v.DiasHabiles })
+                    .ToListAsync();
+
+                var historialPeriodos = new List<object>();
+                for (int i = 0; i <= periodosCompletos; i++)
+                {
+                    var inicioPer = ingreso.AddDays(i * 350);
+                    var finPer = ingreso.AddDays((i + 1) * 350);
+                    var vacsPeriodo = todasVacaciones
+                        .Where(v => v.FechaInicio >= inicioPer && v.FechaInicio < finPer)
+                        .ToList();
+                    var diasDisfrutados = vacsPeriodo.Sum(v => v.DiasHabiles);
+
+                    historialPeriodos.Add(new
+                    {
+                        periodo = i + 1,
+                        inicio = inicioPer.ToString("dd/MM/yyyy"),
+                        fin = finPer.ToString("dd/MM/yyyy"),
+                        diasBase = DiasLey,
+                        diasDisfrutados,
+                        diasRestantes = Math.Max(0, DiasLey - diasDisfrutados),
+                        esPeriodoActual = i == periodosCompletos
+                    });
+                }
+
+                return Json(new
+                {
+                    ok = true,
+                    diasBase,
+                    diasTomados,
+                    disponibles,
+                    resumen = $"{empleado.PrimerApellido} {empleado.Nombre} " +
+                                    $"tiene {disponibles:N0} día(s) de vacaciones disponibles " +
+                                    $"(período actual: {DiasLey:N0} días, " +
+                                    $"{diasTomados} día(s) disfrutados)",
+                    historialPeriodos
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al calcular disponibles");
+                return Json(new { ok = false });
+            }
+        }
         private void AplicarValidaciones(Vacacion model)
         {
             if (model.EmpleadoId <= 0)
@@ -601,6 +650,127 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             {
                 _logger.LogError(ex, "Error al generar boleta vacación ID: {Id}", id);
                 TempData["Error"] = "Error al generar el PDF. Intentá de nuevo.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EnviarPorEmail(int id)
+        {
+            try
+            {
+                var vacacion = await _context.Vacaciones
+                    .Include(v => v.Empleado)
+                    .FirstOrDefaultAsync(v => v.VacacionId == id);
+
+                if (vacacion == null)
+                {
+                    TempData["Error"] = "Vacación no encontrada.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var correo = vacacion.Empleado.CorreoElectronico;
+                if (string.IsNullOrWhiteSpace(correo))
+                {
+                    TempData["Error"] =
+                        $"{vacacion.Empleado.PrimerApellido} " +
+                        $"{vacacion.Empleado.Nombre} no tiene correo registrado.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var (diasBase, diasTomados, disponibles) =
+                    await CalcularDisponiblesInterno(vacacion.EmpleadoId);
+
+                var emisor = HttpContext.Session.GetString("Usuario") ?? "";
+
+                var pdfBytes = _servicioPDF.GenerarBoletaVacacionesSinFirmas(
+                    vacacion, diasBase, diasTomados, disponibles, emisor);
+
+                var nombreArchivo =
+                    $"Boleta_Vacaciones_{vacacion.Empleado.PrimerApellido}_" +
+                    $"{vacacion.FechaInicio:yyyyMMdd}.pdf";
+
+                var emailSvc = HttpContext.RequestServices
+                    .GetRequiredService<EmailService>();
+
+                var tipoVacacion = vacacion.Tipo == TipoVacacion.ConPago ? "Con Pago" : "Sin Pago";
+                var asunto = $"Boleta de Vacaciones — {tipoVacacion} — {vacacion.FechaInicio:dd/MM/yyyy}";
+                var cuerpo = $@"
+<div style='font-family:Arial,sans-serif;max-width:600px;'>
+    <div style='background:#1A1A2E;padding:20px;'>
+        <h2 style='color:#FF7A00;margin:0;'>Ferretería El Pana SRL</h2>
+        <p style='color:#888;margin:4px 0 0;font-size:13px;'>
+            Departamento de Recursos Humanos
+        </p>
+    </div>
+    <div style='padding:20px;border:1px solid #eee;'>
+        <p>Estimado(a) <strong>{vacacion.Empleado.PrimerApellido}
+           {vacacion.Empleado.Nombre}</strong>,</p>
+        <p>Adjunto encontrará su boleta de vacaciones correspondiente al
+           período <strong>{vacacion.FechaInicio:dd/MM/yyyy} - {vacacion.FechaFin:dd/MM/yyyy}</strong>.</p>
+        <table style='width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;'>
+            <tr style='background:#f9f9f9;'>
+                <td style='padding:8px;border:1px solid #eee;'>Período</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {vacacion.FechaInicio:dd/MM/yyyy} - {vacacion.FechaFin:dd/MM/yyyy}
+                </td>
+            </tr>
+            <tr>
+                <td style='padding:8px;border:1px solid #eee;'>Tipo</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {tipoVacacion}
+                </td>
+            </tr>
+            <tr>
+                <td style='padding:8px;border:1px solid #eee;'>Días</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {vacacion.DiasHabiles}
+                </td>
+            </tr>
+            <tr style='background:#fff9f0;'>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    Deducción
+                </td>
+                <td style='padding:8px;border:1px solid #eee;
+                           font-weight:bold;font-size:16px;color:#FF7A00;'>
+                    ₡{vacacion.MontoDeducido:N2}
+                </td>
+            </tr>
+        </table>
+        <p style='color:#888;font-size:12px;'>
+            Documento generado automáticamente por el Sistema GEPCP.
+            No responder a este correo.
+        </p>
+    </div>
+    <div style='background:#f5f5f5;padding:12px;text-align:center;
+                font-size:11px;color:#888;'>
+        Ferretería El Pana SRL · Cédula Jurídica: 3-102-745359
+    </div>
+</div>";
+
+                var enviado = await emailSvc.EnviarPDFAsync(
+                    correo,
+                    $"{vacacion.Empleado.PrimerApellido} {vacacion.Empleado.Nombre}",
+                    asunto, cuerpo, pdfBytes, nombreArchivo);
+
+                await _auditoria.RegistrarAsync(
+                    emisor, "Enviar boleta por email", "Vacaciones",
+                    $"{vacacion.Empleado.PrimerApellido} {vacacion.Empleado.Nombre} " +
+                    $"→ {correo}");
+
+                TempData[enviado ? "Success" : "Error"] = enviado
+                    ? $"Boleta enviada a {correo}."
+                    : "Error al enviar el correo. Verificá la configuración SMTP.";
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar email vacación ID: {Id}", id);
+                TempData["Error"] = "Error al enviar el correo. Intentá de nuevo.";
                 return RedirectToAction(nameof(Index));
             }
         }

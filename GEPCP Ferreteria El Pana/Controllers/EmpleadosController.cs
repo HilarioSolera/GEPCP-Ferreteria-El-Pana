@@ -6,6 +6,9 @@ using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Services;
 using System.Text.RegularExpressions;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 namespace GEPCP_Ferreteria_El_Pana.Controllers
 {
@@ -87,9 +90,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             DireccionCanton = e.DireccionCanton,
             DireccionDistrito = e.DireccionDistrito,
             DireccionExacta = e.DireccionExacta,
+            TipoPago = e.TipoPago,
             // Contacto emergencia
             ContactoEmergenciaNombre = e.ContactoEmergenciaNombre,
-            ContactoEmergenciaTelefono = e.ContactoEmergenciaTelefono
+            ContactoEmergenciaTelefono = e.ContactoEmergenciaTelefono,
+            // ISR créditos fiscales
+            NumHijos = e.NumHijos,
+            TieneConyuge = e.TieneConyuge
         };
 
         private void AplicarValidacionesPersonalizadas(EmpleadoViewModel model, int? idActual)
@@ -168,18 +175,26 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
         // ── INDEX ─────────────────────────────────────────────────────────────
 
-        public async Task<IActionResult> Index(string? busqueda, bool mostrarTodos = false)
+        public async Task<IActionResult> Index(string? busqueda, bool mostrarTodos = false, string filtroEstado = "activos")
         {
             try
             {
                 ViewBag.Usuario = HttpContext.Session.GetString("Usuario");
                 ViewBag.Busqueda = busqueda;
                 ViewBag.MostrarTodos = mostrarTodos;
+                ViewBag.FiltroEstado = filtroEstado;
 
                 if (string.IsNullOrWhiteSpace(busqueda) && !mostrarTodos)
                     return View(new List<EmpleadoViewModel>());
 
                 var query = _context.Empleados.AsNoTracking().AsQueryable();
+
+                // Filtro por estado
+                if (filtroEstado == "activos")
+                    query = query.Where(e => e.Activo);
+                else if (filtroEstado == "inactivos")
+                    query = query.Where(e => !e.Activo);
+                // "todos" → sin filtro
 
                 if (!string.IsNullOrWhiteSpace(busqueda))
                 {
@@ -263,7 +278,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 return RedirectToAction(nameof(Index));
             }
         }
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EmpleadoViewModel model)
@@ -283,38 +297,38 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     Nombre = SanitizarTexto(model.Nombre),
                     PrimerApellido = SanitizarTexto(model.PrimerApellido),
                     SegundoApellido = string.IsNullOrWhiteSpace(model.SegundoApellido)
-                                                 ? null : SanitizarTexto(model.SegundoApellido),
+                                            ? null : SanitizarTexto(model.SegundoApellido),
                     Puesto = model.Puesto.Trim(),
                     Departamento = model.Departamento.Trim(),
                     TipoJornada = model.TipoJornada,
+                    TipoPago = model.TipoPago,
                     FechaIngreso = model.FechaIngreso,
                     FechaNacimiento = model.FechaNacimiento,
                     SalarioBase = Math.Round(model.SalarioBase, 2),
                     Telefono = string.IsNullOrWhiteSpace(model.Telefono)
-                                                 ? null : model.Telefono.Trim(),
+                                            ? null : model.Telefono.Trim(),
                     CorreoElectronico = string.IsNullOrWhiteSpace(model.CorreoElectronico)
-                                                 ? null : model.CorreoElectronico.Trim().ToLower(),
+                                            ? null : model.CorreoElectronico.Trim().ToLower(),
                     NumeroCuenta = string.IsNullOrWhiteSpace(model.NumeroCuenta)
-                                                 ? null : model.NumeroCuenta.Trim(),
+                                            ? null : model.NumeroCuenta.Trim(),
                     FormaPago = model.FormaPago,
-                    // Contrato
                     TipoContrato = model.TipoContrato,
                     FechaVencimientoContrato = model.TipoContrato == TipoContrato.Indefinido
-                                                 ? null : model.FechaVencimientoContrato,
-                    // Dirección
+                                            ? null : model.FechaVencimientoContrato,
                     DireccionProvincia = string.IsNullOrWhiteSpace(model.DireccionProvincia)
-                                                 ? null : SanitizarTexto(model.DireccionProvincia),
+                                            ? null : SanitizarTexto(model.DireccionProvincia),
                     DireccionCanton = string.IsNullOrWhiteSpace(model.DireccionCanton)
-                                                 ? null : SanitizarTexto(model.DireccionCanton),
+                                            ? null : SanitizarTexto(model.DireccionCanton),
                     DireccionDistrito = string.IsNullOrWhiteSpace(model.DireccionDistrito)
-                                                 ? null : SanitizarTexto(model.DireccionDistrito),
+                                            ? null : SanitizarTexto(model.DireccionDistrito),
                     DireccionExacta = string.IsNullOrWhiteSpace(model.DireccionExacta)
-                                                 ? null : SanitizarTexto(model.DireccionExacta),
-                    // Contacto emergencia
+                                            ? null : SanitizarTexto(model.DireccionExacta),
                     ContactoEmergenciaNombre = string.IsNullOrWhiteSpace(model.ContactoEmergenciaNombre)
-                                                 ? null : SanitizarTexto(model.ContactoEmergenciaNombre),
+                                            ? null : SanitizarTexto(model.ContactoEmergenciaNombre),
                     ContactoEmergenciaTelefono = string.IsNullOrWhiteSpace(model.ContactoEmergenciaTelefono)
-                                                 ? null : model.ContactoEmergenciaTelefono.Trim(),
+                                            ? null : model.ContactoEmergenciaTelefono.Trim(),
+                    NumHijos = model.NumHijos,
+                    TieneConyuge = model.TieneConyuge,
                     Activo = true
                 };
 
@@ -329,7 +343,17 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 _logger.LogInformation("Empleado creado: {Cedula} - {Nombre} {Apellido}",
                     empleado.Cedula, empleado.Nombre, empleado.PrimerApellido);
 
-                TempData["Success"] = $"Empleado '{empleado.PrimerApellido} {empleado.Nombre}' creado correctamente.";
+                // ── Aviso de antigüedad mínima ────────────────────────────────────
+                var diasDesdeIngreso = (DateTime.Today - empleado.FechaIngreso).Days;
+                if (diasDesdeIngreso < 15)
+                    TempData["Warning"] =
+                        $"Empleado '{empleado.PrimerApellido} {empleado.Nombre}' creado. " +
+                        $"⚠️ Tiene {diasDesdeIngreso} día(s) de antigüedad — " +
+                        "no será incluido en la planilla hasta completar 15 días.";
+                else
+                    TempData["Success"] =
+                        $"Empleado '{empleado.PrimerApellido} {empleado.Nombre}' creado correctamente.";
+
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateException ex)
@@ -343,12 +367,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error inesperado al crear empleado");
-                ModelState.AddModelError(string.Empty, "Ocurrió un error inesperado. Intentá de nuevo.");
+                ModelState.AddModelError(string.Empty,
+                    "Ocurrió un error inesperado. Intentá de nuevo.");
                 await CargarViewBagPuestos();
                 return View(model);
             }
         }
-
         // ── EDIT ──────────────────────────────────────────────────────────────
 
         public async Task<IActionResult> Edit(int? id)
@@ -404,6 +428,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 empleado.PrimerApellido = SanitizarTexto(model.PrimerApellido);
                 empleado.SegundoApellido = string.IsNullOrWhiteSpace(model.SegundoApellido)
                                                       ? null : SanitizarTexto(model.SegundoApellido);
+                empleado.TipoPago = model.TipoPago;
                 empleado.Puesto = model.Puesto.Trim();
                 empleado.Departamento = model.Departamento.Trim();
                 empleado.TipoJornada = model.TipoJornada;
@@ -435,6 +460,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                                                       ? null : SanitizarTexto(model.ContactoEmergenciaNombre);
                 empleado.ContactoEmergenciaTelefono = string.IsNullOrWhiteSpace(model.ContactoEmergenciaTelefono)
                                                       ? null : model.ContactoEmergenciaTelefono.Trim();
+                // ISR créditos fiscales
+                empleado.NumHijos = model.NumHijos;
+                empleado.TieneConyuge = model.TieneConyuge;
 
                 _context.Update(empleado);
                 await _context.SaveChangesAsync();
@@ -681,6 +709,439 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             if (string.IsNullOrWhiteSpace(input)) return string.Empty;
             return System.Globalization.CultureInfo.CurrentCulture
                 .TextInfo.ToTitleCase(input.ToLower());
+        }
+
+        // ── HISTORIAL PDF ────────────────────────────────────────────────────
+
+        public async Task<IActionResult> DescargarHistorial(int id)
+        {
+            try
+            {
+                var empleado = await _context.Empleados.AsNoTracking()
+                    .FirstOrDefaultAsync(e => e.EmpleadoId == id);
+                if (empleado == null) return NotFound();
+
+                var planillas = await _context.PlanillasEmpleado
+                    .Include(pe => pe.PeriodoPago)
+                    .AsNoTracking()
+                    .Where(pe => pe.EmpleadoId == id)
+                    .OrderByDescending(pe => pe.PeriodoPago.FechaInicio)
+                    .ToListAsync();
+
+                var horasExtras = await _context.HorasExtras
+                    .Include(h => h.PeriodoPago)
+                    .AsNoTracking()
+                    .Where(h => h.EmpleadoId == id)
+                    .OrderByDescending(h => h.Fecha)
+                    .ToListAsync();
+
+                var vacaciones = await _context.Vacaciones
+                    .AsNoTracking()
+                    .Where(v => v.EmpleadoId == id)
+                    .OrderByDescending(v => v.FechaInicio)
+                    .ToListAsync();
+
+                var incapacidades = await _context.Incapacidades
+                    .AsNoTracking()
+                    .Where(i => i.EmpleadoId == id)
+                    .OrderByDescending(i => i.FechaInicio)
+                    .ToListAsync();
+
+                var aguinaldos = await _context.Aguinaldos
+                    .AsNoTracking()
+                    .Where(a => a.EmpleadoId == id)
+                    .OrderByDescending(a => a.Anio)
+                    .ToListAsync();
+
+                var comisiones = await _context.Comisiones
+                    .AsNoTracking()
+                    .Where(c => c.EmpleadoId == id)
+                    .OrderByDescending(c => c.Fecha)
+                    .ToListAsync();
+
+                var prestamos = await _context.Prestamos
+                    .Include(p => p.AbonosPrestamo)
+                    .AsNoTracking()
+                    .Where(p => p.EmpleadoId == id)
+                    .OrderByDescending(p => p.FechaPrestamo)
+                    .ToListAsync();
+
+                var creditos = await _context.CreditosFerreteria
+                    .Include(c => c.AbonosCreditoFerreteria)
+                    .AsNoTracking()
+                    .Where(c => c.EmpleadoId == id)
+                    .OrderByDescending(c => c.FechaCredito)
+                    .ToListAsync();
+
+                var feriados = await _context.PagosFeriado
+                    .Include(f => f.Feriado)
+                    .Include(f => f.PeriodoPago)
+                    .AsNoTracking()
+                    .Where(f => f.EmpleadoId == id)
+                    .OrderByDescending(f => f.Feriado.Fecha)
+                    .ToListAsync();
+
+                var pdf = GenerarHistorialPdf(empleado, planillas, horasExtras, vacaciones,
+                    incapacidades, aguinaldos, comisiones, prestamos, creditos, feriados);
+
+                var nombreArchivo = $"Historial_{empleado.PrimerApellido}_{empleado.Nombre}_{DateTime.Now:yyyyMMdd}.pdf";
+                return File(pdf, "application/pdf", nombreArchivo);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al generar historial empleado ID: {Id}", id);
+                TempData["Error"] = "Error al generar el historial del empleado.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        private byte[] GenerarHistorialPdf(
+            Empleado emp,
+            List<PlanillaEmpleado> planillas,
+            List<HorasExtras> horasExtras,
+            List<Vacacion> vacaciones,
+            List<Incapacidad> incapacidades,
+            List<Aguinaldo> aguinaldos,
+            List<Comision> comisiones,
+            List<Prestamo> prestamos,
+            List<CreditoFerreteria> creditos,
+            List<PagoFeriado> feriados)
+        {
+            var naranja = Color.FromHex("FF7A00");
+            var grisClaro = Color.FromHex("F5F5F5");
+            var oscuro = Color.FromHex("1A1A2E");
+
+            return QuestPDF.Fluent.Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(QuestPDF.Helpers.PageSizes.Letter);
+                    page.MarginHorizontal(30);
+                    page.MarginVertical(25);
+                    page.DefaultTextStyle(x => x.FontSize(9));
+
+                    // ── HEADER ──
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Background(oscuro).Padding(12).Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text("GEPCP Ferretería El Pana").FontSize(14).Bold().FontColor(naranja);
+                                c.Item().Text("Historial Laboral del Empleado").FontSize(10).FontColor(QuestPDF.Helpers.Colors.White);
+                                c.Item().Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(7).FontColor(QuestPDF.Helpers.Colors.Grey.Lighten2);
+                            });
+                        });
+
+                        // Datos del empleado
+                        col.Item().PaddingTop(8).Background(grisClaro).Border(0.5f).BorderColor(QuestPDF.Helpers.Colors.Grey.Lighten2).Padding(8).Row(row =>
+                        {
+                            row.RelativeItem().Column(c =>
+                            {
+                                c.Item().Text($"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}").Bold().FontSize(11);
+                                c.Item().Text($"Cédula: {emp.Cedula}  |  Puesto: {emp.Puesto}  |  Depto: {emp.Departamento}");
+                                c.Item().Text($"Ingreso: {emp.FechaIngreso:dd/MM/yyyy}  |  Jornada: {(emp.TipoJornada == TipoJornada.Completa ? "Completa" : "Media")}  |  Estado: {(emp.Activo ? "Activo" : "Inactivo")}");
+                                c.Item().Text($"Salario Base: ₡{emp.SalarioBase:N0}  |  Valor Hora: ₡{emp.ValorHora:N2}");
+                            });
+                        });
+
+                        col.Item().PaddingBottom(5);
+                    });
+
+                    // ── CONTENT ──
+                    page.Content().Column(col =>
+                    {
+                        // ── PLANILLAS ──
+                        if (planillas.Any())
+                        {
+                            SeccionTitulo(col, "Planillas", naranja);
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(c =>
+                                {
+                                    c.RelativeColumn(2.5f); // Periodo
+                                    c.RelativeColumn(1.2f); // Devengado
+                                    c.RelativeColumn(1.2f); // CCSS
+                                    c.RelativeColumn(1.2f); // ISR
+                                    c.RelativeColumn(1.2f); // Deducciones
+                                    c.RelativeColumn(1.2f); // Neto
+                                });
+                                EncabezadoTabla(table, naranja, "Período", "Devengado", "CCSS", "ISR", "Deducciones", "Neto");
+                                bool alt = false;
+                                foreach (var p in planillas)
+                                {
+                                    var bg = alt ? grisClaro : QuestPDF.Helpers.Colors.White;
+                                    CeldaTabla(table, bg, $"{p.PeriodoPago.FechaInicio:dd/MM} - {p.PeriodoPago.FechaFin:dd/MM/yyyy}");
+                                    CeldaTabla(table, bg, $"₡{p.TotalDevengado:N0}");
+                                    CeldaTabla(table, bg, $"₡{p.DeduccionCCSS:N0}");
+                                    CeldaTabla(table, bg, $"₡{p.DeduccionRenta:N0}");
+                                    CeldaTabla(table, bg, $"₡{p.TotalDeducciones:N0}");
+                                    CeldaTabla(table, bg, $"₡{p.NetoAPagar:N0}");
+                                    alt = !alt;
+                                }
+                            });
+                            col.Item().PaddingBottom(3).AlignRight().Text($"Total Neto Histórico: ₡{planillas.Sum(p => p.NetoAPagar):N0}").Bold().FontSize(8);
+                        }
+
+                        // ── HORAS EXTRAS ──
+                        if (horasExtras.Any())
+                        {
+                            SeccionTitulo(col, "Horas Extras", naranja);
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(c =>
+                                {
+                                    c.RelativeColumn(2f);
+                                    c.RelativeColumn(1f);
+                                    c.RelativeColumn(1f);
+                                    c.RelativeColumn(1.2f);
+                                });
+                                EncabezadoTabla(table, naranja, "Fecha", "Horas", "Porcentaje", "Monto");
+                                bool alt = false;
+                                foreach (var h in horasExtras)
+                                {
+                                    var bg = alt ? grisClaro : QuestPDF.Helpers.Colors.White;
+                                    CeldaTabla(table, bg, h.Fecha.ToString("dd/MM/yyyy"));
+                                    CeldaTabla(table, bg, h.TotalHoras.ToString("N1"));
+                                    CeldaTabla(table, bg, $"x{h.Porcentaje:N1}");
+                                    CeldaTabla(table, bg, $"₡{h.MontoTotal:N0}");
+                                    alt = !alt;
+                                }
+                            });
+                            col.Item().PaddingBottom(3).AlignRight().Text($"Total: ₡{horasExtras.Sum(h => h.MontoTotal):N0}").Bold().FontSize(8);
+                        }
+
+                        // ── VACACIONES ──
+                        if (vacaciones.Any())
+                        {
+                            SeccionTitulo(col, "Vacaciones", naranja);
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(c =>
+                                {
+                                    c.RelativeColumn(2f);
+                                    c.RelativeColumn(1f);
+                                    c.RelativeColumn(1f);
+                                    c.RelativeColumn(1.2f);
+                                });
+                                EncabezadoTabla(table, naranja, "Período", "Días", "Estado", "Monto Ded.");
+                                bool alt = false;
+                                foreach (var v in vacaciones)
+                                {
+                                    var bg = alt ? grisClaro : QuestPDF.Helpers.Colors.White;
+                                    CeldaTabla(table, bg, $"{v.FechaInicio:dd/MM} - {v.FechaFin:dd/MM/yyyy}");
+                                    CeldaTabla(table, bg, v.DiasHabiles.ToString("N1"));
+                                    CeldaTabla(table, bg, v.Estado.ToString());
+                                    CeldaTabla(table, bg, $"₡{v.MontoDeducido:N0}");
+                                    alt = !alt;
+                                }
+                            });
+                            col.Item().PaddingBottom(3).AlignRight().Text($"Total días: {vacaciones.Where(v => v.Estado == EstadoVacacion.Aprobada).Sum(v => v.DiasHabiles):N1}").Bold().FontSize(8);
+                        }
+
+                        // ── INCAPACIDADES ──
+                        if (incapacidades.Any())
+                        {
+                            SeccionTitulo(col, "Incapacidades", naranja);
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(c =>
+                                {
+                                    c.RelativeColumn(2f);
+                                    c.RelativeColumn(1.5f);
+                                    c.RelativeColumn(0.8f);
+                                    c.RelativeColumn(1.2f);
+                                });
+                                EncabezadoTabla(table, naranja, "Período", "Tipo", "Días", "Monto");
+                                bool alt = false;
+                                foreach (var i in incapacidades)
+                                {
+                                    var bg = alt ? grisClaro : QuestPDF.Helpers.Colors.White;
+                                    CeldaTabla(table, bg, $"{i.FechaInicio:dd/MM} - {i.FechaFin:dd/MM/yyyy}");
+                                    CeldaTabla(table, bg, i.TipoIncapacidad);
+                                    CeldaTabla(table, bg, i.TotalDias.ToString());
+                                    CeldaTabla(table, bg, $"₡{i.MontoTotal:N0}");
+                                    alt = !alt;
+                                }
+                            });
+                        }
+
+                        // ── AGUINALDOS ──
+                        if (aguinaldos.Any())
+                        {
+                            SeccionTitulo(col, "Aguinaldos", naranja);
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(c =>
+                                {
+                                    c.RelativeColumn(1f);
+                                    c.RelativeColumn(2f);
+                                    c.RelativeColumn(1.2f);
+                                });
+                                EncabezadoTabla(table, naranja, "Año", "Período", "Monto");
+                                bool alt = false;
+                                foreach (var a in aguinaldos)
+                                {
+                                    var bg = alt ? grisClaro : QuestPDF.Helpers.Colors.White;
+                                    CeldaTabla(table, bg, a.Anio.ToString());
+                                    CeldaTabla(table, bg, $"{a.FechaInicio:dd/MM/yyyy} - {a.FechaFin:dd/MM/yyyy}");
+                                    CeldaTabla(table, bg, $"₡{a.MontoTotal:N0}");
+                                    alt = !alt;
+                                }
+                            });
+                            col.Item().PaddingBottom(3).AlignRight().Text($"Total: ₡{aguinaldos.Sum(a => a.MontoTotal):N0}").Bold().FontSize(8);
+                        }
+
+                        // ── COMISIONES ──
+                        if (comisiones.Any())
+                        {
+                            SeccionTitulo(col, "Comisiones", naranja);
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(c =>
+                                {
+                                    c.RelativeColumn(1.5f);
+                                    c.RelativeColumn(2.5f);
+                                    c.RelativeColumn(1.2f);
+                                });
+                                EncabezadoTabla(table, naranja, "Fecha", "Descripción", "Monto");
+                                bool alt = false;
+                                foreach (var c in comisiones)
+                                {
+                                    var bg = alt ? grisClaro : QuestPDF.Helpers.Colors.White;
+                                    CeldaTabla(table, bg, c.Fecha.ToString("dd/MM/yyyy"));
+                                    CeldaTabla(table, bg, c.Descripcion);
+                                    CeldaTabla(table, bg, $"₡{c.Monto:N0}");
+                                    alt = !alt;
+                                }
+                            });
+                            col.Item().PaddingBottom(3).AlignRight().Text($"Total: ₡{comisiones.Sum(c => c.Monto):N0}").Bold().FontSize(8);
+                        }
+
+                        // ── PRÉSTAMOS ──
+                        if (prestamos.Any())
+                        {
+                            SeccionTitulo(col, "Préstamos", naranja);
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(c =>
+                                {
+                                    c.RelativeColumn(1.5f);
+                                    c.RelativeColumn(1.2f);
+                                    c.RelativeColumn(1f);
+                                    c.RelativeColumn(1.2f);
+                                    c.RelativeColumn(1f);
+                                });
+                                EncabezadoTabla(table, naranja, "Fecha", "Monto", "Cuotas", "Cuota Mensual", "Estado");
+                                bool alt = false;
+                                foreach (var p in prestamos)
+                                {
+                                    var bg = alt ? grisClaro : QuestPDF.Helpers.Colors.White;
+                                    CeldaTabla(table, bg, p.FechaPrestamo.ToString("dd/MM/yyyy"));
+                                    CeldaTabla(table, bg, $"₡{p.MontoOriginal:N0}");
+                                    CeldaTabla(table, bg, p.Cuotas.ToString());
+                                    CeldaTabla(table, bg, $"₡{p.CuotaMensual:N0}");
+                                    CeldaTabla(table, bg, p.Activo ? "Activo" : "Pagado");
+                                    alt = !alt;
+                                }
+                            });
+                        }
+
+                        // ── CRÉDITOS FERRETERÍA ──
+                        if (creditos.Any())
+                        {
+                            SeccionTitulo(col, "Créditos Ferretería", naranja);
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(c =>
+                                {
+                                    c.RelativeColumn(1.5f);
+                                    c.RelativeColumn(2f);
+                                    c.RelativeColumn(1.2f);
+                                    c.RelativeColumn(1f);
+                                });
+                                EncabezadoTabla(table, naranja, "Fecha", "Descripción", "Monto", "Estado");
+                                bool alt = false;
+                                foreach (var c in creditos)
+                                {
+                                    var bg = alt ? grisClaro : QuestPDF.Helpers.Colors.White;
+                                    CeldaTabla(table, bg, c.FechaCredito.ToString("dd/MM/yyyy"));
+                                    CeldaTabla(table, bg, c.Descripcion ?? "—");
+                                    CeldaTabla(table, bg, $"₡{c.MontoTotal:N0}");
+                                    CeldaTabla(table, bg, c.Activo ? "Activo" : "Pagado");
+                                    alt = !alt;
+                                }
+                            });
+                        }
+
+                        // ── FERIADOS ──
+                        if (feriados.Any())
+                        {
+                            SeccionTitulo(col, "Feriados Pagados", naranja);
+                            col.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(c =>
+                                {
+                                    c.RelativeColumn(1.5f);
+                                    c.RelativeColumn(2f);
+                                    c.RelativeColumn(1f);
+                                    c.RelativeColumn(1.2f);
+                                });
+                                EncabezadoTabla(table, naranja, "Fecha", "Feriado", "Trabajado", "Monto");
+                                bool alt = false;
+                                foreach (var f in feriados)
+                                {
+                                    var bg = alt ? grisClaro : QuestPDF.Helpers.Colors.White;
+                                    CeldaTabla(table, bg, f.Feriado.Fecha.ToString("dd/MM/yyyy"));
+                                    CeldaTabla(table, bg, f.Feriado.Nombre);
+                                    CeldaTabla(table, bg, f.Trabajado ? "Sí" : "No");
+                                    CeldaTabla(table, bg, $"₡{f.MontoTotal:N0}");
+                                    alt = !alt;
+                                }
+                            });
+                            col.Item().PaddingBottom(3).AlignRight().Text($"Total: ₡{feriados.Sum(f => f.MontoTotal):N0}").Bold().FontSize(8);
+                        }
+
+                        // Sin datos
+                        if (!planillas.Any() && !horasExtras.Any() && !vacaciones.Any() &&
+                            !incapacidades.Any() && !aguinaldos.Any() && !comisiones.Any() &&
+                            !prestamos.Any() && !creditos.Any() && !feriados.Any())
+                        {
+                            col.Item().PaddingTop(30).AlignCenter().Text("No se encontraron registros para este empleado.").FontSize(11).Italic();
+                        }
+                    });
+
+                    // ── FOOTER ──
+                    page.Footer().AlignCenter().Text(t =>
+                    {
+                        t.Span("Página ").FontSize(7);
+                        t.CurrentPageNumber().FontSize(7);
+                        t.Span(" de ").FontSize(7);
+                        t.TotalPages().FontSize(7);
+                    });
+                });
+            }).GeneratePdf();
+        }
+
+        private static void SeccionTitulo(ColumnDescriptor col, string titulo, Color color)
+        {
+            col.Item().PaddingTop(8).PaddingBottom(3).BorderBottom(2).BorderColor(color)
+                .Text(titulo).Bold().FontSize(10).FontColor(color);
+        }
+
+        private static void EncabezadoTabla(TableDescriptor table, Color color, params string[] columnas)
+        {
+            foreach (var c in columnas)
+            {
+                table.Cell().Background(color).Padding(3)
+                    .Text(c).FontSize(7).Bold().FontColor(QuestPDF.Helpers.Colors.White);
+            }
+        }
+
+        private static void CeldaTabla(TableDescriptor table, Color bg, string texto)
+        {
+            table.Cell().Background(bg).BorderBottom(0.5f).BorderColor(QuestPDF.Helpers.Colors.Grey.Lighten2)
+                .Padding(3).Text(texto).FontSize(7);
         }
     }
 }

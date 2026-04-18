@@ -6,96 +6,87 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0"><i class="bi bi-gift"></i> Editar Aguinaldo</h2>
-    <a asp-action="Index" asp-route-anio="@Model.Anio"
-           class="btn btn-outline-secondary">
+    <a asp-action="Index" asp-route-anio="@Model.Anio" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
-<div class="card shadow-sm border-0" style="max-width: 700px;">
+<div class="card shadow-sm border-0">
     <div class="card-body p-4">
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
         <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="AguinaldoId" />
-            <input type="hidden" asp-for="CreadoEn" />
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-3">
+                    <ul class="mb-0">
+                        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@e.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
             <div class="row g-3">
-
+                <!-- Información del Empleado -->
                 <div class="col-12">
-                    <label asp-for="EmpleadoId" class="form-label fw-bold">
-                        <i class="bi bi-person"></i> Empleado
-                    </label>
-                    <select asp-for="EmpleadoId" asp-items="ViewBag.Empleados"
-                            class="form-select form-select-lg">
-                        <option value="">— Seleccione un empleado —</option>
-                    </select>
-                    <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
+                    <label class="form-label fw-bold">Empleado</label>
+                    <div class="form-control bg-light">
+                        @if (Model.Empleado != null)
+                        {
+                            <strong>@Model.Empleado.PrimerApellido @Model.Empleado.Nombre</strong>
+                        
+                            <br>
+                            <small class="text-muted">
+                                @Model.Empleado.Cedula — @Model.Empleado.Puesto
+                            </small>
+                        }
+                        else
+                        {
+                            <span class="text-danger fw-bold">⚠ Empleado no encontrado</span>
+                        }
+                    </div>
+                    <input type="hidden" asp-for="EmpleadoId" />
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="Anio" class="form-label fw-bold">
-                        <i class="bi bi-calendar"></i> Año
-                    </label>
-                    <input asp-for="Anio" type="number" min="2020"
-                           max="@(DateTime.Today.Year + 1)"
-                           class="form-control form-control-lg" />
-                    <span asp-validation-for="Anio" class="text-danger small"></span>
+                <div class="col-md-3">
+                    <label asp-for="Anio" class="form-label fw-bold">Año</label>
+                    <input asp-for="Anio" type="number" class="form-control" />
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="FechaInicio" class="form-label fw-bold">
-                        <i class="bi bi-calendar-check"></i> Período Inicio
-                    </label>
-                    <input asp-for="FechaInicio" type="date"
-                           class="form-control form-control-lg" />
-                    <span asp-validation-for="FechaInicio" class="text-danger small"></span>
+                <div class="col-md-3">
+                    <label asp-for="FechaInicio" class="form-label fw-bold">Inicio</label>
+                    <input asp-for="FechaInicio" type="date" class="form-control" />
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="FechaFin" class="form-label fw-bold">
-                        <i class="bi bi-calendar-x"></i> Período Fin
-                    </label>
-                    <input asp-for="FechaFin" type="date"
-                           class="form-control form-control-lg" />
-                    <span asp-validation-for="FechaFin" class="text-danger small"></span>
+                <div class="col-md-3">
+                    <label asp-for="FechaFin" class="form-label fw-bold">Fin</label>
+                    <input asp-for="FechaFin" type="date" class="form-control" />
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="FechaPago" class="form-label fw-bold">
-                        <i class="bi bi-calendar2-check"></i> Fecha de Pago
-                    </label>
-                    <input asp-for="FechaPago" type="date"
-                           class="form-control form-control-lg" />
-                    <span asp-validation-for="FechaPago" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6">
-                    <label asp-for="MontoTotal" class="form-label fw-bold">
-                        <i class="bi bi-currency-exchange"></i> Monto Total (₡)
-                    </label>
-                    <input asp-for="MontoTotal" type="number" step="0.01" min="0.01"
-                           class="form-control form-control-lg" />
-                    <span asp-validation-for="MontoTotal" class="text-danger small"></span>
+                <div class="col-md-3">
+                    <label asp-for="FechaPago" class="form-label fw-bold">Fecha Pago</label>
+                    <input asp-for="FechaPago" type="date" class="form-control" />
                 </div>
 
                 <div class="col-12">
-                    <label asp-for="Observaciones" class="form-label fw-bold">
-                        <i class="bi bi-chat-text"></i> Observaciones
-                        <span class="text-muted fw-normal small">(opcional)</span>
-                    </label>
-                    <input asp-for="Observaciones" class="form-control form-control-lg"
-                           maxlength="200" />
-                    <span asp-validation-for="Observaciones" class="text-danger small"></span>
+                    <label asp-for="MontoTotal" class="form-label fw-bold">Monto Total (₡)</label>
+                    <input asp-for="MontoTotal" type="number" step="0.01" class="form-control" />
                 </div>
 
+                <div class="col-12">
+                    <label asp-for="Observaciones" class="form-label fw-bold">Observaciones</label>
+                    <textarea asp-for="Observaciones" class="form-control" rows="4"></textarea>
+                </div>
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-warning btn-lg px-5">
+            <div class="mt-4 d-flex gap-3">
+                <button type="submit" class="btn btn-warning btn px-5">
                     <i class="bi bi-check-circle"></i> Guardar Cambios
                 </button>
-                <a asp-action="Index" asp-route-anio="@Model.Anio"
-                   class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" asp-route-anio="@Model.Anio" class="btn btn-secondary btn px-5">Cancelar</a>
             </div>
         </form>
     </div>

@@ -3,7 +3,6 @@
     ViewData["Title"] = "Préstamos - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var verTodos = (bool)(ViewBag.VerTodos ?? false);
-
     var totalSaldo = (decimal)(ViewBag.TotalSaldo ?? 0m);
     var totalCuotas = (decimal)(ViewBag.TotalCuotas ?? 0m);
     var totalPrestamos = (int)(ViewBag.TotalPrestamos ?? 0);
@@ -67,13 +66,17 @@
         <div class="col-md-2">
             <select name="estado" class="form-select shadow-sm"
                     onchange="this.form.submit()">
-                <option value="" selected="@(string.IsNullOrEmpty(ViewBag.EstadoFiltro as string) ? "selected" : null)">
+                <option value=""
+                        selected="@(string.IsNullOrEmpty(ViewBag.EstadoFiltro as string)
+                                                                                ? "selected" : null)">
                     Todos
                 </option>
-                <option value="Activo" selected="@(ViewBag.EstadoFiltro == "Activo" ? "selected" : null)">
+                <option value="Activo"
+                        selected="@(ViewBag.EstadoFiltro == "Activo" ? "selected" : null)">
                     Activos
                 </option>
-                <option value="Cerrado" selected="@(ViewBag.EstadoFiltro == "Cerrado" ? "selected" : null)">
+                <option value="Cerrado"
+                        selected="@(ViewBag.EstadoFiltro == "Cerrado" ? "selected" : null)">
                     Cerrados
                 </option>
             </select>
@@ -128,6 +131,7 @@ else
                     <th class="text-end">Monto Original</th>
                     <th class="text-end">Saldo Actual</th>
                     <th class="text-end">Pagado</th>
+                    <th class="text-end">Faltante</th>
                     <th class="text-end">Cuota Quinc.</th>
                     <th class="text-center">Cuotas</th>
                     <th>Fecha</th>
@@ -138,14 +142,19 @@ else
             <tbody>
                 @foreach (var p in Model)
                 {
-                    var montoOriginal = p.MontoOriginal > 0 ? p.MontoOriginal : p.CuotaMensual * p.Cuotas;
+                    var montoOriginal = p.MontoOriginal > 0
+                        ? p.MontoOriginal
+                        : p.CuotaMensual * p.Cuotas;
                     var pagado = Math.Round(montoOriginal - p.Monto, 2);
+                    var faltante = p.Activo ? p.Monto : 0;
                     var pct = montoOriginal > 0
                         ? (int)Math.Min(100, Math.Round((pagado / montoOriginal) * 100))
                         : 0;
                     var tieneAbonos = p.AbonosPrestamo.Any();
 
                     <tr class="@(!p.Activo ? "table-light" : "")">
+
+                        @* Expandir historial *@
                         <td class="text-center">
                             @if (tieneAbonos)
                             {
@@ -158,13 +167,19 @@ else
                                 </button>
                             }
                         </td>
+
+                        @* Empleado *@
                         <td>
                             <div class="fw-bold">
                                 @p.Empleado.PrimerApellido @p.Empleado.Nombre
                             </div>
                             <div class="text-muted small">@p.Empleado.Cedula</div>
                         </td>
+
+                        @* Monto original *@
                         <td class="text-end">₡@montoOriginal.ToString("N0")</td>
+
+                        @* Saldo actual *@
                         <td class="text-end fw-bold"
                             style="color:@(p.Activo ? "#c55000" : "#1a4a1a")">
                             ₡@p.Monto.ToString("N0")
@@ -172,27 +187,72 @@ else
                             {
                                 <div class="progress mt-1" style="height:3px;">
                                     <div class="progress-bar"
-                                         style="width:@pct%;background:#FF7A00;">
-                                    </div>
+                                         style="width:@pct%;background:#FF7A00;"></div>
                                 </div>
                             }
                         </td>
+
+                        @* Pagado *@
                         <td class="text-end" style="color:#1a4a1a;">
                             ₡@pagado.ToString("N0")
                             <div class="text-muted" style="font-size:0.7rem;">@pct%</div>
                         </td>
+
+                        @* Faltante — solo si activo *@
+                        <td class="text-end">
+                            @if (p.Activo)
+                            {
+                                <span style="color:#c55000;font-weight:600;">
+                                    ₡@faltante.ToString("N0")
+                                </span>
+                                <div class="text-muted" style="font-size:0.68rem;">
+                                    ~@((p.CuotaMensual > 0
+                                                                            ? (int)Math.Ceiling((double)(faltante / p.CuotaMensual))
+                                                                            : 0)) cuota(s)
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+
                         <td class="text-end">₡@p.CuotaMensual.ToString("N0")</td>
                         <td class="text-center">@p.Cuotas</td>
                         <td style="font-size:0.8rem;">
                             @p.FechaPrestamo.ToString("dd/MM/yyyy")
                         </td>
+
+                        @* Estado *@
                         <td class="text-center">
                             <span class="badge @(p.Activo ? "bg-success" : "bg-secondary")">
                                 @(p.Activo ? "Activo" : "Saldado")
                             </span>
                         </td>
+
+                        @* Acciones *@
                         <td class="text-center">
                             <div class="d-flex gap-1 justify-content-center flex-wrap">
+
+                                @* PDF disponible en cualquier estado *@
+                                <a asp-action="DescargarFiniquito"
+                                       asp-route-id="@p.PrestamoId"
+                                       class="btn btn-sm btn-outline-danger"
+                                       title="@(p.Activo ? "Estado actual PDF" : "Finiquito PDF")">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                </a>
+
+                                @if (!string.IsNullOrEmpty(p.Empleado.CorreoElectronico))
+                                {
+                                    <form asp-action="EnviarPorEmail" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@p.PrestamoId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar correo">
+                                            <i class="bi bi-envelope"></i>
+                                        </button>
+                                    </form>
+                                }
+
                                 @if (p.Activo)
                                 {
                                     <button type="button"
@@ -219,12 +279,6 @@ else
                                 }
                                 else
                                 {
-                                    <a asp-action="DescargarFiniquito"
-                                           asp-route-id="@p.PrestamoId"
-                                           class="btn btn-sm btn-outline-danger"
-                                           title="Descargar finiquito PDF">
-                                        <i class="bi bi-file-earmark-pdf"></i>
-                                    </a>
                                     <form asp-action="Reabrir" method="post" class="d-inline"
                                           onsubmit="return confirm('¿Reabrir el préstamo de @p.Empleado.PrimerApellido?')">
                                         @Html.AntiForgeryToken()
@@ -250,11 +304,11 @@ else
                         </td>
                     </tr>
 
-                    @* ── Historial de abonos expandible ── *@
+                    @* ── Historial expandible ── *@
                     @if (tieneAbonos)
                     {
                         <tr class="collapse" id="hist-@p.PrestamoId">
-                            <td colspan="10" class="p-0">
+                            <td colspan="11" class="p-0">
                                 <div class="px-4 py-3"
                                      style="background:#f8f8f8;border-top:1px solid #eee;">
 
@@ -267,9 +321,26 @@ else
                                             @p.AbonosPrestamo.Count() abono(s)
                                         </div>
                                         <div style="font-size:0.72rem;color:#888;">
-                                            Monto original: <strong>₡@montoOriginal.ToString("N0")</strong>
-                                            · Total pagado: <strong style="color:#1a4a1a;">₡@pagado.ToString("N0")</strong>
-                                            · Saldo: <strong style="color:#c55000;">₡@p.Monto.ToString("N0")</strong>
+                                            Monto original:
+                                            <strong>₡@montoOriginal.ToString("N0")</strong>
+                                            · Pagado:
+                                            <strong style="color:#1a4a1a;">
+                                                ₡@pagado.ToString("N0")
+                                            </strong>
+                                            · Saldo:
+                                            <strong style="color:#c55000;">
+                                                ₡@p.Monto.ToString("N0")
+                                            </strong>
+                                            @if (p.Activo)
+                                            {
+                                                <span style="color:#c55000;">
+                                                    · Faltante:
+                                                    <strong>₡@faltante.ToString("N0")</strong>
+                                                    (~@((p.CuotaMensual > 0
+                                                                                                            ? (int)Math.Ceiling((double)(faltante / p.CuotaMensual))
+                                                                                                            : 0)) cuota(s))
+                                                </span>
+                                            }
                                         </div>
                                     </div>
 
@@ -279,18 +350,28 @@ else
                                             <tr>
                                                 <th style="padding:5px 10px;">#</th>
                                                 <th style="padding:5px 10px;">Fecha</th>
-                                                <th style="padding:5px 10px;text-align:right;">Monto Abono</th>
-                                                <th style="padding:5px 10px;text-align:right;">Saldo Anterior</th>
-                                                <th style="padding:5px 10px;text-align:right;">Saldo Después</th>
+                                                <th style="padding:5px 10px;text-align:right;">
+                                                    Monto Abono
+                                                </th>
+                                                <th style="padding:5px 10px;text-align:right;">
+                                                    Saldo Anterior
+                                                </th>
+                                                <th style="padding:5px 10px;text-align:right;">
+                                                    Saldo Después
+                                                </th>
+                                                <th style="padding:5px 10px;text-align:right;">
+                                                    Faltante
+                                                </th>
                                                 <th style="padding:5px 10px;">Observaciones</th>
-                                                <th style="padding:5px 10px;text-align:center;">Corregir</th>
+                                                <th style="padding:5px 10px;text-align:center;">
+                                                    Acciones
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @{
                                                 var abonos = p.AbonosPrestamo
-                                                    .OrderBy(a => a.FechaAbono)
-                                                    .ToList();
+                                                    .OrderBy(a => a.FechaAbono).ToList();
                                                 var saldoCalc = montoOriginal;
                                                 int numAbono = 1;
                                             }
@@ -299,6 +380,7 @@ else
                                                 var saldoAnt = saldoCalc;
                                                 saldoCalc = Math.Round(saldoCalc - a.Monto, 2);
                                                 if (saldoCalc < 0) saldoCalc = 0;
+                                                var esFinal = saldoCalc == 0;
 
                                                 <tr style="background:@(numAbono % 2 == 0 ? "#f5f5f5" : "#fff")">
                                                     <td style="padding:5px 10px;color:#888;">
@@ -316,11 +398,30 @@ else
                                                         ₡@saldoAnt.ToString("N0")
                                                     </td>
                                                     <td style="padding:5px 10px;text-align:right;
-                                                        color:#c55000;font-weight:600;">
+                                                        color:@(esFinal ? "#1a4a1a" : "#c55000");
+                                                        font-weight:600;">
                                                         ₡@saldoCalc.ToString("N0")
+                                                        @if (esFinal)
+                                                        {
+                                                            <span style="font-size:0.65rem;">✓</span>
+                                                        }
+                                                    </td>
+                                                    <td style="padding:5px 10px;text-align:right;
+                                                        color:@(esFinal ? "#1a4a1a" : "#888");
+                                                        font-size:0.75rem;">
+                                                        @if (esFinal)
+                                                        {
+                                                            <span style="color:#1a4a1a;font-weight:700;">
+                                                                Saldado ✓
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span>₡@saldoCalc.ToString("N0")</span>
+                                                        }
                                                     </td>
                                                     <td style="padding:5px 10px;color:#555;
-                                                        font-size:0.75rem;max-width:200px;">
+                                                        font-size:0.75rem;max-width:180px;">
                                                         @(a.Observaciones ?? "—")
                                                     </td>
                                                     <td style="padding:5px 10px;text-align:center;">
@@ -338,7 +439,7 @@ else
                                                         </button>
                                                         <form asp-action="EliminarAbono"
                                                               method="post" class="d-inline"
-                                                              onsubmit="return confirm('¿Eliminar este abono de ₡@a.Monto.ToString("N0")? El saldo se recalculará.')">
+                                                              onsubmit="return confirm('¿Eliminar abono de ₡@a.Monto.ToString("N0")? El saldo se recalculará.')">
                                                             @Html.AntiForgeryToken()
                                                             <input type="hidden" name="abonoId"
                                                                    value="@a.AbonoPrestamoId" />
@@ -357,13 +458,26 @@ else
                                         <tfoot>
                                             <tr style="background:#222;color:#fff;font-weight:700;">
                                                 <td colspan="2" style="padding:5px 10px;">
-                                                    Total abonado (@abonos.Count abono(s))
+                                                    Total (@abonos.Count abono(s))
                                                 </td>
                                                 <td style="padding:5px 10px;text-align:right;">
                                                     ₡@abonos.Sum(a => a.Monto).ToString("N0")
                                                 </td>
-                                                <td colspan="2" style="padding:5px 10px;text-align:right;">
-                                                    Saldo final: ₡@p.Monto.ToString("N0")
+                                                <td colspan="2" style="padding:5px 10px;
+                                                    text-align:right;">
+                                                    Saldo: ₡@p.Monto.ToString("N0")
+                                                </td>
+                                                <td style="padding:5px 10px;text-align:right;">
+                                                    @if (p.Activo)
+                                                    {
+                                                        <span style="color:#FFB74D;">
+                                                            Falta: ₡@faltante.ToString("N0")
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span style="color:#A5D6A7;">✓ Saldado</span>
+                                                    }
                                                 </td>
                                                 <td colspan="2"></td>
                                             </tr>
@@ -414,18 +528,18 @@ else
                             Monto del Abono (₡) <span class="text-danger">*</span>
                         </label>
                         <input type="number" name="monto" id="abonoMonto"
-                               class="form-control form-control-lg"
+                               class="form-control"
                                step="0.01" min="0.01"
                                placeholder="Ingresá el monto" />
                         <div class="form-text text-muted" id="abonoHint"></div>
                     </div>
                     <div class="mb-1">
                         <label class="form-label fw-bold">
-                            Observaciones <span class="text-muted fw-normal">(opcional)</span>
+                            Observaciones
+                            <span class="text-muted fw-normal">(opcional)</span>
                         </label>
                         <input type="text" name="observaciones"
-                               class="form-control"
-                               maxlength="150"
+                               class="form-control" maxlength="150"
                                placeholder="Ej: Pago quincenal, pago extra..." />
                     </div>
                 </div>
@@ -472,7 +586,7 @@ else
                             Monto Corregido (₡) <span class="text-danger">*</span>
                         </label>
                         <input type="number" name="montoNuevo" id="corregirMontoNuevo"
-                               class="form-control form-control-lg"
+                               class="form-control"
                                step="0.01" min="0.01"
                                placeholder="Ingresá el monto correcto" />
                         <div class="form-text text-muted">
@@ -481,11 +595,11 @@ else
                     </div>
                     <div class="mb-1">
                         <label class="form-label fw-bold">
-                            Motivo de la corrección <span class="text-muted fw-normal">(opcional)</span>
+                            Motivo de la corrección
+                            <span class="text-muted fw-normal">(opcional)</span>
                         </label>
                         <input type="text" name="observaciones"
-                               class="form-control"
-                               maxlength="150"
+                               class="form-control" maxlength="150"
                                placeholder="Ej: Error de digitación, monto incorrecto..." />
                     </div>
                 </div>

@@ -30,7 +30,7 @@
                     <label asp-for="NombreCompleto" class="form-label fw-bold">
                         <i class="bi bi-person-badge"></i> Nombre Completo <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="NombreCompleto" class="form-control form-control-lg"
+                    <input asp-for="NombreCompleto" class="form-control"
                            maxlength="100" placeholder="Ej: María López Jiménez" />
                     <span asp-validation-for="NombreCompleto" class="text-danger small"></span>
                 </div>
@@ -41,7 +41,7 @@
                         <span class="text-muted fw-normal small">(requerido para recuperar contraseña)</span>
                     </label>
                     <input asp-for="CorreoElectronico" type="email"
-                           class="form-control form-control-lg"
+                           class="form-control"
                            maxlength="150" placeholder="Ej: maria@ferreteria.com" />
                     <span asp-validation-for="CorreoElectronico" class="text-danger small"></span>
                 </div>
@@ -50,7 +50,7 @@
                     <label asp-for="Rol" class="form-label fw-bold">
                         <i class="bi bi-shield"></i> Rol <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Rol" class="form-select form-select-lg">
+                    <select asp-for="Rol" class="form-select">
                         <option value="RRHH">RRHH</option>
                         <option value="Jefatura">Jefatura</option>
                     </select>
@@ -60,10 +60,10 @@
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-warning btn-lg px-5">
+                <button type="submit" class="btn btn-warning btn px-5">
                     <i class="bi bi-check-circle"></i> Guardar Cambios
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn px-5">Cancelar</a>
             </div>
         </form>
     </div>

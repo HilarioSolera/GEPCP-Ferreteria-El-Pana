@@ -110,7 +110,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                AplicarValidaciones(model, empleado.SalarioBase / 2m);
+                // Después — usar FactorCuotaPrestamo del empleado
+                var salarioReferencia = Math.Round(
+                    empleado.SalarioBase / empleado.FactorCuotaPrestamo, 2);
+                AplicarValidaciones(model, salarioReferencia);
 
                 if (!ModelState.IsValid)
                     return View(model);
@@ -539,35 +542,158 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (prestamo == null) return NotFound();
 
-                if (prestamo.Activo)
-                {
-                    TempData["Error"] =
-                        "El finiquito solo está disponible cuando el préstamo está saldado.";
-                    return RedirectToAction(nameof(Index), new { verTodos = true });
-                }
-
+                // Funciona para activos (estado actual) y cerrados (finiquito)
                 var pdfBytes = _servicioPDF.GenerarFiniquitoPrestamo(prestamo);
+
+                var tipo = prestamo.Activo ? "EstadoPrestamo" : "Finiquito";
                 var nombre =
-                    $"Finiquito_Prestamo_{prestamo.Empleado.PrimerApellido}_" +
+                    $"{tipo}_{prestamo.Empleado.PrimerApellido}_" +
                     $"{prestamo.FechaPrestamo:yyyyMMdd}.pdf";
 
                 await _auditoria.RegistrarAsync(
                     HttpContext.Session.GetString("Usuario") ?? "",
-                    "Descargar finiquito préstamo", "Préstamos",
+                    prestamo.Activo ? "Descargar estado préstamo" : "Descargar finiquito préstamo",
+                    "Préstamos",
                     $"{prestamo.Empleado.PrimerApellido} {prestamo.Empleado.Nombre}");
 
                 return File(pdfBytes, "application/pdf", nombre);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al generar finiquito préstamo ID: {Id}", id);
+                _logger.LogError(ex, "Error al generar PDF préstamo ID: {Id}", id);
                 TempData["Error"] = "Error al generar el PDF. Intentá de nuevo.";
+                return RedirectToAction(nameof(Index), new { verTodos = true });
+            }
+        }
+
+        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EnviarPorEmail(int id)
+        {
+            try
+            {
+                var prestamo = await _context.Prestamos
+                    .Include(p => p.Empleado)
+                    .Include(p => p.AbonosPrestamo)
+                    .FirstOrDefaultAsync(p => p.PrestamoId == id);
+
+                if (prestamo == null)
+                {
+                    TempData["Error"] = "Préstamo no encontrado.";
+                    return RedirectToAction(nameof(Index), new { verTodos = true });
+                }
+
+                var correo = prestamo.Empleado.CorreoElectronico;
+                if (string.IsNullOrWhiteSpace(correo))
+                {
+                    TempData["Error"] =
+                        $"{prestamo.Empleado.PrimerApellido} " +
+                        $"{prestamo.Empleado.Nombre} no tiene correo registrado.";
+                    return RedirectToAction(nameof(Index), new { verTodos = true });
+                }
+
+                var pdfBytes = _servicioPDF.GenerarFiniquitoPrestamoSinFirmas(prestamo);
+                var tipo = prestamo.Activo ? "EstadoPrestamo" : "Finiquito";
+                var nombreArchivo =
+                    $"{tipo}_{prestamo.Empleado.PrimerApellido}_{prestamo.FechaPrestamo:yyyyMMdd}.pdf";
+
+                var emailSvc = HttpContext.RequestServices
+                    .GetRequiredService<EmailService>();
+
+                var asunto = prestamo.Activo
+                    ? $"Estado de Préstamo — Monto: ₡{prestamo.Monto:N0}"
+                    : $"Finiquito de Préstamo — {prestamo.Empleado.PrimerApellido}";
+
+                var saldoFormato = prestamo.Activo
+                    ? $"Saldo Actual: ₡{prestamo.Monto:N2}"
+                    : $"Saldo Finalizado: ₡{prestamo.Monto:N2}";
+
+                var cuerpo = $@"
+<div style='font-family:Arial,sans-serif;max-width:600px;'>
+    <div style='background:#1A1A2E;padding:20px;'>
+        <h2 style='color:#FF7A00;margin:0;'>Ferretería El Pana SRL</h2>
+        <p style='color:#888;margin:4px 0 0;font-size:13px;'>
+            Departamento de Recursos Humanos
+        </p>
+    </div>
+    <div style='padding:20px;border:1px solid #eee;'>
+        <p>Estimado(a) <strong>{prestamo.Empleado.PrimerApellido}
+           {prestamo.Empleado.Nombre}</strong>,</p>
+        <p>Adjunto encontrará su boleta de {(prestamo.Activo ? "estado de préstamo" : "finiquito de préstamo")}
+           solicitado.</p>
+        <table style='width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;'>
+            <tr style='background:#f9f9f9;'>
+                <td style='padding:8px;border:1px solid #eee;'>Fecha de Préstamo</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {prestamo.FechaPrestamo:dd/MM/yyyy}
+                </td>
+            </tr>
+            <tr>
+                <td style='padding:8px;border:1px solid #eee;'>Monto Original</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    ₡{(prestamo.MontoOriginal > 0 ? prestamo.MontoOriginal : prestamo.CuotaMensual * prestamo.Cuotas):N2}
+                </td>
+            </tr>
+            <tr>
+                <td style='padding:8px;border:1px solid #eee;'>Cuota Actual</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    ₡{prestamo.CuotaMensual:N2}
+                </td>
+            </tr>
+            <tr style='background:#fff9f0;'>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {saldoFormato.Split(':')[0]}
+                </td>
+                <td style='padding:8px;border:1px solid #eee;
+                           font-weight:bold;font-size:16px;color:#FF7A00;'>
+                    ₡{prestamo.Monto:N2}
+                </td>
+            </tr>
+        </table>
+        <p style='color:#888;font-size:12px;'>
+            Documento generado automáticamente por el Sistema GEPCP.
+            No responder a este correo.
+        </p>
+    </div>
+    <div style='background:#f5f5f5;padding:12px;text-align:center;
+                font-size:11px;color:#888;'>
+        Ferretería El Pana SRL · Cédula Jurídica: 3-102-745359
+    </div>
+</div>";
+
+                var enviado = await emailSvc.EnviarPDFAsync(
+                    correo,
+                    $"{prestamo.Empleado.PrimerApellido} {prestamo.Empleado.Nombre}",
+                    asunto,
+                    cuerpo,
+                    pdfBytes,
+                    nombreArchivo);
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Enviar préstamo por email", "Préstamos",
+                    $"{prestamo.Empleado.PrimerApellido} {prestamo.Empleado.Nombre} — Monto: ₡{(prestamo.MontoOriginal > 0 ? prestamo.MontoOriginal : prestamo.CuotaMensual * prestamo.Cuotas):N2}");
+
+                if (!enviado)
+                    TempData["Error"] = "No se pudo enviar el correo. Intentá de nuevo.";
+                else
+                    TempData["Success"] = $"Boleta de {tipo.ToLower()} enviada exitosamente.";
+
+                return RedirectToAction(nameof(Index), new { verTodos = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar préstamo por email ID: {Id}", id);
+                TempData["Error"] = "Error al enviar el correo. Intentá de nuevo.";
                 return RedirectToAction(nameof(Index), new { verTodos = true });
             }
         }
 
         // ── APIs ──────────────────────────────────────────────────────────────
 
+        // ==================== BuscarEmpleados ====================
         [HttpGet]
         public async Task<IActionResult> BuscarEmpleados(string? termino)
         {
@@ -591,7 +717,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     cedula = e.Cedula,
                     puesto = e.Puesto,
                     salarioBase = e.SalarioBase,
-                    salarioQuincenal = Math.Round(e.SalarioBase / 2m, 2),
+                    salarioQuincenal = Math.Round(
+                        e.SalarioBase / (e.TipoPago == TipoPago.Semanal ? 4m :
+                                         e.TipoPago == TipoPago.Mensual ? 1m : 2m), 2),
+                    tipoPago = e.TipoPago.ToString(),   // ← AGREGAR ESTA LÍNEA
                     tieneActivo = _context.Prestamos.Any(
                         p => p.EmpleadoId == e.EmpleadoId && p.Activo)
                 })
@@ -600,6 +729,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return Json(empleados);
         }
 
+        // ==================== TodosLosEmpleados ====================
         [HttpGet]
         public async Task<IActionResult> TodosLosEmpleados()
         {
@@ -614,7 +744,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     cedula = e.Cedula,
                     puesto = e.Puesto,
                     salarioBase = e.SalarioBase,
-                    salarioQuincenal = Math.Round(e.SalarioBase / 2m, 2),
+                    salarioQuincenal = Math.Round(
+                        e.SalarioBase / (e.TipoPago == TipoPago.Semanal ? 4m :
+                                         e.TipoPago == TipoPago.Mensual ? 1m : 2m), 2),
+                    tipoPago = e.TipoPago.ToString(),   // ← AGREGAR ESTA LÍNEA
                     tieneActivo = _context.Prestamos.Any(
                         p => p.EmpleadoId == e.EmpleadoId && p.Activo)
                 })
@@ -662,7 +795,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             {
                 ModelState.AddModelError("CuotaMensual",
                     $"La cuota (₡{model.CuotaMensual:N0}) no puede superar el salario " +
-                    $"quincenal del empleado (₡{salarioQuincenal:N0}).");
+                    $"del período del empleado (₡{salarioQuincenal:N0}).");
             }
 
             if (model.FechaPrestamo == default)

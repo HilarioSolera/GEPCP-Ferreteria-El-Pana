@@ -11,42 +11,54 @@
     </a>
 </div>
 
-<div class="card shadow-sm border-0" style="max-width: 750px;">
+<div class="card shadow-sm border-0">
     <div class="card-body p-4">
         <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="IncapacidadId" />
 
+            <!-- MENSAJE GLOBAL DE ERRORES -->
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-4">
+                    <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
+                    <strong>No se pudo guardar los cambios:</strong>
+                    <ul class="mb-0 mt-2">
+                        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@e.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
             <div class="row g-3">
 
+                <!-- Empleado (Solo Lectura) -->
                 <div class="col-12">
-                    <label asp-for="EmpleadoId" class="form-label fw-bold">
-                        <i class="bi bi-person"></i> Empleado <span class="text-danger">*</span>
-                    </label>
-                    <select asp-for="EmpleadoId" asp-items="ViewBag.Empleados"
-                            class="form-select form-select-lg" id="selectEmpleado">
-                        <option value="">— Seleccione un empleado —</option>
-                    </select>
-                    <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
+                    <label class="form-label fw-bold">Empleado</label>
+                    <div class="alert alert-secondary py-2 d-flex align-items-center gap-2">
+                        <i class="bi bi-person-badge"></i>
+                        <strong>@ViewBag.EmpleadoNombre</strong>
+                        <span class="text-muted small">@ViewBag.EmpleadoCedula</span>
+                    </div>
+                    <input type="hidden" asp-for="EmpleadoId" />
                 </div>
 
+                <!-- Entidad -->
                 <div class="col-md-4">
-                    <label asp-for="Entidad" class="form-label fw-bold">
-                        <i class="bi bi-building-check"></i> Entidad <span class="text-danger">*</span>
-                    </label>
-                    <select asp-for="Entidad" class="form-select form-select-lg"
-                            id="selectEntidad">
+                    <label asp-for="Entidad" class="form-label fw-bold">Entidad <span class="text-danger">*</span></label>
+                    <select asp-for="Entidad" class="form-select" id="selectEntidad">
                         <option value="1">CCSS</option>
                         <option value="2">INS</option>
                     </select>
                     <span asp-validation-for="Entidad" class="text-danger small"></span>
                 </div>
 
+                <!-- Tipo de Incapacidad -->
                 <div class="col-md-8">
-                    <label asp-for="TipoIncapacidad" class="form-label fw-bold">
-                        <i class="bi bi-clipboard2-pulse"></i> Tipo <span class="text-danger">*</span>
-                    </label>
-                    <select asp-for="TipoIncapacidad" class="form-select form-select-lg">
+                    <label asp-for="TipoIncapacidad" class="form-label fw-bold">Tipo de Incapacidad <span class="text-danger">*</span></label>
+                    <select asp-for="TipoIncapacidad" class="form-select">
                         <option value="Enfermedad común">Enfermedad común</option>
                         <option value="Accidente de tránsito">Accidente de tránsito</option>
                         <option value="Accidente laboral">Accidente laboral</option>
@@ -57,46 +69,35 @@
                     <span asp-validation-for="TipoIncapacidad" class="text-danger small"></span>
                 </div>
 
+                <!-- Fechas -->
                 <div class="col-md-5">
-                    <label asp-for="FechaInicio" class="form-label fw-bold">
-                        <i class="bi bi-calendar-check"></i> Fecha Inicio <span class="text-danger">*</span>
-                    </label>
-                    <input asp-for="FechaInicio" type="date"
-                           class="form-control form-control-lg" id="inputFechaInicio" />
+                    <label asp-for="FechaInicio" class="form-label fw-bold">Fecha Inicio <span class="text-danger">*</span></label>
+                    <input asp-for="FechaInicio" type="date" id="inputFechaInicio" class="form-control" />
                     <span asp-validation-for="FechaInicio" class="text-danger small"></span>
                 </div>
 
                 <div class="col-md-5">
-                    <label asp-for="FechaFin" class="form-label fw-bold">
-                        <i class="bi bi-calendar-x"></i> Fecha Fin <span class="text-danger">*</span>
-                    </label>
-                    <input asp-for="FechaFin" type="date"
-                           class="form-control form-control-lg" id="inputFechaFin" />
+                    <label asp-for="FechaFin" class="form-label fw-bold">Fecha Fin <span class="text-danger">*</span></label>
+                    <input asp-for="FechaFin" type="date" id="inputFechaFin" class="form-control" />
                     <span asp-validation-for="FechaFin" class="text-danger small"></span>
                 </div>
 
                 <div class="col-md-2">
                     <label class="form-label fw-bold text-muted">Días</label>
-                    <div class="form-control form-control-lg bg-light text-center fw-bold text-primary"
-                         id="totalDiasRef">
-                        @Model.TotalDias
-                    </div>
+                    <div class="form-control bg-light text-center fw-bold text-primary" id="totalDiasRef">—</div>
                 </div>
 
+                <!-- Tiquete CCSS -->
                 <div class="col-md-6" id="divTiquete">
-                    <label asp-for="TiqueteCCSS" class="form-label fw-bold">
-                        <i class="bi bi-ticket-perforated"></i> Tiquete CCSS
-                    </label>
-                    <input asp-for="TiqueteCCSS" class="form-control form-control-lg"
-                           maxlength="50" />
+                    <label asp-for="TiqueteCCSS" class="form-label fw-bold">Tiquete CCSS</label>
+                    <input asp-for="TiqueteCCSS" class="form-control" maxlength="50" />
                     <span asp-validation-for="TiqueteCCSS" class="text-danger small"></span>
                 </div>
 
+                <!-- Porcentaje de Pago -->
                 <div class="col-md-3">
-                    <label asp-for="PorcentajePago" class="form-label fw-bold">
-                        <i class="bi bi-percent"></i> % Pago <span class="text-danger">*</span>
-                    </label>
-                    <select asp-for="PorcentajePago" class="form-select form-select-lg">
+                    <label asp-for="PorcentajePago" class="form-label fw-bold">% Pago <span class="text-danger">*</span></label>
+                    <select asp-for="PorcentajePago" class="form-select" id="selectPorcentaje">
                         <option value="50">50%</option>
                         <option value="60">60%</option>
                         <option value="100">100%</option>
@@ -104,35 +105,30 @@
                     <span asp-validation-for="PorcentajePago" class="text-danger small"></span>
                 </div>
 
+                <!-- Responsable -->
                 <div class="col-md-3">
-                    <label asp-for="ResponsablePago" class="form-label fw-bold">
-                        <i class="bi bi-person-check"></i> Responsable <span class="text-danger">*</span>
-                    </label>
-                    <select asp-for="ResponsablePago" class="form-select form-select-lg">
+                    <label asp-for="ResponsablePago" class="form-label fw-bold">Responsable</label>
+                    <select asp-for="ResponsablePago" class="form-select">
                         <option value="1">Patrono</option>
                         <option value="2">CCSS</option>
                         <option value="3">INS</option>
                     </select>
-                    <span asp-validation-for="ResponsablePago" class="text-danger small"></span>
                 </div>
 
+                <!-- Observaciones -->
                 <div class="col-12">
-                    <label asp-for="Observaciones" class="form-label fw-bold">
-                        <i class="bi bi-chat-text"></i> Observaciones
-                        <span class="text-muted fw-normal small">(opcional)</span>
-                    </label>
-                    <input asp-for="Observaciones" class="form-control form-control-lg"
-                           maxlength="200" />
+                    <label asp-for="Observaciones" class="form-label fw-bold">Observaciones</label>
+                    <input asp-for="Observaciones" class="form-control" maxlength="200" />
                     <span asp-validation-for="Observaciones" class="text-danger small"></span>
                 </div>
 
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-warning btn-lg px-5">
+                <button type="submit" class="btn btn-warning btn px-5">
                     <i class="bi bi-check-circle"></i> Guardar Cambios
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn px-5">Cancelar</a>
             </div>
         </form>
     </div>
@@ -142,25 +138,26 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-    <script>
-        function toggleTiquete() {
-            var entidad = parseInt(document.getElementById('selectEntidad').value);
-            document.getElementById('divTiquete').style.display =
-                entidad === 1 ? 'block' : 'none';
-        }
 
+    <script>
+        // Toggle Tiquete CCSS
+        document.getElementById('selectEntidad').addEventListener('change', function() {
+            document.getElementById('divTiquete').style.display = this.value == "1" ? 'block' : 'none';
+        });
+
+        // Calcular días automáticamente
         function calcularDias() {
-            var fi   = new Date(document.getElementById('inputFechaInicio').value);
-            var ff   = new Date(document.getElementById('inputFechaFin').value);
+            var fi = new Date(document.getElementById('inputFechaInicio').value);
+            var ff = new Date(document.getElementById('inputFechaFin').value);
             var dias = Math.round((ff - fi) / (1000 * 60 * 60 * 24)) + 1;
             document.getElementById('totalDiasRef').textContent = dias > 0 ? dias : '—';
         }
 
-        document.getElementById('selectEntidad').addEventListener('change', toggleTiquete);
         document.getElementById('inputFechaInicio').addEventListener('change', calcularDias);
         document.getElementById('inputFechaFin').addEventListener('change', calcularDias);
 
-        toggleTiquete();
+        // Inicializar al cargar
+        document.getElementById('selectEntidad').dispatchEvent(new Event('change'));
         calcularDias();
     </script>
 }

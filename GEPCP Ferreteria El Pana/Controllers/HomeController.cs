@@ -12,7 +12,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<HomeController> _logger;
-        private const decimal DiasLey = 14m;
+        private const decimal DiasLey = 12m;
         private const decimal SemanasLey = 50m;
 
         public HomeController(
@@ -139,32 +139,34 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     .Where(e => e.Activo)
                     .ToListAsync();
 
-                // Traemos datos y sumamos en memoria
-                var diasTomadosPorEmpleado = await _context.Vacaciones
+                // Traemos vacaciones aprobadas con fechas para filtrar por período
+                var vacacionesAprobadas = await _context.Vacaciones
                     .Where(v => v.Estado == EstadoVacacion.Aprobada &&
                                 v.Tipo == TipoVacacion.ConPago)
-                    .Select(v => new { v.EmpleadoId, v.DiasHabiles })
+                    .Select(v => new { v.EmpleadoId, v.DiasHabiles, v.FechaInicio })
                     .ToListAsync();
 
-                var diasTomadosDict = diasTomadosPorEmpleado
-                    .GroupBy(x => x.EmpleadoId)
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.Sum(x => x.DiasHabiles)   // decimal
-                    );
-
-                // Vacaciones en alerta
+                // Vacaciones en alerta (por período aniversario actual)
                 var vacacionesAlerta = new List<object>();
                 foreach (var emp in empleadosActivos)
                 {
-                    var semanas = (decimal)(DateTime.Today - emp.FechaIngreso).TotalDays / 7;
-                    var periodos = Math.Floor(semanas / SemanasLey);
-                    var diasBase = periodos * DiasLey;
+                    var hoy = DateTime.Today;
+                    var ingreso = emp.FechaIngreso;
+                    var diasTrabajados = (decimal)(hoy - ingreso).TotalDays;
+                    var periodosCompletos = (int)(diasTrabajados / 350);
+                    var inicioPeriodoActual = ingreso.AddDays(periodosCompletos * 350);
+                    var finPeriodoActual = ingreso.AddDays((periodosCompletos + 1) * 350);
 
-                    decimal tomados = diasTomadosDict.TryGetValue(emp.EmpleadoId, out var valor) ? valor : 0m;
-                    var disponibles = diasBase - tomados;
+                    var diasBase = DiasLey;
+                    var tomados = vacacionesAprobadas
+                        .Where(v => v.EmpleadoId == emp.EmpleadoId &&
+                                    v.FechaInicio >= inicioPeriodoActual)
+                        .Sum(v => v.DiasHabiles);
+                    var disponibles = Math.Max(0, diasBase - tomados);
 
-                    if (disponibles >= DiasLey)
+                    // Alerta: tiene días disponibles y se acerca al fin de período
+                    var diasParaFinPeriodo = (finPeriodoActual - hoy).TotalDays;
+                    if (disponibles > 0 && (disponibles >= DiasLey || diasParaFinPeriodo <= 60))
                     {
                         vacacionesAlerta.Add(new
                         {
@@ -174,7 +176,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                             DiasBase = diasBase,
                             Tomados = tomados,
                             Disponibles = disponibles,
-                            FechaIngreso = emp.FechaIngreso
+                            FechaIngreso = emp.FechaIngreso,
+                            FinPeriodo = finPeriodoActual,
+                            DiasParaFinPeriodo = (int)diasParaFinPeriodo
                         });
                     }
                 }
@@ -185,16 +189,23 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 ViewBag.TotalVacAlerta = vacacionesAlerta.Count;
 
-                // Reporte completo de vacaciones
+                // Reporte completo de vacaciones (por período actual)
                 var reporteVacaciones = new List<object>();
                 foreach (var emp in empleadosActivos.OrderBy(e => e.PrimerApellido))
                 {
-                    var semanas = (decimal)(DateTime.Today - emp.FechaIngreso).TotalDays / 7;
-                    var periodos = Math.Floor(semanas / SemanasLey);
-                    var diasBase = periodos * DiasLey;
+                    var hoy = DateTime.Today;
+                    var ingreso = emp.FechaIngreso;
+                    var diasTrabajados = (decimal)(hoy - ingreso).TotalDays;
+                    var periodosCompletos = (int)(diasTrabajados / 350);
+                    var inicioPeriodoActual = ingreso.AddDays(periodosCompletos * 350);
+                    var finPeriodoActual = ingreso.AddDays((periodosCompletos + 1) * 350);
 
-                    decimal tomados = diasTomadosDict.TryGetValue(emp.EmpleadoId, out var valor) ? valor : 0m;
-                    var disponibles = diasBase - tomados;
+                    var diasBase = DiasLey;
+                    var tomados = vacacionesAprobadas
+                        .Where(v => v.EmpleadoId == emp.EmpleadoId &&
+                                    v.FechaInicio >= inicioPeriodoActual)
+                        .Sum(v => v.DiasHabiles);
+                    var disponibles = Math.Max(0, diasBase - tomados);
 
                     reporteVacaciones.Add(new
                     {
@@ -205,7 +216,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         Tomados = tomados,
                         Disponibles = disponibles,
                         FechaIngreso = emp.FechaIngreso,
-                        Semanas = Math.Round(semanas, 1)
+                        InicioPeriodo = inicioPeriodoActual,
+                        FinPeriodo = finPeriodoActual,
+                        Periodo = periodosCompletos + 1
                     });
                 }
 

@@ -143,7 +143,6 @@ else if (Model.ContratoProximoAVencer)
                                         }
                                         else
                                         {
-
                                             <span class="text-muted">—</span>
                                         }
                                     </td>
@@ -159,7 +158,6 @@ else if (Model.ContratoProximoAVencer)
                                         }
                                         else
                                         {
-
                                             <span class="text-muted">—</span>
                                         }
                                     </td>
@@ -190,7 +188,6 @@ else if (Model.ContratoProximoAVencer)
                                         }
                                         else
                                         {
-
                                             <span class="text-muted">—</span>
                                         }
                                     </td>
@@ -221,9 +218,22 @@ else if (Model.ContratoProximoAVencer)
                                 <tr>
                                     <td class="fw-bold text-muted">Jornada</td>
                                     <td>
-                                        @(Model.TipoJornada == GEPCP_Ferreteria_El_Pana.Models.TipoJornada.Completa
-                                            ? "Completa (240 hrs/mes)"
-                                            : "Media Jornada (120 hrs/mes)")
+                                        <span class="badge @(Model.TipoJornada == GEPCP_Ferreteria_El_Pana.Models.TipoJornada.Completa
+                                                                                                                                                        ? "bg-primary" : "bg-info")">
+                                            @(Model.TipoJornada == GEPCP_Ferreteria_El_Pana.Models.TipoJornada.Completa
+                                                ? "Completa" : "Media")
+                                        </span>
+                                        <div class="mt-1">
+                                            @(Model.TipoJornada == GEPCP_Ferreteria_El_Pana.Models.TipoJornada.Completa
+                                                ? "Completa (240 hrs/mes)"
+                                                : "Media Jornada (120 hrs/mes)")
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(Model.DescripcionTipoPago))
+                                        {
+                                            <div style="font-size:0.68rem;" class="text-muted">
+                                                @Model.DescripcionTipoPago
+                                            </div>
+                                        }
                                     </td>
                                 </tr>
                                 <tr>
@@ -361,7 +371,6 @@ else if (Model.ContratoProximoAVencer)
                                             }
                                             else
                                             {
-
                                                 <span class="text-muted">—</span>
                                             }
                                         </td>

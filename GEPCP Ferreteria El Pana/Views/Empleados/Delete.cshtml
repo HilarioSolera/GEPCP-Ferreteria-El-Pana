@@ -72,7 +72,7 @@
     <div class="card-footer bg-transparent d-flex gap-2 py-3">
         <form asp-action="Delete" asp-route-id="@Model.EmpleadoId" method="post">
             @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-danger btn-lg px-4">
+            <button type="submit" class="btn btn-danger btn px-4">
                 <i class="bi bi-trash"></i> Sí, eliminar permanentemente
             </button>
         </form>
@@ -82,13 +82,13 @@
             <form asp-action="Desactivar" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.EmpleadoId" />
-                <button type="submit" class="btn btn-warning btn-lg px-4">
+                <button type="submit" class="btn btn-warning btn px-4">
                     <i class="bi bi-pause-circle"></i> Mejor desactivarlo
                 </button>
             </form>
         }
 
-        <a asp-action="Index" class="btn btn-secondary btn-lg px-4 ms-auto">
+        <a asp-action="Index" class="btn btn-secondary btn px-4 ms-auto">
             Cancelar
         </a>
     </div>

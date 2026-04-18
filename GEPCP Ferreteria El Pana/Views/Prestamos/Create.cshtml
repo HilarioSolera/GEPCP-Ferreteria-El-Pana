@@ -31,12 +31,10 @@
             }
 
             <div class="row g-3">
-
-                @* ── Empleado buscador ── *@
+                <!-- Buscador de empleado -->
                 <div class="col-12">
                     <label class="form-label fw-bold">
-                        <i class="bi bi-person-search"></i> Empleado
-                        <span class="text-danger">*</span>
+                        <i class="bi bi-person-search"></i> Empleado <span class="text-danger">*</span>
                     </label>
                     <input type="hidden" asp-for="EmpleadoId" id="EmpleadoId" />
                     <div class="input-group mb-1">
@@ -44,17 +42,16 @@
                             <i class="bi bi-search text-muted"></i>
                         </span>
                         <input type="text" id="buscarEmpleado"
-                               class="form-control form-control-lg border-start-0"
+                               class="form-control border-start-0"
                                placeholder="Buscar por nombre, apellido o cédula..."
                                autocomplete="off" />
-                        <button type="button" class="btn btn-outline-secondary"
-                                id="btnTodos">
+                        <button type="button" class="btn btn-outline-secondary" id="btnTodos">
                             <i class="bi bi-list-ul"></i> Todos
                         </button>
                     </div>
+
                     <div id="empleadoSeleccionado" class="d-none">
-                        <div class="alert py-2 d-flex justify-content-between align-items-center"
-                             id="empAlerta">
+                        <div class="alert py-2 d-flex justify-content-between align-items-center" id="empAlerta">
                             <div>
                                 <i class="bi bi-person-check-fill"></i>
                                 <strong id="empNombre"></strong>
@@ -62,113 +59,84 @@
                                 <span class="badge bg-secondary ms-1" id="empPuesto"></span>
                             </div>
                             <div class="text-end small me-3">
+                                <div>Salario base: <strong id="empSalarioBase"></strong></div>
                                 <div>
-                                    Salario mensual:
-                                    <strong id="empSalarioBase"></strong>
-                                </div>
-                                <div>
-                                    Salario quincenal:
+                                    <span id="labelSalarioPeriodo">Salario del período:</span>
                                     <strong id="empSalarioQuincenal"></strong>
                                 </div>
                                 <div id="empActivoWarn" class="text-danger d-none fw-bold">
-                                    <i class="bi bi-exclamation-triangle"></i>
-                                    Ya tiene un préstamo activo
+                                    <i class="bi bi-exclamation-triangle"></i> Ya tiene un préstamo activo
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                    id="btnLimpiar">
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnLimpiar">
                                 <i class="bi bi-x"></i>
                             </button>
                         </div>
                     </div>
+
                     <div id="resultados" class="border rounded shadow-sm"
-                         style="display:none;max-height:260px;overflow-y:auto;
-                        background:#fff;z-index:100;position:relative;">
+                         style="display:none; max-height:260px; overflow-y:auto; background:#fff; z-index:100; position:relative;">
                     </div>
                     <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
                 </div>
 
-                @* ── Monto ── *@
+                <!-- Monto -->
                 <div class="col-md-4">
                     <label asp-for="MontoPrincipal" class="form-label fw-bold">
-                        <i class="bi bi-currency-dollar"></i> Monto del Préstamo (₡)
-                        <span class="text-danger">*</span>
+                        <i class="bi bi-currency-dollar"></i> Monto del Préstamo (₡) <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="MontoPrincipal" type="number" step="0.01"
-                           min="1" max="9999999.99" id="inputMonto"
-                           class="form-control form-control-lg"
-                           placeholder="Ej: 500000" />
-                    <span asp-validation-for="MontoPrincipal" class="text-danger small"></span>
+                    <input asp-for="MontoPrincipal" type="number" step="0.01" min="1" id="inputMonto"
+                           class="form-control" placeholder="Ej: 500000" />
                 </div>
 
-                @* ── Cuotas ── *@
+                <!-- Número de Cuotas -->
                 <div class="col-md-4">
                     <label asp-for="CuotasTotal" class="form-label fw-bold">
-                        <i class="bi bi-calendar-range"></i> Número de Cuotas
-                        <span class="text-danger">*</span>
+                        <i class="bi bi-calendar-range"></i> Número de Cuotas <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="CuotasTotal" type="number"
-                           min="1" max="120" id="inputCuotas"
-                           class="form-control form-control-lg"
-                           placeholder="Ej: 12" />
-                    <span asp-validation-for="CuotasTotal" class="text-danger small"></span>
+                    <input asp-for="CuotasTotal" type="number" min="1" max="120" id="inputCuotas"
+                           class="form-control" placeholder="Ej: 12" />
                 </div>
 
-                @* ── Cuota mensual ── *@
+                <!-- Cuota -->
                 <div class="col-md-4">
                     <label asp-for="CuotaMensual" class="form-label fw-bold">
-                        <i class="bi bi-cash"></i> Cuota Quincenal (₡)
-                        <span class="text-danger">*</span>
+                        <i class="bi bi-cash"></i> Cuota del Período (₡) <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="CuotaMensual" type="number" step="0.01"
-                           min="1" max="9999999.99" id="inputCuota"
-                           class="form-control form-control-lg"
-                           placeholder="Se calcula automáticamente" />
+                    <input asp-for="CuotaMensual" type="number" step="0.01" min="1" id="inputCuota"
+                           class="form-control" placeholder="Se calcula automáticamente" />
                     <div class="form-text" id="cuotaHint"></div>
-                    <span asp-validation-for="CuotaMensual" class="text-danger small"></span>
                 </div>
 
-                @* ── Fecha ── *@
+                <!-- Fecha -->
                 <div class="col-md-4">
                     <label asp-for="FechaPrestamo" class="form-label fw-bold">
-                        <i class="bi bi-calendar"></i> Fecha del Préstamo
-                        <span class="text-danger">*</span>
+                        <i class="bi bi-calendar"></i> Fecha del Préstamo <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="FechaPrestamo" type="date"
-                           class="form-control form-control-lg"
+                    <input asp-for="FechaPrestamo" type="date" class="form-control"
                            max="@DateTime.Today.ToString("yyyy-MM-dd")" />
-                    <span asp-validation-for="FechaPrestamo" class="text-danger small"></span>
                 </div>
 
-                @* ── Resumen ── *@
+                <!-- Resumen -->
                 <div class="col-12">
                     <div id="resumenPrestamo" class="d-none">
-                        <div class="card border-0"
-                             style="background:#fff9f0;border-left:3px solid #FF7A00 !important;">
+                        <div class="card border-0" style="background:#fff9f0; border-left:3px solid #FF7A00 !important;">
                             <div class="card-body py-2 px-3">
                                 <div class="row g-2 text-center">
                                     <div class="col-md-3">
-                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
-                                            Monto préstamo
-                                        </div>
+                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">Monto préstamo</div>
                                         <div class="fw-bold" style="color:#FF7A00;" id="resumenMonto">—</div>
                                     </div>
                                     <div class="col-md-3">
-                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
-                                            Cuota quincenal
-                                        </div>
+                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">Cuota</div>
                                         <div class="fw-bold" id="resumenCuota">—</div>
                                     </div>
                                     <div class="col-md-3">
-                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
-                                            Cuotas
-                                        </div>
+                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">Cuotas</div>
                                         <div class="fw-bold" id="resumenCuotas">—</div>
                                     </div>
                                     <div class="col-md-3">
-                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
-                                            % del salario quincenal
-                                        </div>
+                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">% del salario</div>
                                         <div class="fw-bold" id="resumenPct">—</div>
                                     </div>
                                 </div>
@@ -176,18 +144,13 @@
                         </div>
                     </div>
                 </div>
-
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn-lg px-5"
-                        id="btnGuardar" disabled>
+                <button type="submit" class="btn btn-success btn px-5" id="btnGuardar" disabled>
                     <i class="bi bi-check-circle"></i> Registrar Préstamo
                 </button>
-                <a asp-action="Index" asp-route-verTodos="true"
-                       class="btn btn-secondary btn-lg px-5">
-                    Cancelar
-                </a>
+                <a asp-action="Index" asp-route-verTodos="true" class="btn btn-secondary btn px-5">Cancelar</a>
             </div>
         </form>
     </div>
@@ -197,75 +160,155 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
     <script>
         var empData = null;
+        window._empResults = [];
 
-        // ── Buscador ──────────────────────────────────────────────────────────
+        // ====================== BUSCAR ======================
         async function buscar(termino, todos = false) {
             var url = todos
                 ? '/Prestamos/TodosLosEmpleados'
                 : '/Prestamos/BuscarEmpleados?termino=' + encodeURIComponent(termino);
-            var res = await fetch(url);
-            var data = await res.json();
-            var div = document.getElementById('resultados');
 
-            if (!data.length) {
-                div.innerHTML = '<div class="p-3 text-muted text-center small">Sin resultados.</div>';
+            try {
+                var res = await fetch(url);
+                var data = await res.json();
+                var div = document.getElementById('resultados');
+
+                if (!data.length) {
+                    div.innerHTML = '<div class="p-3 text-muted text-center small">Sin resultados.</div>';
+                    div.style.display = 'block';
+                    return;
+                }
+
+                window._empResults = data;
+
+                div.innerHTML = data.map((e, i) => {
+                    var salRef = e.salarioQuincenal.toLocaleString('es-CR', { minimumFractionDigits: 0 });
+                    var labelSal = e.tipoPago === 'Semanal' ? 'Semanal'
+                        : e.tipoPago === 'Mensual' ? 'Mensual'
+                            : 'Quinc.';
+
+                    var bg = e.tieneActivo ? '#fff9f0' : '#fff';
+                    var badge = e.tieneActivo
+                        ? '<span class="badge bg-warning text-dark ms-1" style="font-size:0.6rem;">Préstamo activo</span>'
+                        : '';
+
+                    return `<div class="p-2 border-bottom emp-item" data-index="${i}" style="cursor:pointer; background:${bg};">
+                                <div class="fw-bold small">${e.nombre}${badge}</div>
+                                <div class="text-muted" style="font-size:0.78rem;">
+                                    ${e.cedula} — ${e.puesto}
+                                    <span class="float-end">${labelSal}: ₡${salRef}</span>
+                                </div>
+                            </div>`;
+                }).join('');
+
+                // Eventos
+                div.querySelectorAll('.emp-item').forEach(el => {
+                    el.addEventListener('mouseenter', () => el.style.background = '#f0f0f0');
+                    el.addEventListener('mouseleave', () => {
+                        const idx = parseInt(el.dataset.index);
+                        el.style.background = window._empResults[idx]?.tieneActivo ? '#fff9f0' : '#fff';
+                    });
+                    el.addEventListener('click', () => seleccionar(parseInt(el.dataset.index)));
+                });
+
                 div.style.display = 'block';
-                return;
+            } catch (err) {
+                console.error(err);
+                document.getElementById('resultados').innerHTML = '<div class="p-3 text-danger">Error al cargar empleados</div>';
             }
-            div.innerHTML = data.map(e =>
-                `<div class="p-2 border-bottom"
-                              style="cursor:pointer;background:${e.tieneActivo ? '#fff9f0' : '#fff'}"
-                              onmouseover="this.style.background='#f0f0f0'"
-                              onmouseout="this.style.background='${e.tieneActivo ? '#fff9f0' : '#fff'}'"
-                              onclick="seleccionar(${JSON.stringify(e)})">
-                            <div class="fw-bold small">
-                                ${e.nombre}
-                                ${e.tieneActivo
-                    ? '<span class="badge bg-warning text-dark ms-1" style="font-size:0.6rem;">Tiene préstamo activo</span>'
-                    : ''}
-                            </div>
-                            <div class="text-muted" style="font-size:0.78rem;">
-                                ${e.cedula} — ${e.puesto}
-                                <span class="float-end">
-                                    Quinc: ₡${e.salarioQuincenal.toLocaleString('es-CR',
-                        { minimumFractionDigits: 0 })}
-                                </span>
-                            </div>
-                         </div>`
-            ).join('');
-            div.style.display = 'block';
         }
 
-        function seleccionar(e) {
+        function seleccionar(index) {
+            var e = window._empResults[index];
+            if (!e) return;
+
             empData = e;
             document.getElementById('EmpleadoId').value = e.id;
             document.getElementById('empNombre').textContent = e.nombre;
             document.getElementById('empCedula').textContent = e.cedula;
             document.getElementById('empPuesto').textContent = e.puesto;
+
+            // Salario base
             document.getElementById('empSalarioBase').textContent =
                 '₡' + e.salarioBase.toLocaleString('es-CR', { minimumFractionDigits: 0 });
+
+            // Salario según tipo de pago
+            var labelPago = e.tipoPago === 'Semanal' ? 'Salario semanal:'
+                : e.tipoPago === 'Mensual' ? 'Salario mensual:'
+                    : 'Salario quincenal:';
+            document.getElementById('labelSalarioPeriodo').textContent = labelPago;
+
             document.getElementById('empSalarioQuincenal').textContent =
                 '₡' + e.salarioQuincenal.toLocaleString('es-CR', { minimumFractionDigits: 0 });
 
+            // Warning de préstamo activo
             var alerta = document.getElementById('empAlerta');
             var warn = document.getElementById('empActivoWarn');
             if (e.tieneActivo) {
                 alerta.className = 'alert alert-warning py-2 d-flex justify-content-between align-items-center';
                 warn.classList.remove('d-none');
+                document.getElementById('btnGuardar').disabled = true;
             } else {
                 alerta.className = 'alert alert-success py-2 d-flex justify-content-between align-items-center';
                 warn.classList.add('d-none');
+                document.getElementById('btnGuardar').disabled = false;
             }
 
             document.getElementById('empleadoSeleccionado').classList.remove('d-none');
             document.getElementById('resultados').style.display = 'none';
             document.getElementById('buscarEmpleado').value = '';
-            document.getElementById('btnGuardar').disabled = e.tieneActivo;
 
             actualizarResumen();
         }
+
+        // ====================== RESUMEN ======================
+        function actualizarResumen() {
+            var monto = parseFloat(document.getElementById('inputMonto').value) || 0;
+            var cuotas = parseInt(document.getElementById('inputCuotas').value) || 0;
+            var cuota = parseFloat(document.getElementById('inputCuota').value) || 0;
+
+            var resumenDiv = document.getElementById('resumenPrestamo');
+
+            if (monto > 0 || cuota > 0) {
+                resumenDiv.classList.remove('d-none');
+
+                document.getElementById('resumenMonto').textContent = '₡' + monto.toLocaleString('es-CR', { minimumFractionDigits: 0 });
+                document.getElementById('resumenCuota').textContent = cuota > 0 ? '₡' + cuota.toLocaleString('es-CR', { minimumFractionDigits: 2 }) : '—';
+
+                var labelCuota = empData && empData.tipoPago === 'Semanal' ? 'semana(s)'
+                    : empData && empData.tipoPago === 'Mensual' ? 'mes(es)'
+                        : 'quincena(s)';
+
+                document.getElementById('resumenCuotas').textContent = cuotas > 0 ? cuotas + ' ' + labelCuota : '—';
+
+                // Porcentaje
+                if (empData && empData.salarioQuincenal > 0 && cuota > 0) {
+                    var pct = Math.round((cuota / empData.salarioQuincenal) * 100);
+                    var pctEl = document.getElementById('resumenPct');
+                    pctEl.textContent = pct + '%';
+                    pctEl.style.color = pct > 100 ? '#B71C1C' : pct > 70 ? '#E65100' : '#1B5E20';
+                }
+            } else {
+                resumenDiv.classList.add('d-none');
+            }
+        }
+
+        // ====================== EVENTOS ======================
+        var timer;
+        document.getElementById('buscarEmpleado').addEventListener('input', function() {
+            clearTimeout(timer);
+            var val = this.value.trim();
+            if (val.length < 2) {
+                document.getElementById('resultados').style.display = 'none';
+                return;
+            }
+            timer = setTimeout(() => buscar(val, false), 300);
+        });
+
+        document.getElementById('btnTodos').addEventListener('click', () => buscar('', true));
 
         document.getElementById('btnLimpiar').addEventListener('click', function() {
             empData = null;
@@ -276,79 +319,27 @@
             document.getElementById('resumenPrestamo').classList.add('d-none');
         });
 
-        var timer;
-        document.getElementById('buscarEmpleado').addEventListener('input', function() {
-            clearTimeout(timer);
-            var val = this.value.trim();
-            if (val.length < 2) {
-                document.getElementById('resultados').style.display = 'none';
-                return;
-            }
-            timer = setTimeout(() => buscar(val), 300);
-        });
-
-        document.getElementById('btnTodos').addEventListener('click', () => buscar('', true));
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('#resultados') &&
-                !e.target.closest('#buscarEmpleado') &&
-                !e.target.closest('#btnTodos'))
-                document.getElementById('resultados').style.display = 'none';
-        });
-
-        // ── Calcular cuota y resumen ──────────────────────────────────────────
-        function calcularCuota() {
-            var monto = parseFloat(document.getElementById('inputMonto').value) || 0;
-            var cuotas = parseInt(document.getElementById('inputCuotas').value) || 0;
-            var hint = document.getElementById('cuotaHint');
-
-            if (monto > 0 && cuotas > 0) {
-                var cuota = Math.round((monto / cuotas) * 100) / 100;
-                document.getElementById('inputCuota').value = cuota.toFixed(2);
-                hint.innerHTML =
-                    `<i class="bi bi-calculator"></i> Calculado: ` +
-                    `<strong>₡${cuota.toLocaleString('es-CR', { minimumFractionDigits: 2 })}</strong>. ` +
-                    `Podés ajustarla.`;
-                hint.className = 'form-text text-success';
-            }
-            actualizarResumen();
-        }
-
-        function actualizarResumen() {
-            var monto = parseFloat(document.getElementById('inputMonto').value) || 0;
-            var cuotas = parseInt(document.getElementById('inputCuotas').value) || 0;
-            var cuota = parseFloat(document.getElementById('inputCuota').value) || 0;
-            var res = document.getElementById('resumenPrestamo');
-
-            if (monto > 0 || cuota > 0) {
-                res.classList.remove('d-none');
-                document.getElementById('resumenMonto').textContent =
-                    '₡' + monto.toLocaleString('es-CR', { minimumFractionDigits: 0 });
-                document.getElementById('resumenCuota').textContent =
-                    cuota > 0
-                        ? '₡' + cuota.toLocaleString('es-CR', { minimumFractionDigits: 2 })
-                        : '—';
-                document.getElementById('resumenCuotas').textContent =
-                    cuotas > 0 ? cuotas + ' quincena(s)' : '—';
-
-                if (empData && empData.salarioQuincenal > 0 && cuota > 0) {
-                    var pct = Math.round((cuota / empData.salarioQuincenal) * 100);
-                    var pctEl = document.getElementById('resumenPct');
-                    pctEl.textContent = pct + '%';
-                    pctEl.style.color = pct > 100 ? '#B71C1C' : pct > 70 ? '#E65100' : '#1B5E20';
-                } else {
-                    document.getElementById('resumenPct').textContent = '—';
-                }
-            } else {
-                res.classList.add('d-none');
-            }
-        }
-
         document.getElementById('inputMonto').addEventListener('input', calcularCuota);
         document.getElementById('inputCuotas').addEventListener('input', calcularCuota);
         document.getElementById('inputCuota').addEventListener('input', actualizarResumen);
 
-        if (parseInt(document.getElementById('EmpleadoId').value) > 0)
-            document.getElementById('btnGuardar').disabled = false;
+        function calcularCuota() {
+            var monto = parseFloat(document.getElementById('inputMonto').value) || 0;
+            var cuotas = parseInt(document.getElementById('inputCuotas').value) || 0;
+            if (monto > 0 && cuotas > 0) {
+                var cuota = Math.round((monto / cuotas) * 100) / 100;
+                document.getElementById('inputCuota').value = cuota.toFixed(2);
+            }
+            actualizarResumen();
+        }
+
+        // Click fuera para cerrar resultados
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#resultados') &&
+                !e.target.closest('#buscarEmpleado') &&
+                !e.target.closest('#btnTodos')) {
+                document.getElementById('resultados').style.display = 'none';
+            }
+        });
     </script>
 }

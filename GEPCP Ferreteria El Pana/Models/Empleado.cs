@@ -22,6 +22,12 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         PlazoFijo = 2,
         PorObra = 3
     }
+    public enum TipoPago
+    {
+        Quincenal = 1,
+        Semanal = 2,
+        Mensual = 3
+    }
 
 
     public class Empleado
@@ -114,8 +120,40 @@ namespace GEPCP_Ferreteria_El_Pana.Models
             ? Math.Round(SalarioBase / HorasMensuales, 2)
             : 0;
 
+
+        [NotMapped]
+        public int HorasPorPeriodo => TipoPago switch
+        {
+            TipoPago.Semanal => HorasMensuales / 4,
+            TipoPago.Mensual => HorasMensuales,
+            _ => HorasQuincenales
+        };
+
+        [NotMapped]
+        public decimal FactorCuotaPrestamo => TipoPago switch
+        {
+            TipoPago.Semanal => 4m,
+            TipoPago.Mensual => 1m,
+            _ => 2m
+        };
+
+        [NotMapped]
+        public string DescripcionTipoPago => TipoPago switch
+        {
+            TipoPago.Semanal => "Semanal",
+            TipoPago.Mensual => "Mensual",
+            _ => "Quincenal"
+        };
+
         [NotMapped]
         public decimal ValorHoraExtra => Math.Round(ValorHora * 1.5m, 2);
+
+        // ── ISR: Créditos fiscales ───────────────────────────
+        [Display(Name = "Número de Hijos")]
+        public int NumHijos { get; set; } = 0;
+
+        [Display(Name = "¿Tiene Cónyuge?")]
+        public bool TieneConyuge { get; set; } = false;
 
         public bool Activo { get; set; } = true;
 
@@ -141,6 +179,9 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Fecha de Nacimiento")]
         [DataType(DataType.Date)]
         public DateTime? FechaNacimiento { get; set; }
+        [Required]
+        [Display(Name = "Tipo de Pago")]
+        public TipoPago TipoPago { get; set; } = TipoPago.Quincenal;
 
 
         // ── Navegación ─────────────────────────────────

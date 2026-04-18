@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260402044754_AgregarCamposEmpleadoMas")]
-    partial class AgregarCamposEmpleadoMas
+    [Migration("20260418071849_AddCCSS_ISR_ConfigurablePeriodo")]
+    partial class AddCCSS_ISR_ConfigurablePeriodo
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -133,9 +133,14 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Property<decimal>("Monto")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("PeriodoPagoId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("ComisionId");
 
                     b.HasIndex("EmpleadoId");
+
+                    b.HasIndex("PeriodoPagoId");
 
                     b.ToTable("Comisiones");
                 });
@@ -243,6 +248,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("NumHijos")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("NumeroCuenta")
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
@@ -269,10 +277,16 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("TieneConyuge")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("TipoContrato")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("TipoJornada")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TipoPago")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("EmpleadoId");
@@ -562,10 +576,67 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Property<DateTime>("FechaInicio")
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("ISR_CreditoConyuge")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_CreditoHijo")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo1_Hasta")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo2_Desde")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo2_Hasta")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo2_Porcentaje")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo3_Desde")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo3_Hasta")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo3_Porcentaje")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo4_Desde")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo4_Hasta")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo4_Porcentaje")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo5_Desde")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("ISR_Tramo5_Porcentaje")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Mes")
                         .HasColumnType("INTEGER");
 
+                    b.Property<decimal>("PorcentajeBP")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PorcentajeCCSS")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PorcentajeIVM")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("PorcentajeSEM")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Quincena")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TipoPeriodo")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("PeriodoPagoId");
@@ -617,6 +688,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("BaseImponibleRenta")
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("DeduccionCCSS")
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
@@ -635,6 +709,15 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
 
                     b.Property<decimal>("DeduccionPrestamos")
                         .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("DeduccionRenta")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("DeduccionVacaciones")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DescripcionOtrasDeducciones")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("EmpleadoId")
@@ -730,6 +813,9 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("Monto")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MontoOriginal")
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("PrestamoId");
@@ -892,6 +978,58 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Vacacion", b =>
+                {
+                    b.Property<int>("VacacionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("DiasDisponiblesAlRegistrar")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("DiasHabiles")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EmpleadoId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("FechaFin")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaInicio")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FechaRegistro")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("MontoDeducido")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Observaciones")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RegistradoPor")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("SalarioDiario")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("VacacionId");
+
+                    b.HasIndex("EmpleadoId");
+
+                    b.ToTable("Vacaciones");
+                });
+
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.AbonoCreditoFerreteria", b =>
                 {
                     b.HasOne("GEPCP_Ferreteria_El_Pana.Models.CreditoFerreteria", "CreditoFerreteria")
@@ -933,7 +1071,13 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("GEPCP_Ferreteria_El_Pana.Models.PeriodoPago", "PeriodoPago")
+                        .WithMany()
+                        .HasForeignKey("PeriodoPagoId");
+
                     b.Navigation("Empleado");
+
+                    b.Navigation("PeriodoPago");
                 });
 
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.CreditoFerreteria", b =>
@@ -1056,6 +1200,17 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Navigation("Empleado");
                 });
 
+            modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Vacacion", b =>
+                {
+                    b.HasOne("GEPCP_Ferreteria_El_Pana.Models.Empleado", "Empleado")
+                        .WithMany("Vacaciones")
+                        .HasForeignKey("EmpleadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empleado");
+                });
+
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.CreditoFerreteria", b =>
                 {
                     b.Navigation("AbonosCreditoFerreteria");
@@ -1080,6 +1235,8 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Navigation("PlanillasEmpleado");
 
                     b.Navigation("Prestamos");
+
+                    b.Navigation("Vacaciones");
                 });
 
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Feriado", b =>

@@ -490,77 +490,64 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── API: Buscar empleados ─────────────────────────────────────────────
-
         [HttpGet]
-        public async Task<IActionResult> BuscarEmpleados(string? termino)
+        public async Task<IActionResult> BuscarEmpleados(string? termino, int? periodoId)
         {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(termino) || termino.Length < 2)
-                    return Json(new List<object>());
-
-                var t = termino.Trim().ToLower();
-
-                var empleados = await _context.Empleados
-                    .AsNoTracking()
-                    .Where(e => e.Activo && (
-                        e.Nombre.ToLower().Contains(t) ||
-                        e.PrimerApellido.ToLower().Contains(t) ||
-                        (e.SegundoApellido != null && e.SegundoApellido.ToLower().Contains(t)) ||
-                        e.Cedula.Contains(t)))
-                    .OrderBy(e => e.PrimerApellido)
-                    .Take(10)
-                    .Select(e => new
-                    {
-                        id = e.EmpleadoId,
-                        nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
-                        cedula = e.Cedula,
-                        puesto = e.Puesto,
-                        valorHora = e.SalarioBase /
-                                    (e.TipoJornada == TipoJornada.Completa ? 240 : 120)
-                    })
-                    .ToListAsync();
-
-                return Json(empleados);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al buscar empleados");
+            if (string.IsNullOrWhiteSpace(termino) || termino.Length < 2)
                 return Json(new List<object>());
-            }
+
+            var t = termino.Trim().ToLower();
+
+            var empleados = await _context.Empleados
+                .AsNoTracking()
+                .Where(e => e.Activo && (
+                    EF.Functions.Like(e.Nombre.ToLower(), $"%{t}%") ||
+                    EF.Functions.Like(e.PrimerApellido.ToLower(), $"%{t}%") ||
+                    (e.SegundoApellido != null &&
+                     EF.Functions.Like(e.SegundoApellido.ToLower(), $"%{t}%")) ||
+                    EF.Functions.Like(e.Cedula, $"%{t}%")))
+                .OrderBy(e => e.PrimerApellido)
+                .ThenBy(e => e.Nombre)
+                .Take(15)
+                .Select(e => new
+                {
+                    id = e.EmpleadoId,
+                    nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
+                    cedula = e.Cedula,
+                    puesto = e.Puesto,
+                    tipoPago = e.TipoPago.ToString(),
+                    valorHora = e.ValorHora,
+                    salarioBase = e.SalarioBase
+                })
+                .ToListAsync();
+
+            return Json(empleados);
         }
 
-        // ── API: Todos los empleados ──────────────────────────────────────────
-
         [HttpGet]
-        public async Task<IActionResult> TodosLosEmpleados()
+        public async Task<IActionResult> TodosLosEmpleados(int? periodoId)
         {
-            try
-            {
-                var empleados = await _context.Empleados
-                    .AsNoTracking()
-                    .Where(e => e.Activo)
-                    .OrderBy(e => e.PrimerApellido)
-                    .Select(e => new
-                    {
-                        id = e.EmpleadoId,
-                        nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
-                        cedula = e.Cedula,
-                        puesto = e.Puesto,
-                        valorHora = e.SalarioBase /
-                                    (e.TipoJornada == TipoJornada.Completa ? 240 : 120)
-                    })
-                    .ToListAsync();
+            var empleados = await _context.Empleados
+                .AsNoTracking()
+                .Where(e => e.Activo)
+                .OrderBy(e => e.PrimerApellido)
+                .ThenBy(e => e.Nombre)
+                .Select(e => new
+                {
+                    id = e.EmpleadoId,
+                    nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
+                    cedula = e.Cedula,
+                    puesto = e.Puesto,
+                    tipoPago = e.TipoPago.ToString(),
+                    valorHora = e.ValorHora,
+                    salarioBase = e.SalarioBase
+                })
+                .ToListAsync();
 
-                return Json(empleados);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al cargar todos los empleados");
-                return Json(new List<object>());
-            }
+            return Json(empleados);
         }
+        // ── API: Todos los empleados
+
 
         // ── API: Rango del período ────────────────────────────────────────────
 
@@ -624,19 +611,135 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
+        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EnviarPorEmail(int id)
+        {
+            try
+            {
+                var hx = await _context.HorasExtras
+                    .Include(h => h.Empleado)
+                    .Include(h => h.PeriodoPago)
+                    .FirstOrDefaultAsync(h => h.HorasExtrasId == id);
+
+                if (hx == null)
+                {
+                    TempData["Error"] = "Horas extras no encontradas.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var correo = hx.Empleado.CorreoElectronico;
+                if (string.IsNullOrWhiteSpace(correo))
+                {
+                    TempData["Error"] =
+                        $"{hx.Empleado.PrimerApellido} " +
+                        $"{hx.Empleado.Nombre} no tiene correo registrado.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var pdfBytes = _servicioPDF.GenerarPDFHorasExtrasSinFirmas(hx);
+                var nombreArchivo =
+                    $"HorasExtras_{hx.Empleado.PrimerApellido}_{hx.PeriodoPago.Descripcion.Replace(" ", "_")}.pdf";
+
+                var emailSvc = HttpContext.RequestServices
+                    .GetRequiredService<EmailService>();
+
+                var asunto = $"Boleta de Horas Extras — {hx.PeriodoPago.Descripcion}";
+                var cuerpo = $@"
+<div style='font-family:Arial,sans-serif;max-width:600px;'>
+    <div style='background:#1A1A2E;padding:20px;'>
+        <h2 style='color:#FF7A00;margin:0;'>Ferretería El Pana SRL</h2>
+        <p style='color:#888;margin:4px 0 0;font-size:13px;'>
+            Departamento de Recursos Humanos
+        </p>
+    </div>
+    <div style='padding:20px;border:1px solid #eee;'>
+        <p>Estimado(a) <strong>{hx.Empleado.PrimerApellido}
+           {hx.Empleado.Nombre}</strong>,</p>
+        <p>Adjunto encontrará su boleta de horas extras correspondiente al
+           período <strong>{hx.PeriodoPago.Descripcion}</strong>.</p>
+        <table style='width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;'>
+            <tr style='background:#f9f9f9;'>
+                <td style='padding:8px;border:1px solid #eee;'>Período</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {hx.PeriodoPago.Descripcion}
+                </td>
+            </tr>
+            <tr>
+                <td style='padding:8px;border:1px solid #eee;'>Horas</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {hx.TotalHoras:N2}
+                </td>
+            </tr>
+            <tr>
+                <td style='padding:8px;border:1px solid #eee;'>Porcentaje</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {hx.Porcentaje * 100:N0}%
+                </td>
+            </tr>
+            <tr style='background:#fff9f0;'>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    Monto Total
+                </td>
+                <td style='padding:8px;border:1px solid #eee;
+                           font-weight:bold;font-size:16px;color:#FF7A00;'>
+                    ₡{hx.MontoTotal:N2}
+                </td>
+            </tr>
+        </table>
+        <p style='color:#888;font-size:12px;'>
+            Documento generado automáticamente por el Sistema GEPCP.
+            No responder a este correo.
+        </p>
+    </div>
+    <div style='background:#f5f5f5;padding:12px;text-align:center;
+                font-size:11px;color:#888;'>
+        Ferretería El Pana SRL · Cédula Jurídica: 3-102-745359
+    </div>
+</div>";
+
+                var enviado = await emailSvc.EnviarPDFAsync(
+                    correo,
+                    $"{hx.Empleado.PrimerApellido} {hx.Empleado.Nombre}",
+                    asunto,
+                    cuerpo,
+                    pdfBytes,
+                    nombreArchivo);
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Enviar horas extras por email", "Horas Extras",
+                    $"{hx.Empleado.PrimerApellido} {hx.Empleado.Nombre} — {hx.PeriodoPago.Descripcion} — {hx.TotalHoras} hrs");
+
+                if (!enviado)
+                    TempData["Error"] = "No se pudo enviar el correo. Intentá de nuevo.";
+                else
+                    TempData["Success"] = "Boleta de horas extras enviada exitosamente.";
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar horas extras por email ID: {Id}", id);
+                TempData["Error"] = "Error al enviar el correo. Intentá de nuevo.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
         // ── HELPERS ───────────────────────────────────────────────────────────
 
         private async Task CargarViewBagPeriodos(int? periodoId = null)
         {
-            var limite = DateTime.Today.AddMonths(-2);
+            var hoy = DateTime.Today;
             ViewBag.Periodos = new SelectList(
                 await _context.PeriodosPago
                     .AsNoTracking()
                     .Where(p => p.Estado == EstadoPeriodo.Abierto &&
-                                p.FechaInicio >= limite)
-                    .OrderByDescending(p => p.Anio)
-                    .ThenByDescending(p => p.Mes)
-                    .ThenByDescending(p => p.Quincena)
+                                p.Anio == hoy.Year &&
+                                p.Mes == hoy.Month)
+                    .OrderByDescending(p => p.Quincena)
                     .ToListAsync(),
                 "PeriodoPagoId", "Descripcion", periodoId);
         }

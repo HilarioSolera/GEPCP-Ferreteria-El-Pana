@@ -71,5 +71,85 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                 throw;
             }
         }
+
+
+        public async Task<bool> EnviarPDFAsync(
+            string destinatario,
+            string nombreDestinatario,
+            string asunto,
+            string cuerpo,
+            byte[] pdfBytes,
+            string nombreArchivo)
+        {
+            try
+            {
+                var host = _config["Email:Host"] ?? "smtp.gmail.com";
+                var port = int.Parse(_config["Email:Port"] ?? "587");
+                var usuario = _config["Email:Usuario"] ?? "";
+                var password = _config["Email:Password"] ?? "";
+                var remitente = _config["Email:Remitente"] ?? "noreply@ferreelpana.com";
+                var nombreRem = _config["Email:NombreRemitente"] ?? "Ferretería El Pana";
+
+                using var mensaje = new MailMessage();
+                mensaje.From = new MailAddress(remitente, nombreRem);
+                mensaje.To.Add(new MailAddress(destinatario, nombreDestinatario));
+                mensaje.Subject = asunto;
+                mensaje.Body = cuerpo;
+                mensaje.IsBodyHtml = true;
+
+                using var stream = new MemoryStream(pdfBytes);
+                mensaje.Attachments.Add(
+                    new Attachment(stream, nombreArchivo, "application/pdf"));
+
+                using var smtp = new SmtpClient(host, port);
+                smtp.EnableSsl = true;
+                smtp.Credentials = new NetworkCredential(usuario, password);
+
+                await smtp.SendMailAsync(mensaje);
+
+                _logger.LogInformation(
+                    "PDF enviado a {Email}: {Asunto}", destinatario, asunto);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Error al enviar PDF a {Email}", destinatario);
+                return false;
+            }
+        }
+
+        public async Task<bool> EnviarAsync(string destinatario, string asunto, string cuerpo)
+        {
+            try
+            {
+                var host = _config["Email:Host"] ?? "smtp.gmail.com";
+                var port = int.Parse(_config["Email:Port"] ?? "587");
+                var usuario = _config["Email:Usuario"] ?? "";
+                var password = _config["Email:Password"] ?? "";
+                var remitente = _config["Email:Remitente"] ?? "noreply@ferreelpana.com";
+                var nombreRem = _config["Email:NombreRemitente"] ?? "Ferretería El Pana";
+
+                using var mensaje = new MailMessage();
+                mensaje.From = new MailAddress(remitente, nombreRem);
+                mensaje.To.Add(new MailAddress(destinatario));
+                mensaje.Subject = asunto;
+                mensaje.Body = cuerpo;
+                mensaje.IsBodyHtml = true;
+
+                using var smtp = new SmtpClient(host, port);
+                smtp.EnableSsl = true;
+                smtp.Credentials = new NetworkCredential(usuario, password);
+
+                await smtp.SendMailAsync(mensaje);
+                _logger.LogInformation("Correo enviado a: {Correo}", destinatario);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar correo a: {Correo}", destinatario);
+                return false;
+            }
+        }
     }
 }

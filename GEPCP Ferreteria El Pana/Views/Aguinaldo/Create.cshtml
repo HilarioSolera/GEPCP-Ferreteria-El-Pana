@@ -1,98 +1,107 @@
 ﻿@model GEPCP_Ferreteria_El_Pana.Models.Aguinaldo
 @{
-    ViewData["Title"] = "Registrar Aguinaldo - GEPCP Ferretería El Pana";
+    ViewData["Title"] = "Nuevo Aguinaldo - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="bi bi-gift"></i> Registrar Aguinaldo</h2>
+    <h2 class="mb-0"><i class="bi bi-gift"></i> Nuevo Aguinaldo</h2>
     <a asp-action="Index" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
-<div class="card shadow-sm border-0" style="max-width: 700px;">
+<div class="card shadow-sm border-0">
     <div class="card-body p-4">
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
-            <div class="row g-3">
 
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-3">
+                    <ul class="mb-0">
+                        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@e.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <div class="row g-3">
+                <!-- Buscador -->
                 <div class="col-12">
-                    <label asp-for="EmpleadoId" class="form-label fw-bold">
-                        <i class="bi bi-person"></i> Empleado <span class="text-danger">*</span>
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-person-search"></i> Empleado <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="EmpleadoId" asp-items="ViewBag.Empleados"
-                            class="form-select form-select-lg">
-                        <option value="">— Seleccione un empleado —</option>
-                    </select>
+                    <input type="hidden" asp-for="EmpleadoId" id="EmpleadoId" />
+
+                    <div class="input-group mb-1">
+                        <span class="input-group-text bg-white">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" id="buscarEmpleado" class="form-control"
+                               placeholder="Buscar por nombre, apellido o cédula..." autocomplete="off" />
+                        <button type="button" class="btn btn-outline-secondary" id="btnTodos">
+                            <i class="bi bi-list-ul"></i> Todos
+                        </button>
+                    </div>
+
+                    <div id="empleadoSeleccionado" class="d-none alert alert-success py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-person-check-fill"></i>
+                                <strong id="empNombre"></strong><br>
+                                <span class="text-muted" id="empCedula"></span> —
+                                <span id="empPuesto"></span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnLimpiar">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="resultados" class="border rounded shadow-sm"
+                         style="display:none; max-height:300px; overflow-y:auto; background:#fff; position:relative; z-index:100;">
+                    </div>
                     <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="Anio" class="form-label fw-bold">
-                        <i class="bi bi-calendar"></i> Año <span class="text-danger">*</span>
-                    </label>
-                    <input asp-for="Anio" type="number" min="2020"
-                           max="@(DateTime.Today.Year + 1)"
-                           class="form-control form-control-lg" />
-                    <span asp-validation-for="Anio" class="text-danger small"></span>
+                <!-- Campos -->
+                <div class="col-md-3">
+                    <label asp-for="Anio" class="form-label fw-bold">Año</label>
+                    <input asp-for="Anio" type="number" min="2020" class="form-control" />
                 </div>
-
-                <div class="col-md-4">
-                    <label asp-for="FechaInicio" class="form-label fw-bold">
-                        <i class="bi bi-calendar-check"></i> Período Inicio <span class="text-danger">*</span>
-                    </label>
-                    <input asp-for="FechaInicio" type="date"
-                           class="form-control form-control-lg" />
-                    <span asp-validation-for="FechaInicio" class="text-danger small"></span>
+                <div class="col-md-3">
+                    <label asp-for="FechaInicio" class="form-label fw-bold">Inicio Período</label>
+                    <input asp-for="FechaInicio" type="date" class="form-control" />
                 </div>
-
-                <div class="col-md-4">
-                    <label asp-for="FechaFin" class="form-label fw-bold">
-                        <i class="bi bi-calendar-x"></i> Período Fin <span class="text-danger">*</span>
-                    </label>
-                    <input asp-for="FechaFin" type="date"
-                           class="form-control form-control-lg" />
-                    <span asp-validation-for="FechaFin" class="text-danger small"></span>
+                <div class="col-md-3">
+                    <label asp-for="FechaFin" class="form-label fw-bold">Fin Período</label>
+                    <input asp-for="FechaFin" type="date" class="form-control" />
                 </div>
-
-                <div class="col-md-6">
-                    <label asp-for="FechaPago" class="form-label fw-bold">
-                        <i class="bi bi-calendar2-check"></i> Fecha de Pago <span class="text-danger">*</span>
-                    </label>
-                    <input asp-for="FechaPago" type="date"
-                           class="form-control form-control-lg" />
-                    <span asp-validation-for="FechaPago" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6">
-                    <label asp-for="MontoTotal" class="form-label fw-bold">
-                        <i class="bi bi-currency-exchange"></i> Monto Total (₡) <span class="text-danger">*</span>
-                    </label>
-                    <input asp-for="MontoTotal" type="number" step="0.01" min="0.01"
-                           class="form-control form-control-lg"
-                           placeholder="Ej: 343277.78" />
-                    <span asp-validation-for="MontoTotal" class="text-danger small"></span>
+                <div class="col-md-3">
+                    <label asp-for="FechaPago" class="form-label fw-bold">Fecha de Pago</label>
+                    <input asp-for="FechaPago" type="date" class="form-control" />
                 </div>
 
                 <div class="col-12">
-                    <label asp-for="Observaciones" class="form-label fw-bold">
-                        <i class="bi bi-chat-text"></i> Observaciones
-                        <span class="text-muted fw-normal small">(opcional)</span>
-                    </label>
-                    <input asp-for="Observaciones" class="form-control form-control-lg"
-                           maxlength="200" placeholder="Ej: Incluye período de licencia..." />
-                    <span asp-validation-for="Observaciones" class="text-danger small"></span>
+                    <label asp-for="MontoTotal" class="form-label fw-bold">Monto Total (₡)</label>
+                    <input asp-for="MontoTotal" type="number" step="0.01" min="0.01"
+                           class="form-control" placeholder="Ej: 345678.90" />
                 </div>
 
+                <div class="col-12">
+                    <label asp-for="Observaciones" class="form-label fw-bold">Observaciones</label>
+                    <textarea asp-for="Observaciones" class="form-control" rows="3" maxlength="300"></textarea>
+                </div>
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn-lg px-5">
+            <div class="mt-4 d-flex gap-3">
+                <button type="submit" class="btn btn-success btn px-5" id="btnGuardar" disabled>
                     <i class="bi bi-check-circle"></i> Registrar Aguinaldo
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn px-5">Cancelar</a>
             </div>
         </form>
     </div>
@@ -102,4 +111,78 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    <script>
+        var empData = null;
+        window._empResults = [];
+
+        async function buscar(termino, todos = false) {
+            var url = todos ? '/Aguinaldo/TodosLosEmpleados' : '/Aguinaldo/BuscarEmpleados?termino=' + encodeURIComponent(termino);
+            var res = await fetch(url);
+            var data = await res.json();
+            var div = document.getElementById('resultados');
+
+            if (!data.length) {
+                div.innerHTML = '<div class="p-3 text-muted text-center">Sin resultados.</div>';
+                div.style.display = 'block';
+                return;
+            }
+
+            window._empResults = data;
+            div.innerHTML = data.map((e, i) => `
+                        <div class="p-3 border-bottom emp-item" data-index="${i}" style="cursor:pointer">
+                            <div class="fw-bold">${e.nombre}</div>
+                            <div class="small text-muted">${e.cedula} — ${e.puesto}</div>
+                        </div>
+                    `).join('');
+
+            div.querySelectorAll('.emp-item').forEach(el => {
+                el.addEventListener('click', () => seleccionar(parseInt(el.getAttribute('data-index'))));
+            });
+            div.style.display = 'block';
+        }
+
+        function seleccionar(index) {
+            var e = window._empResults[index];
+            empData = e;
+            document.getElementById('EmpleadoId').value = e.id;
+            document.getElementById('empNombre').textContent = e.nombre;
+            document.getElementById('empCedula').textContent = e.cedula;
+            document.getElementById('empPuesto').textContent = e.puesto;
+
+            document.getElementById('empleadoSeleccionado').classList.remove('d-none');
+            document.getElementById('resultados').style.display = 'none';
+            document.getElementById('buscarEmpleado').value = '';
+            document.getElementById('btnGuardar').disabled = false;
+        }
+
+        // Eventos
+        var timer;
+        document.getElementById('buscarEmpleado').addEventListener('input', function() {
+            clearTimeout(timer);
+            var val = this.value.trim();
+            if (val.length < 2) {
+                document.getElementById('resultados').style.display = 'none';
+                return;
+            }
+            timer = setTimeout(() => buscar(val), 300);
+        });
+
+        document.getElementById('btnTodos').addEventListener('click', () => buscar('', true));
+
+        document.getElementById('btnLimpiar').addEventListener('click', function() {
+            empData = null;
+            document.getElementById('EmpleadoId').value = '';
+            document.getElementById('empleadoSeleccionado').classList.add('d-none');
+            document.getElementById('btnGuardar').disabled = true;
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#resultados') &&
+                !e.target.closest('#buscarEmpleado') &&
+                !e.target.closest('#btnTodos')) {
+                document.getElementById('resultados').style.display = 'none';
+            }
+        });
+    </script>
 }

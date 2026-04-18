@@ -49,7 +49,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 var ids = periodos.Select(p => p.PeriodoPagoId).ToList();
 
-                // Traer planillas a memoria (SQLite no soporta SumAsync con decimal)
                 var planillasRaw = await _context.PlanillasEmpleado
                     .Where(pe => ids.Contains(pe.PeriodoPagoId))
                     .Select(pe => new { pe.PeriodoPagoId, pe.NetoAPagar })
@@ -79,16 +78,18 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE ────────────────────────────────────────────────────────────
+        // ── CREATE GET ────────────────────────────────────────────────────────
 
         public IActionResult Create()
         {
             try
             {
                 var hoy = DateTime.Today;
-                var quincena = hoy.Day <= 15 ? NumeroQuincena.Primera : NumeroQuincena.Segunda;
-                DateTime fechaInicio, fechaFin;
+                var quincena = hoy.Day <= 15
+                    ? NumeroQuincena.Primera
+                    : NumeroQuincena.Segunda;
 
+                DateTime fechaInicio, fechaFin;
                 if (quincena == NumeroQuincena.Primera)
                 {
                     fechaInicio = new DateTime(hoy.Year, hoy.Month, 1);
@@ -108,6 +109,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     Quincena = quincena,
                     Mes = hoy.Month,
                     Anio = hoy.Year,
+                    TipoPeriodo = TipoPeriodo.Quincenal,
                     Estado = EstadoPeriodo.Abierto
                 });
             }
@@ -119,12 +121,38 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
+        // ── CREATE POST ───────────────────────────────────────────────────────
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PeriodoPago model)
         {
             try
             {
+                var hoy = DateTime.Today;
+                var mesActual = hoy.Month;
+                var anioActual = hoy.Year;
+
+                // ── Restricción: solo ±1 mes del actual ───────────────────────
+                // Para períodos semanales se permite más holgura (±2 semanas)
+                // pero mantenemos la misma regla por simplicidad.
+                bool esMesPermitido =
+                    (model.Anio == anioActual &&
+                     model.Mes >= mesActual - 1 &&
+                     model.Mes <= mesActual + 1) ||
+                    (model.Anio == anioActual - 1 &&
+                     model.Mes == 12 && mesActual == 1) ||
+                    (model.Anio == anioActual + 1 &&
+                     model.Mes == 1 && mesActual == 12);
+
+                if (!esMesPermitido)
+                {
+                    ModelState.AddModelError(string.Empty,
+                        $"Solo podés crear períodos del mes anterior, actual o siguiente. " +
+                        $"Intentaste crear: {NombresMeses[model.Mes]} {model.Anio}.");
+                    return View(model);
+                }
+
                 // ── Validaciones básicas ──────────────────────────────────────
                 if (model.Mes < 1 || model.Mes > 12)
                     ModelState.AddModelError("Mes", "El mes debe estar entre 1 y 12.");
@@ -142,46 +170,69 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 {
                     if (model.FechaFin < model.FechaInicio)
                         ModelState.AddModelError("FechaFin",
-                            "La fecha de fin no puede ser anterior a la fecha de inicio.");
+                            "La fecha de fin no puede ser anterior a la de inicio.");
 
                     if (model.FechaFin == model.FechaInicio)
                         ModelState.AddModelError("FechaFin",
-                            "La fecha de fin no puede ser igual a la fecha de inicio.");
+                            "La fecha de fin no puede ser igual a la de inicio.");
+
+                    // Validar duración coherente con el tipo de período
+                    var dias = (model.FechaFin - model.FechaInicio).TotalDays + 1;
+                    switch (model.TipoPeriodo)
+                    {
+                        case TipoPeriodo.Semanal when dias > 9:
+                            ModelState.AddModelError("FechaFin",
+                                "Un período semanal no debería superar 9 días.");
+                            break;
+                        case TipoPeriodo.Quincenal when dias > 17:
+                            ModelState.AddModelError("FechaFin",
+                                "Un período quincenal no debería superar 17 días.");
+                            break;
+                        case TipoPeriodo.Mensual when dias > 32:
+                            ModelState.AddModelError("FechaFin",
+                                "Un período mensual no debería superar 32 días.");
+                            break;
+                    }
                 }
 
                 if (!ModelState.IsValid) return View(model);
 
-                // ── Validación: período duplicado (mismo mes/quincena/año) ─────
+                // ── Validación: duplicado (mismo mes/quincena/año/tipo) ────────
                 var existeDuplicado = await _context.PeriodosPago.AnyAsync(p =>
                     p.Anio == model.Anio &&
                     p.Mes == model.Mes &&
-                    p.Quincena == model.Quincena);
+                    p.Quincena == model.Quincena &&
+                    p.TipoPeriodo == model.TipoPeriodo);
 
                 if (existeDuplicado)
                 {
                     ModelState.AddModelError(string.Empty,
-                        $"Ya existe un período para {NombresMeses[model.Mes]} {model.Anio} — Quincena {(int)model.Quincena}. " +
-                        "No se pueden crear períodos duplicados.");
+                        $"Ya existe un período {model.TipoPeriodo} para " +
+                        $"{NombresMeses[model.Mes]} {model.Anio} — " +
+                        $"Quincena {(int)model.Quincena}.");
                     return View(model);
                 }
 
-                // ── Validación: solapamiento de fechas ────────────────────────
+                // ── Validación: solapamiento de fechas del mismo tipo ─────────
                 var solapamiento = await _context.PeriodosPago.AnyAsync(p =>
+                    p.TipoPeriodo == model.TipoPeriodo &&
                     p.FechaInicio <= model.FechaFin &&
                     p.FechaFin >= model.FechaInicio);
 
                 if (solapamiento)
                 {
-                    var periodoConflicto = await _context.PeriodosPago
+                    var conflicto = await _context.PeriodosPago
                         .AsNoTracking()
                         .FirstOrDefaultAsync(p =>
+                            p.TipoPeriodo == model.TipoPeriodo &&
                             p.FechaInicio <= model.FechaFin &&
                             p.FechaFin >= model.FechaInicio);
 
                     ModelState.AddModelError(string.Empty,
                         $"Las fechas se solapan con el período existente: " +
-                        $"\"{periodoConflicto?.Descripcion}\" " +
-                        $"({periodoConflicto?.FechaInicio:dd/MM/yyyy} — {periodoConflicto?.FechaFin:dd/MM/yyyy}). " +
+                        $"\"{conflicto?.Descripcion}\" " +
+                        $"({conflicto?.FechaInicio:dd/MM/yyyy} — " +
+                        $"{conflicto?.FechaFin:dd/MM/yyyy}). " +
                         "Ajustá las fechas antes de continuar.");
                     return View(model);
                 }
@@ -194,12 +245,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 await _auditoria.RegistrarAsync(
                     HttpContext.Session.GetString("Usuario") ?? "",
                     "Crear período de pago", "Períodos",
-                    model.Descripcion);
+                    $"{model.Descripcion} — Tipo: {model.TipoPeriodo}");
 
-                _logger.LogInformation("Período creado: {Mes}/{Anio} Q{Q}",
-                    model.Mes, model.Anio, (int)model.Quincena);
+                TempData["Success"] =
+                    $"Período {model.Descripcion} ({model.TipoPeriodo}) creado correctamente.";
 
-                TempData["Success"] = $"Período {model.Descripcion} creado correctamente.";
                 return RedirectToAction(nameof(Index), new { anio = model.Anio });
             }
             catch (DbUpdateException ex)
@@ -245,8 +295,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     "Cerrar período", "Períodos",
                     periodo.Descripcion);
 
-                _logger.LogInformation("Período cerrado: ID {Id} {Desc}", id, periodo.Descripcion);
-                TempData["Success"] = $"Período {periodo.Descripcion} cerrado. Los registros quedan inmutables.";
+                TempData["Success"] =
+                    $"Período {periodo.Descripcion} cerrado. Los registros quedan inmutables.";
+
                 return RedirectToAction(nameof(Index), new { anio = periodo.Anio });
             }
             catch (Exception ex)
@@ -290,14 +341,15 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     "Reabrir período cerrado", "Períodos",
                     $"{periodo.Descripcion} — reabierto por Jefatura");
 
-                _logger.LogWarning("Período cerrado reabierto: ID {Id} {Desc}", id, periodo.Descripcion);
-
                 if (tienePlanillas)
-                    TempData["Warning"] = $"⚠️ Período {periodo.Descripcion} reabierto. " +
+                    TempData["Warning"] =
+                        $"Período {periodo.Descripcion} reabierto. " +
                         "IMPORTANTE: Los saldos de préstamos y créditos descontados al cerrar " +
-                        "NO se revierten automáticamente. Revisá la planilla antes de recalcular.";
+                        "NO se revierten automáticamente desde aquí. " +
+                        "Usá Reabrir desde el módulo de Planilla para revertir los saldos.";
                 else
-                    TempData["Success"] = $"Período {periodo.Descripcion} reabierto correctamente.";
+                    TempData["Success"] =
+                        $"Período {periodo.Descripcion} reabierto correctamente.";
 
                 return RedirectToAction(nameof(Index), new { anio = periodo.Anio });
             }
@@ -326,7 +378,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (periodo.Estado == EstadoPeriodo.Cerrado)
                 {
-                    TempData["Error"] = "No se puede eliminar un período cerrado. " +
+                    TempData["Error"] =
+                        "No se puede eliminar un período cerrado. " +
                         "Los registros de nómina deben conservarse por ley (mínimo 6 años).";
                     return RedirectToAction(nameof(Index), new { anio = periodo.Anio });
                 }
@@ -336,13 +389,15 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (tienePlanilla)
                 {
-                    TempData["Error"] = "No se puede eliminar un período que ya tiene planilla calculada. " +
+                    TempData["Error"] =
+                        "No se puede eliminar un período que ya tiene planilla calculada. " +
                         "Eliminá primero la planilla desde el módulo de Planilla.";
                     return RedirectToAction(nameof(Index), new { anio = periodo.Anio });
                 }
 
                 var anio = periodo.Anio;
                 var desc = periodo.Descripcion;
+
                 _context.PeriodosPago.Remove(periodo);
                 await _context.SaveChangesAsync();
 
@@ -351,7 +406,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     "Eliminar período abierto", "Períodos",
                     desc);
 
-                _logger.LogInformation("Período eliminado: ID {Id} {Desc}", id, desc);
                 TempData["Success"] = $"Período {desc} eliminado.";
                 return RedirectToAction(nameof(Index), new { anio });
             }

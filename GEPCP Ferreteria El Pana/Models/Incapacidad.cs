@@ -15,6 +15,17 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         INS = 3
     }
 
+    public enum TipoIncapacidad
+    {
+        EnfermedadComun,
+        AccidenteTransito,
+        AccidenteLaboral,
+        LicenciaMaternidad,
+        LicenciaPaternidad,  // ← agregar esto
+        Recuperacion,
+        Otro
+    }
+
     public class Incapacidad
     {
         public int IncapacidadId { get; set; }

@@ -329,30 +329,134 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── APIs ──────────────────────────────────────────────────────────────
+        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EnviarPorEmail(int id)
+        {
+            try
+            {
+                var comision = await _context.Comisiones
+                    .Include(c => c.Empleado)
+                    .FirstOrDefaultAsync(c => c.ComisionId == id);
+
+                if (comision == null)
+                {
+                    TempData["Error"] = "Comisión no encontrada.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var correo = comision.Empleado.CorreoElectronico;
+                if (string.IsNullOrWhiteSpace(correo))
+                {
+                    TempData["Error"] =
+                        $"{comision.Empleado.PrimerApellido} " +
+                        $"{comision.Empleado.Nombre} no tiene correo registrado.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var pdfBytes = _servicioPDF.GenerarPDFComisionSinFirmas(comision);
+                var nombreArchivo =
+                    $"Comision_{comision.Empleado.PrimerApellido}_" +
+                    $"{comision.Fecha:yyyyMMdd}.pdf";
+
+                var emailSvc = HttpContext.RequestServices
+                    .GetRequiredService<EmailService>();
+
+                var asunto = $"Boleta de Comisión — {comision.Fecha:dd/MM/yyyy}";
+                var cuerpo = $@"
+<div style='font-family:Arial,sans-serif;max-width:600px;'>
+    <div style='background:#1A1A2E;padding:20px;'>
+        <h2 style='color:#FF7A00;margin:0;'>Ferretería El Pana SRL</h2>
+        <p style='color:#888;margin:4px 0 0;font-size:13px;'>
+            Departamento de Recursos Humanos
+        </p>
+    </div>
+    <div style='padding:20px;border:1px solid #eee;'>
+        <p>Estimado(a) <strong>{comision.Empleado.PrimerApellido}
+           {comision.Empleado.Nombre}</strong>,</p>
+        <p>Adjunto encontrará su boleta de comisión correspondiente al
+           <strong>{comision.Fecha:dd/MM/yyyy}</strong>.</p>
+        <table style='width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;'>
+            <tr style='background:#f9f9f9;'>
+                <td style='padding:8px;border:1px solid #eee;'>Fecha</td>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    {comision.Fecha:dd/MM/yyyy}
+                </td>
+            </tr>
+            <tr style='background:#fff9f0;'>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    Monto
+                </td>
+                <td style='padding:8px;border:1px solid #eee;
+                           font-weight:bold;font-size:16px;color:#FF7A00;'>
+                    ₡{comision.Monto:N2}
+                </td>
+            </tr>
+        </table>
+        <p style='color:#888;font-size:12px;'>
+            Documento generado automáticamente por el Sistema GEPCP.
+            No responder a este correo.
+        </p>
+    </div>
+    <div style='background:#f5f5f5;padding:12px;text-align:center;
+                font-size:11px;color:#888;'>
+        Ferretería El Pana SRL · Cédula Jurídica: 3-102-745359
+    </div>
+</div>";
+
+                var enviado = await emailSvc.EnviarPDFAsync(
+                    correo,
+                    $"{comision.Empleado.PrimerApellido} {comision.Empleado.Nombre}",
+                    asunto, cuerpo, pdfBytes, nombreArchivo);
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Enviar boleta por email", "Comisiones",
+                    $"{comision.Empleado.PrimerApellido} {comision.Empleado.Nombre} " +
+                    $"→ {correo}");
+
+                TempData[enviado ? "Success" : "Error"] = enviado
+                    ? $"Boleta enviada a {correo}."
+                    : "Error al enviar el correo. Verificá la configuración SMTP.";
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar email comisión ID: {Id}", id);
+                TempData["Error"] = "Error al enviar el correo. Intentá de nuevo.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
 
         [HttpGet]
-        public async Task<IActionResult> BuscarEmpleados(string? termino)
+        public async Task<IActionResult> BuscarEmpleados(string? termino, int? periodoId)
         {
             if (string.IsNullOrWhiteSpace(termino) || termino.Length < 2)
                 return Json(new List<object>());
 
             var t = termino.Trim().ToLower();
+
             var empleados = await _context.Empleados
                 .AsNoTracking()
                 .Where(e => e.Activo && (
-                    e.Nombre.ToLower().Contains(t) ||
-                    e.PrimerApellido.ToLower().Contains(t) ||
-                    (e.SegundoApellido != null && e.SegundoApellido.ToLower().Contains(t)) ||
-                    e.Cedula.Contains(t)))
+                    EF.Functions.Like(e.Nombre.ToLower(), $"%{t}%") ||
+                    EF.Functions.Like(e.PrimerApellido.ToLower(), $"%{t}%") ||
+                    (e.SegundoApellido != null &&
+                     EF.Functions.Like(e.SegundoApellido.ToLower(), $"%{t}%")) ||
+                    EF.Functions.Like(e.Cedula, $"%{t}%")))
                 .OrderBy(e => e.PrimerApellido)
-                .Take(10)
+                .ThenBy(e => e.Nombre)
+                .Take(15)
                 .Select(e => new
                 {
                     id = e.EmpleadoId,
                     nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
                     cedula = e.Cedula,
-                    puesto = e.Puesto
+                    puesto = e.Puesto,
+                    tipoPago = e.TipoPago.ToString()
                 })
                 .ToListAsync();
 
@@ -360,51 +464,34 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> TodosLosEmpleados()
+        public async Task<IActionResult> TodosLosEmpleados(int? periodoId)
         {
             var empleados = await _context.Empleados
                 .AsNoTracking()
                 .Where(e => e.Activo)
                 .OrderBy(e => e.PrimerApellido)
+                .ThenBy(e => e.Nombre)
                 .Select(e => new
                 {
                     id = e.EmpleadoId,
                     nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
                     cedula = e.Cedula,
-                    puesto = e.Puesto
+                    puesto = e.Puesto,
+                    tipoPago = e.TipoPago.ToString()
                 })
                 .ToListAsync();
 
             return Json(empleados);
         }
-
-        [HttpGet]
-        public async Task<IActionResult> ObtenerRangoPeriodo(int periodoId)
-        {
-            var periodo = await _context.PeriodosPago
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.PeriodoPagoId == periodoId);
-
-            if (periodo == null) return Json(new { ok = false });
-
-            return Json(new
-            {
-                ok = true,
-                fechaInicio = periodo.FechaInicio.ToString("yyyy-MM-dd"),
-                fechaFin = periodo.FechaFin.ToString("yyyy-MM-dd"),
-                descripcion = periodo.Descripcion
-            });
-        }
-
         // ── HELPERS ───────────────────────────────────────────────────────────
 
         private async Task CargarPeriodosViewBag(int? selectedId = null)
         {
+            var hoy = DateTime.Today;
             ViewBag.PeriodosSelect = await _context.PeriodosPago
                 .AsNoTracking()
-                .OrderByDescending(p => p.Anio)
-                .ThenByDescending(p => p.Mes)
-                .ThenByDescending(p => p.Quincena)
+                .Where(p => p.Anio == hoy.Year && p.Mes == hoy.Month)
+                .OrderByDescending(p => p.Quincena)
                 .Select(p => new
                 {
                     p.PeriodoPagoId,

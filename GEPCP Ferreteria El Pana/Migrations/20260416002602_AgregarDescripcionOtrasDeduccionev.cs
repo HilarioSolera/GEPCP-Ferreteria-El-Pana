@@ -5,25 +5,24 @@
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     /// <inheritdoc />
-    public partial class AgregarTrabajadoPagoFeriado : Migration
+    public partial class AgregarDescripcionOtrasDeduccionev : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<bool>(
-                name: "Trabajado",
-                table: "PagosFeriado",
-                type: "INTEGER",
-                nullable: false,
-                defaultValue: false);
+            migrationBuilder.AddColumn<string>(
+                name: "DescripcionOtrasDeducciones",
+                table: "PlanillasEmpleado",
+                type: "TEXT",
+                nullable: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "Trabajado",
-                table: "PagosFeriado");
+                name: "DescripcionOtrasDeducciones",
+                table: "PlanillasEmpleado");
         }
     }
 }

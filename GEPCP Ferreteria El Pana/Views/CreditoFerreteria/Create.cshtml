@@ -5,93 +5,193 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="bi bi-plus-circle"></i> Nuevo Crédito Ferretería</h2>
-    <a asp-action="Index" class="btn btn-outline-secondary">
+    <h2 class="mb-0"><i class="bi bi-cart-check"></i> Nuevo Crédito Ferretería</h2>
+    <a asp-action="Index" asp-route-verTodos="true" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
-<div class="card shadow-sm border-0" style="max-width: 700px;">
+<div class="card shadow-sm border-0">
     <div class="card-body p-4">
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
-            <div class="row g-3">
 
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>No se pudo registrar:</strong>
+                    <ul class="mb-0 mt-1">
+                        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@e.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <div class="row g-3">
+                <!-- Empleado buscador -->
                 <div class="col-12">
-                    <label asp-for="EmpleadoId" class="form-label fw-bold">
-                        <i class="bi bi-person"></i> Empleado <span class="text-danger">*</span>
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-person-search"></i> Empleado
+                        <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="EmpleadoId" asp-items="ViewBag.Empleados"
-                            class="form-select form-select-lg">
-                        <option value="">— Seleccione un empleado —</option>
-                    </select>
+                    <input type="hidden" asp-for="EmpleadoId" id="EmpleadoId" />
+                    <div class="input-group mb-1">
+                        <span class="input-group-text bg-white">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" id="buscarEmpleado"
+                               class="form-control border-start-0"
+                               placeholder="Buscar por nombre, apellido o cédula..."
+                               autocomplete="off" />
+                        <button type="button" class="btn btn-outline-secondary"
+                                id="btnTodos">
+                            <i class="bi bi-list-ul"></i> Todos
+                        </button>
+                    </div>
+
+                    <div id="empleadoSeleccionado" class="d-none">
+                        <div class="alert py-2 d-flex justify-content-between align-items-center"
+                             id="empAlerta">
+                            <div>
+                                <i class="bi bi-person-check-fill"></i>
+                                <strong id="empNombre"></strong>
+                                <span class="text-muted ms-2 small" id="empCedula"></span>
+                                <span class="badge bg-secondary ms-1" id="empPuesto"></span>
+                            </div>
+                            <div class="text-end small me-3">
+                                <div>
+                                    <span id="labelSalarioPeriodo">Salario del período:</span>
+                                    <strong id="empSalarioQuincenal"></strong>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    id="btnLimpiar">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="resultados" class="border rounded shadow-sm"
+                         style="display:none;max-height:260px;overflow-y:auto;
+                        background:#fff;z-index:100;position:relative;">
+                    </div>
                     <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6">
+                <!-- Monto -->
+                <div class="col-md-4">
                     <label asp-for="MontoTotal" class="form-label fw-bold">
-                        <i class="bi bi-currency-dollar"></i> Monto Total (₡) <span class="text-danger">*</span>
+                        <i class="bi bi-currency-dollar"></i> Monto Total (₡)
+                        <span class="text-danger">*</span>
                     </label>
                     <input asp-for="MontoTotal" type="number" step="0.01"
-                           min="1" max="9999999.99"
-                           class="form-control form-control-lg"
-                           id="inputMonto"
-                           placeholder="Ej: 50000.00" />
+                           min="1" max="9999999.99" id="inputMonto"
+                           class="form-control"
+                           placeholder="Ej: 50000" />
                     <span asp-validation-for="MontoTotal" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6">
+                <!-- Cuota -->
+                <div class="col-md-4">
                     <label asp-for="CuotaQuincenal" class="form-label fw-bold">
-                        <i class="bi bi-calendar2-week"></i> Cuota Quincenal (₡) <span class="text-danger">*</span>
+                        <i class="bi bi-calendar2-week"></i> Cuota del Período (₡)
+                        <span class="text-danger">*</span>
                     </label>
                     <input asp-for="CuotaQuincenal" type="number" step="0.01"
-                           min="1" max="9999999.99"
-                           class="form-control form-control-lg"
-                           id="inputCuota"
+                           min="1" max="9999999.99" id="inputCuota"
+                           class="form-control"
                            placeholder="Se calcula automáticamente" />
-                    <div class="form-text text-muted" id="cuotaHint"></div>
+                    <div class="form-text" id="cuotaHint"></div>
                     <span asp-validation-for="CuotaQuincenal" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6">
+                <!-- Quincenas estimadas -->
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted">
+                        <i class="bi bi-calculator"></i> Cuotas estimadas
+                    </label>
+                    <div class="form-control bg-light text-center fw-bold"
+                         style="color:#FF7A00;" id="quincenasRef">
+                        —
+                    </div>
+                    <div class="form-text text-muted">Monto ÷ Cuota del período</div>
+                </div>
+
+                <!-- Fecha -->
+                <div class="col-md-4">
                     <label asp-for="FechaCredito" class="form-label fw-bold">
-                        <i class="bi bi-calendar"></i> Fecha del Crédito <span class="text-danger">*</span>
+                        <i class="bi bi-calendar"></i> Fecha del Crédito
+                        <span class="text-danger">*</span>
                     </label>
                     <input asp-for="FechaCredito" type="date"
-                           class="form-control form-control-lg"
+                           class="form-control"
                            max="@DateTime.Today.ToString("yyyy-MM-dd")" />
                     <span asp-validation-for="FechaCredito" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6">
-                    <label class="form-label fw-bold text-muted">
-                        <i class="bi bi-calculator"></i> Quincenas estimadas
-                    </label>
-                    <div class="form-control form-control-lg bg-light text-center fw-bold text-primary"
-                         id="quincenasRef">
-                        —
-                    </div>
-                    <div class="form-text text-muted">Monto ÷ Cuota quincenal</div>
-                </div>
-
-                <div class="col-12">
+                <!-- Descripción -->
+                <div class="col-md-8">
                     <label asp-for="Descripcion" class="form-label fw-bold">
-                        <i class="bi bi-chat-text"></i> Descripción <span class="text-danger">*</span>
+                        <i class="bi bi-chat-text"></i> Descripción
+                        <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Descripcion" class="form-control form-control-lg"
+                    <input asp-for="Descripcion" class="form-control"
                            maxlength="200"
-                           placeholder="Ej: Compra materiales construcción - Factura #1234" />
+                           placeholder="Ej: Compra materiales - Factura #1234" />
                     <div class="form-text text-muted">Máximo 200 caracteres.</div>
                     <span asp-validation-for="Descripcion" class="text-danger small"></span>
                 </div>
 
+                <!-- Resumen -->
+                <div class="col-12">
+                    <div id="resumenCredito" class="d-none">
+                        <div class="card border-0"
+                             style="background:#fff9f0; border-left:3px solid #FF7A00 !important;">
+                            <div class="card-body py-2 px-3">
+                                <div class="row g-2 text-center">
+                                    <div class="col-md-3">
+                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
+                                            Monto crédito
+                                        </div>
+                                        <div class="fw-bold" style="color:#FF7A00;" id="resumenMonto">—</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
+                                            Cuota del período
+                                        </div>
+                                        <div class="fw-bold" id="resumenCuota">—</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
+                                            Cuotas
+                                        </div>
+                                        <div class="fw-bold" id="resumenQuincenas">—</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
+                                            % del salario
+                                        </div>
+                                        <div class="fw-bold" id="resumenPct">—</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn-lg px-5">
+                <button type="submit" class="btn btn-success btn px-5"
+                        id="btnGuardar" disabled>
                     <i class="bi bi-check-circle"></i> Registrar Crédito
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" asp-route-verTodos="true"
+                       class="btn btn-secondary btn px-5">
+                    Cancelar
+                </a>
             </div>
         </form>
     </div>
@@ -101,36 +201,164 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
     <script>
-        function calcularQuincenas() {
-            var monto  = parseFloat(document.getElementById('inputMonto').value) || 0;
-            var cuota  = parseFloat(document.getElementById('inputCuota').value) || 0;
-            var ref    = document.getElementById('quincenasRef');
-            var hint   = document.getElementById('cuotaHint');
+        var empData = null;
+        window._empResults = [];
+
+        // ====================== BUSCADOR ======================
+        async function buscar(termino, todos = false) {
+            var url = todos
+                ? '/CreditoFerreteria/TodosLosEmpleados'
+                : '/CreditoFerreteria/BuscarEmpleados?termino=' + encodeURIComponent(termino);
+
+            var res = await fetch(url);
+            var data = await res.json();
+            var div = document.getElementById('resultados');
+
+            if (!data.length) {
+                div.innerHTML = '<div class="p-3 text-muted text-center small">Sin resultados.</div>';
+                div.style.display = 'block';
+                return;
+            }
+
+            window._empResults = data;
+
+            div.innerHTML = data.map(function(e, i) {
+                var salRef = e.salarioQuincenal.toLocaleString('es-CR', { minimumFractionDigits: 0 });
+                var lblSal = e.tipoPago === 'Semanal' ? 'Semanal'
+                    : e.tipoPago === 'Mensual' ? 'Mensual'
+                        : 'Quinc.';
+
+                return `<div class="p-2 border-bottom emp-item" data-index="${i}" style="cursor:pointer;background:#fff;">
+                            <div class="fw-bold small">${e.nombre}</div>
+                            <div class="text-muted" style="font-size:0.78rem;">
+                                ${e.cedula} — ${e.puesto}
+                                <span class="float-end">${lblSal}: ₡${salRef}</span>
+                            </div>
+                        </div>`;
+            }).join('');
+
+            div.querySelectorAll('.emp-item').forEach(function(el) {
+                el.addEventListener('mouseenter', () => el.style.background = '#f0f0f0');
+                el.addEventListener('mouseleave', () => el.style.background = '#fff');
+                el.addEventListener('click', () => seleccionar(parseInt(el.getAttribute('data-index'))));
+            });
+
+            div.style.display = 'block';
+        }
+
+        function seleccionar(index) {
+            var e = window._empResults[index];
+            if (!e) return;
+
+            empData = e;
+            document.getElementById('EmpleadoId').value = e.id;
+            document.getElementById('empNombre').textContent = e.nombre;
+            document.getElementById('empCedula').textContent = e.cedula;
+            document.getElementById('empPuesto').textContent = e.puesto;
+
+            // Label dinámico del salario
+            var labelPago = e.tipoPago === 'Semanal' ? 'Salario semanal:'
+                : e.tipoPago === 'Mensual' ? 'Salario mensual:'
+                    : 'Salario quincenal:';
+            document.getElementById('labelSalarioPeriodo').textContent = labelPago;
+
+            document.getElementById('empSalarioQuincenal').textContent =
+                '₡' + e.salarioQuincenal.toLocaleString('es-CR', { minimumFractionDigits: 0 });
+
+            document.getElementById('empAlerta').className = 'alert alert-success py-2 d-flex justify-content-between align-items-center';
+            document.getElementById('empleadoSeleccionado').classList.remove('d-none');
+            document.getElementById('resultados').style.display = 'none';
+            document.getElementById('buscarEmpleado').value = '';
+            document.getElementById('btnGuardar').disabled = false;
+
+            actualizarResumen();
+        }
+
+        // ====================== RESUMEN ======================
+        function actualizarResumen() {
+            var monto = parseFloat(document.getElementById('inputMonto').value) || 0;
+            var cuota = parseFloat(document.getElementById('inputCuota').value) || 0;
+            var ref = document.getElementById('quincenasRef');
+            var hint = document.getElementById('cuotaHint');
+            var resumenDiv = document.getElementById('resumenCredito');
 
             if (monto > 0 && cuota > 0) {
-                var quincenas = Math.ceil(monto / cuota);
-                ref.textContent = quincenas + ' quincena(s)';
-                hint.innerHTML =
-                    '<i class="bi bi-info-circle text-success"></i> ' +
-                    'Se pagará en aproximadamente <strong>' + quincenas + ' quincenas</strong>.';
+                var q = Math.ceil(monto / cuota);
+                var lblPeriodo = empData && empData.tipoPago === 'Semanal' ? 'semana(s)'
+                    : empData && empData.tipoPago === 'Mensual' ? 'mes(es)'
+                        : 'quincena(s)';
+
+                ref.textContent = q + ' ' + lblPeriodo;
+
+                hint.innerHTML = `<i class="bi bi-info-circle text-success"></i>
+                            Se pagará en aproximadamente <strong>${q} ${lblPeriodo}</strong>.`;
                 hint.className = 'form-text text-success';
+
+                // Resumen inferior
+                document.getElementById('resumenMonto').textContent = '₡' + monto.toLocaleString('es-CR', { minimumFractionDigits: 0 });
+                document.getElementById('resumenCuota').textContent = '₡' + cuota.toLocaleString('es-CR', { minimumFractionDigits: 2 });
+                document.getElementById('resumenQuincenas').textContent = q + ' ' + lblPeriodo;
+
+                // Porcentaje
+                if (empData && empData.salarioQuincenal > 0) {
+                    var pct = Math.round((cuota / empData.salarioQuincenal) * 100);
+                    var pctEl = document.getElementById('resumenPct');
+                    pctEl.textContent = pct + '%';
+                    pctEl.style.color = pct > 100 ? '#B71C1C' : pct > 70 ? '#E65100' : '#1B5E20';
+                }
             } else {
                 ref.textContent = '—';
                 hint.textContent = '';
             }
+
+            if (monto > 0 || cuota > 0) {
+                resumenDiv.classList.remove('d-none');
+            } else {
+                resumenDiv.classList.add('d-none');
+            }
         }
 
-        // Sugerir cuota = monto / 4 quincenas por defecto
-        document.getElementById('inputMonto').addEventListener('input', function () {
-            var monto = parseFloat(this.value) || 0;
-            if (monto > 0) {
-                var cuotaSug = (monto / 4).toFixed(2);
-                document.getElementById('inputCuota').value = cuotaSug;
+        // ====================== EVENTOS ======================
+        var timer;
+        document.getElementById('buscarEmpleado').addEventListener('input', function() {
+            clearTimeout(timer);
+            var val = this.value.trim();
+            if (val.length < 2) {
+                document.getElementById('resultados').style.display = 'none';
+                return;
             }
-            calcularQuincenas();
+            timer = setTimeout(() => buscar(val, false), 300);
         });
 
-        document.getElementById('inputCuota').addEventListener('input', calcularQuincenas);
+        document.getElementById('btnTodos').addEventListener('click', () => buscar('', true));
+
+        document.getElementById('btnLimpiar').addEventListener('click', function() {
+            empData = null;
+            document.getElementById('EmpleadoId').value = '';
+            document.getElementById('empleadoSeleccionado').classList.add('d-none');
+            document.getElementById('buscarEmpleado').value = '';
+            document.getElementById('btnGuardar').disabled = true;
+            document.getElementById('resumenCredito').classList.add('d-none');
+        });
+
+        document.getElementById('inputMonto').addEventListener('input', function() {
+            var monto = parseFloat(this.value) || 0;
+            if (monto > 0) {
+                document.getElementById('inputCuota').value = (monto / 4).toFixed(2);
+            }
+            actualizarResumen();
+        });
+
+        document.getElementById('inputCuota').addEventListener('input', actualizarResumen);
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#resultados') &&
+                !e.target.closest('#buscarEmpleado') &&
+                !e.target.closest('#btnTodos')) {
+                document.getElementById('resultados').style.display = 'none';
+            }
+        });
     </script>
 }

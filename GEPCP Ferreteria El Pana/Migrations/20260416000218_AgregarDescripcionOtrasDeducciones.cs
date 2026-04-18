@@ -5,7 +5,7 @@
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     /// <inheritdoc />
-    public partial class AgregarTablaAbonosCredito : Migration
+    public partial class AgregarDescripcionOtrasDeducciones : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

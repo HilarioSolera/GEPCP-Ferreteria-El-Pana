@@ -15,8 +15,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         private readonly ComprobantePlanillaService _servicioPDF;
         private readonly AuditoriaService _auditoria;
 
-        private const decimal PorcentajeCCSS = 10.83m;
-
         public PlanillaController(
             ApplicationDbContext context,
             ILogger<PlanillaController> logger,
@@ -29,18 +27,102 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _auditoria = auditoria;
         }
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
+        // ====================== CÁLCULO ISR (valores configurables por período) ======================
+        // El ISR para asalariados en Costa Rica se calcula por tramos progresivos
+        // sobre el salario BRUTO mensual. Se convierte el devengado del período a
+        // mensual, se aplican los tramos, y se divide el impuesto entre el factor.
+        private decimal CalcularImpuestoRenta(decimal baseImponiblePeriodo, PeriodoPago periodo,
+            int numHijos = 0, bool tieneConyuge = false)
+        {
+            // Fallback: si el período tiene tramos ISR en 0, usar valores CR 2026
+            decimal t1Hasta = periodo.ISR_Tramo1_Hasta > 0 ? periodo.ISR_Tramo1_Hasta : 918000m;
+            decimal t2Desde = periodo.ISR_Tramo2_Desde > 0 ? periodo.ISR_Tramo2_Desde : 918000m;
+            decimal t2Hasta = periodo.ISR_Tramo2_Hasta > 0 ? periodo.ISR_Tramo2_Hasta : 1347000m;
+            decimal t2Pct   = periodo.ISR_Tramo2_Porcentaje > 0 ? periodo.ISR_Tramo2_Porcentaje : 10m;
+            decimal t3Desde = periodo.ISR_Tramo3_Desde > 0 ? periodo.ISR_Tramo3_Desde : 1347000m;
+            decimal t3Hasta = periodo.ISR_Tramo3_Hasta > 0 ? periodo.ISR_Tramo3_Hasta : 2364000m;
+            decimal t3Pct   = periodo.ISR_Tramo3_Porcentaje > 0 ? periodo.ISR_Tramo3_Porcentaje : 15m;
+            decimal t4Desde = periodo.ISR_Tramo4_Desde > 0 ? periodo.ISR_Tramo4_Desde : 2364000m;
+            decimal t4Hasta = periodo.ISR_Tramo4_Hasta > 0 ? periodo.ISR_Tramo4_Hasta : 4727000m;
+            decimal t4Pct   = periodo.ISR_Tramo4_Porcentaje > 0 ? periodo.ISR_Tramo4_Porcentaje : 20m;
+            decimal t5Desde = periodo.ISR_Tramo5_Desde > 0 ? periodo.ISR_Tramo5_Desde : 4727000m;
+            decimal t5Pct   = periodo.ISR_Tramo5_Porcentaje > 0 ? periodo.ISR_Tramo5_Porcentaje : 25m;
 
+            // Factor de conversión del período a mensual
+            decimal factorMensual = periodo.TipoPeriodo switch
+            {
+                TipoPeriodo.Semanal => 52m / 12m,   // ≈ 4.333
+                TipoPeriodo.Mensual => 1m,
+                _ => 2m                               // Quincenal
+            };
+
+            decimal baseImponibleMensual = baseImponiblePeriodo * factorMensual;
+            decimal impuestoMensual = 0m;
+
+            // Tramo 1: Exento hasta el umbral
+            if (baseImponibleMensual <= t1Hasta)
+                return 0m;
+
+            // Tramo 2
+            if (baseImponibleMensual > t2Desde)
+            {
+                decimal excedente = Math.Min(baseImponibleMensual, t2Hasta) - t2Desde;
+                impuestoMensual += excedente * (t2Pct / 100m);
+            }
+
+            // Tramo 3
+            if (baseImponibleMensual > t3Desde)
+            {
+                decimal excedente = Math.Min(baseImponibleMensual, t3Hasta) - t3Desde;
+                impuestoMensual += excedente * (t3Pct / 100m);
+            }
+
+            // Tramo 4
+            if (baseImponibleMensual > t4Desde)
+            {
+                decimal excedente = Math.Min(baseImponibleMensual, t4Hasta) - t4Desde;
+                impuestoMensual += excedente * (t4Pct / 100m);
+            }
+
+            // Tramo 5
+            if (baseImponibleMensual > t5Desde)
+            {
+                decimal excedente = baseImponibleMensual - t5Desde;
+                impuestoMensual += excedente * (t5Pct / 100m);
+            }
+
+            // Créditos fiscales mensuales
+            decimal creditoHijos = numHijos * periodo.ISR_CreditoHijo;
+            decimal creditoConyuge = tieneConyuge ? periodo.ISR_CreditoConyuge : 0m;
+            impuestoMensual = Math.Max(0m, impuestoMensual - creditoHijos - creditoConyuge);
+
+            // Retención por período = Impuesto mensual / factor
+            return Math.Round(impuestoMensual / factorMensual, 2);
+        }
+
+
+
+        // ── INDEX ─────────────────────────────────────────────────────────────
         public async Task<IActionResult> Index(int? periodoId)
         {
             try
             {
+                var hoy = DateTime.Today;
                 var periodos = await _context.PeriodosPago
                     .AsNoTracking()
-                    .OrderByDescending(p => p.Anio)
-                    .ThenByDescending(p => p.Mes)
-                    .ThenByDescending(p => p.Quincena)
+                    .Where(p => p.Anio == hoy.Year && p.Mes == hoy.Month)
+                    .OrderByDescending(p => p.Quincena)
                     .ToListAsync();
+
+                if (!periodos.Any())
+                {
+                    var mesAnterior = hoy.AddMonths(-1);
+                    periodos = await _context.PeriodosPago
+                        .AsNoTracking()
+                        .Where(p => p.Anio == mesAnterior.Year && p.Mes == mesAnterior.Month)
+                        .OrderByDescending(p => p.Quincena)
+                        .ToListAsync();
+                }
 
                 ViewBag.Periodos = periodos;
                 ViewBag.PeriodoId = periodoId;
@@ -56,7 +138,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (periodoId == null)
                     return View(new List<PlanillaEmpleado>());
 
-                var periodo = periodos.First(p => p.PeriodoPagoId == periodoId);
+                var periodo = periodos.FirstOrDefault(p => p.PeriodoPagoId == periodoId)
+                           ?? await _context.PeriodosPago.AsNoTracking()
+                                .FirstOrDefaultAsync(p => p.PeriodoPagoId == periodoId);
+
+                if (periodo == null)
+                    return View(new List<PlanillaEmpleado>());
+
                 ViewBag.Periodo = periodo;
 
                 var planillas = await _context.PlanillasEmpleado
@@ -64,8 +152,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     .Include(pe => pe.PeriodoPago)
                     .AsNoTracking()
                     .Where(pe => pe.PeriodoPagoId == periodoId)
-                    .OrderBy(pe => pe.Empleado.PrimerApellido)
-                    .ThenBy(pe => pe.Empleado.Nombre)
+                    .OrderBy(pe => pe.Empleado.Departamento)
+                    .ThenBy(pe => pe.Empleado.PrimerApellido)
                     .ToListAsync();
 
                 ViewBag.TotalEmpleados = planillas.Count;
@@ -78,16 +166,14 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al cargar planilla. PeriodoId: {P}", periodoId);
-                TempData["Error"] = "Ocurrió un error al cargar la planilla. Intentá de nuevo.";
+                TempData["Error"] = "Ocurrió un error al cargar la planilla.";
                 return View(new List<PlanillaEmpleado>());
             }
         }
 
         // ── CALCULAR ──────────────────────────────────────────────────────────
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> Calcular(int periodoId)
         {
             try
@@ -98,157 +184,213 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     TempData["Error"] = "Período no encontrado.";
                     return RedirectToAction(nameof(Index), new { periodoId });
                 }
-
                 if (periodo.Estado == EstadoPeriodo.Cerrado)
                 {
                     TempData["Error"] = "No se puede recalcular un período cerrado.";
                     return RedirectToAction(nameof(Index), new { periodoId });
                 }
 
-                // Limpiar planillas existentes
-                var existentes = await _context.PlanillasEmpleado
-                    .Where(pe => pe.PeriodoPagoId == periodoId).ToListAsync();
-                _context.PlanillasEmpleado.RemoveRange(existentes);
+                var tipoPagoFiltro = (TipoPago)(int)periodo.TipoPeriodo;
+var todosEmpleados = await _context.Empleados
+    .Where(e => e.Activo &&
+        (e.TipoPago == tipoPagoFiltro ||
+         (periodo.TipoPeriodo == TipoPeriodo.Quincenal && (int)e.TipoPago == 0)))
+    .ToListAsync();
+
+// Filtro antigüedad mínima 15 días
+var fechaMinIngreso = periodo.FechaFin.AddDays(-14);
+var empleadosExcluidos = todosEmpleados
+    .Where(e => e.FechaIngreso > fechaMinIngreso).ToList();
+var empleados = todosEmpleados
+    .Where(e => e.FechaIngreso <= fechaMinIngreso).ToList();
+
+if (empleadosExcluidos.Any())
+    TempData["Warning"] =
+        $"⚠️ Excluidos por antigüedad: " +
+        string.Join(", ", empleadosExcluidos
+            .Select(e => $"{e.PrimerApellido} {e.Nombre}"));
+
+if (!empleados.Any())
+{
+    TempData["Error"] = "No hay empleados con suficiente antigüedad para calcular.";
+    return RedirectToAction(nameof(Index), new { periodoId });
+}
+
+var abonosPeriodoExistentes = await _context.AbonosPrestamo
+    .Where(a => a.Observaciones != null &&
+                a.Observaciones.Contains("Deducción planilla") &&
+                a.Observaciones.Contains(periodo.Descripcion))
+    .Select(a => a.Prestamo.EmpleadoId)
+    .ToListAsync();
+
+foreach (var empleado in empleados)
+{
+    var salarioOrdinario = Math.Round(
+        empleado.ValorHora * empleado.HorasPorPeriodo, 2);
+
+    var horasExtrasReg = await _context.HorasExtras
+        .FirstOrDefaultAsync(h =>
+            h.EmpleadoId == empleado.EmpleadoId &&
+            h.PeriodoPagoId == periodoId);
+    var montoHorasExtras = horasExtrasReg?.MontoTotal ?? 0m;
+    var totalHorasExtras = horasExtrasReg?.TotalHoras ?? 0m;
+
+    var montoComisiones = (await _context.Comisiones
+        .Where(c =>
+            c.EmpleadoId == empleado.EmpleadoId &&
+            c.Fecha >= periodo.FechaInicio &&
+            c.Fecha <= periodo.FechaFin)
+        .Select(c => c.Monto)
+        .ToListAsync()).Sum();
+
+    var montoFeriados = (await _context.PagosFeriado
+        .Where(pf =>
+            pf.EmpleadoId == empleado.EmpleadoId &&
+            pf.PeriodoPagoId == periodoId)
+        .Select(pf => pf.MontoTotal)
+        .ToListAsync()).Sum();
+
+    var totalDevengado = Math.Round(
+        salarioOrdinario + montoHorasExtras +
+        montoComisiones + montoFeriados, 2);
+
+    var deduccionCCSS = Math.Round(
+        totalDevengado * (periodo.PorcentajeCCSS / 100m), 2);
+
+    // ISR: se calcula sobre el salario bruto mensual (tramos progresivos)
+    var deduccionRenta = CalcularImpuestoRenta(totalDevengado, periodo, empleado.NumHijos, empleado.TieneConyuge);
+
+    decimal deduccionPrestamo = 0m;
+    if (!abonosPeriodoExistentes.Contains(empleado.EmpleadoId))
+    {
+        var prestamo = await _context.Prestamos
+            .FirstOrDefaultAsync(p =>
+                p.EmpleadoId == empleado.EmpleadoId && p.Activo);
+        if (prestamo != null && prestamo.Monto > 0)
+        {
+            var cuotaPeriodo = Math.Round(
+                prestamo.CuotaMensual / empleado.FactorCuotaPrestamo, 2);
+            deduccionPrestamo = Math.Round(
+                Math.Min(cuotaPeriodo, prestamo.Monto), 2);
+        }
+    }
+
+    var creditosActivos = await _context.CreditosFerreteria
+        .Where(c => c.EmpleadoId == empleado.EmpleadoId && c.Activo)
+        .ToListAsync();
+    var deduccionCredito = Math.Round(
+        creditosActivos
+            .Where(c => c.Saldo > 0)
+            .Sum(c => Math.Min(c.CuotaQuincenal, c.Saldo)), 2);
+
+    var diasIncapacidad = (await _context.Incapacidades
+        .Where(i =>
+            i.EmpleadoId == empleado.EmpleadoId &&
+            i.FechaInicio <= periodo.FechaFin &&
+            i.FechaFin >= periodo.FechaInicio)
+        .ToListAsync())
+        .Sum(i =>
+        {
+            var inicio = i.FechaInicio < periodo.FechaInicio
+                ? periodo.FechaInicio : i.FechaInicio;
+            var fin = i.FechaFin > periodo.FechaFin
+                ? periodo.FechaFin : i.FechaFin;
+            return Math.Max(0, (fin - inicio).Days + 1);
+        });
+    var salarioDiario = Math.Round(empleado.SalarioBase / 30m, 2);
+    var deduccionIncapacidad = Math.Round(salarioDiario * diasIncapacidad, 2);
+
+    var deduccionVacaciones = Math.Round((await _context.Vacaciones
+        .Where(v =>
+            v.EmpleadoId == empleado.EmpleadoId &&
+            v.Tipo == TipoVacacion.SinPago &&
+            v.Estado == EstadoVacacion.Aprobada &&
+            v.FechaInicio <= periodo.FechaFin &&
+            v.FechaFin >= periodo.FechaInicio)
+        .Select(v => v.MontoDeducido)
+        .ToListAsync()).Sum(), 2);
+
+    var totalDeducciones = Math.Round(
+        deduccionCCSS + deduccionRenta +
+        deduccionPrestamo + deduccionCredito +
+        deduccionIncapacidad + deduccionVacaciones, 2);
+
+    var netoAPagar = Math.Max(0,
+        Math.Round(totalDevengado - totalDeducciones, 2));
+
+    var planillaExistente = await _context.PlanillasEmpleado
+        .FirstOrDefaultAsync(p =>
+            p.EmpleadoId == empleado.EmpleadoId &&
+            p.PeriodoPagoId == periodoId);
+
+    if (planillaExistente != null)
+    {
+        planillaExistente.HorasOrdinarias = empleado.HorasPorPeriodo;
+        planillaExistente.HorasExtras = totalHorasExtras;
+        planillaExistente.HorasNoLaboradas = 0m;
+        planillaExistente.ValorHora = empleado.ValorHora;
+        planillaExistente.ValorHoraExtra = empleado.ValorHoraExtra;
+        planillaExistente.SalarioOrdinario = salarioOrdinario;
+        planillaExistente.AumentoAplicado = montoComisiones;
+        planillaExistente.MontoHorasExtras = montoHorasExtras;
+        planillaExistente.MontoFeriados = montoFeriados;
+        planillaExistente.TotalDevengado = totalDevengado;
+        planillaExistente.DeduccionCCSS = deduccionCCSS;
+        planillaExistente.DeduccionRenta = deduccionRenta;
+        planillaExistente.DeduccionPrestamos = deduccionPrestamo;
+        planillaExistente.DeduccionCreditoFerreteria = deduccionCredito;
+        planillaExistente.DeduccionIncapacidad = deduccionIncapacidad;
+        planillaExistente.DeduccionVacaciones = deduccionVacaciones;
+        planillaExistente.DeduccionHorasNoLaboradas = 0m;
+        planillaExistente.OtrasDeducciones = 0m;
+        planillaExistente.TotalDeducciones = totalDeducciones;
+        planillaExistente.NetoAPagar = netoAPagar;
+    }
+    else
+    {
+        _context.PlanillasEmpleado.Add(new PlanillaEmpleado
+        {
+            PeriodoPagoId              = periodoId,
+            PorcentajeCCSS             = periodo.PorcentajeCCSS,
+            EmpleadoId                 = empleado.EmpleadoId,
+            HorasOrdinarias            = empleado.HorasPorPeriodo,
+            HorasExtras                = totalHorasExtras,
+            HorasNoLaboradas           = 0m,
+            ValorHora                  = empleado.ValorHora,
+            ValorHoraExtra             = empleado.ValorHoraExtra,
+            SalarioOrdinario           = salarioOrdinario,
+            AumentoAplicado            = montoComisiones,
+            MontoHorasExtras           = montoHorasExtras,
+            MontoFeriados              = montoFeriados,
+            TotalDevengado             = totalDevengado,
+            DeduccionCCSS              = deduccionCCSS,
+            DeduccionRenta             = deduccionRenta,
+            DeduccionPrestamos         = deduccionPrestamo,
+            DeduccionCreditoFerreteria = deduccionCredito,
+            DeduccionIncapacidad       = deduccionIncapacidad,
+            DeduccionVacaciones        = deduccionVacaciones,
+            DeduccionHorasNoLaboradas  = 0m,
+            OtrasDeducciones           = 0m,
+            TotalDeducciones           = totalDeducciones,
+            NetoAPagar                 = netoAPagar
+        });
+    }
+}
+
                 await _context.SaveChangesAsync();
 
-                var empleados = await _context.Empleados.Where(e => e.Activo).ToListAsync();
-
-                foreach (var empleado in empleados)
-                {
-                    var salarioOrdinario = Math.Round(
-                        empleado.ValorHora * empleado.HorasQuincenales, 2);
-
-                    // Horas extras
-                    var horasExtrasReg = await _context.HorasExtras
-                        .FirstOrDefaultAsync(h =>
-                            h.EmpleadoId == empleado.EmpleadoId &&
-                            h.PeriodoPagoId == periodoId);
-                    var montoHorasExtras = horasExtrasReg?.MontoTotal ?? 0m;
-                    var totalHorasExtras = horasExtrasReg?.TotalHoras ?? 0m;
-
-                    // Comisiones
-                    var montoComisiones = (await _context.Comisiones
-                        .Where(c =>
-                            c.EmpleadoId == empleado.EmpleadoId &&
-                            c.Fecha >= periodo.FechaInicio &&
-                            c.Fecha <= periodo.FechaFin)
-                        .Select(c => c.Monto)
-                        .ToListAsync()).Sum();
-
-                    // Feriados
-                    var montoFeriados = (await _context.PagosFeriado
-                        .Where(pf =>
-                            pf.EmpleadoId == empleado.EmpleadoId &&
-                            pf.PeriodoPagoId == periodoId)
-                        .Select(pf => pf.MontoTotal)
-                        .ToListAsync()).Sum();
-
-                    var totalDevengado = Math.Round(
-                        salarioOrdinario + montoHorasExtras + montoComisiones + montoFeriados, 2);
-
-                    // CCSS
-                    var deduccionCCSS = Math.Round(totalDevengado * (PorcentajeCCSS / 100m), 2);
-
-                    // Préstamos
-                    var prestamo = await _context.Prestamos
-                        .FirstOrDefaultAsync(p => p.EmpleadoId == empleado.EmpleadoId && p.Activo);
-                    decimal deduccionPrestamo = 0m;
-                    if (prestamo != null)
-                    {
-                        var cuotaQuincenal = Math.Round(prestamo.CuotaMensual / 2m, 2);
-                        deduccionPrestamo = Math.Round(Math.Min(cuotaQuincenal, prestamo.Monto), 2);
-                    }
-
-                    // Créditos
-                    var creditosActivos = await _context.CreditosFerreteria
-                        .Where(c => c.EmpleadoId == empleado.EmpleadoId && c.Activo)
-                        .ToListAsync();
-                    var deduccionCredito = Math.Round(
-                        creditosActivos.Sum(c => Math.Min(c.CuotaQuincenal, c.Saldo)), 2);
-
-                    // Incapacidades
-                    var deduccionIncapacidad = Math.Round((await _context.Incapacidades
-                        .Where(i =>
-                            i.EmpleadoId == empleado.EmpleadoId &&
-                            i.MontoTotal > 0 &&
-                            i.FechaInicio <= periodo.FechaFin &&
-                            i.FechaFin >= periodo.FechaInicio)
-                        .Select(i => i.MontoTotal)
-                        .ToListAsync()).Sum(), 2);
-
-                    // ── Vacaciones sin pago ───────────────────────────────────
-                    // Solo descuenta vacaciones SinPago aprobadas que caigan
-                    // dentro del período actual
-                    var deduccionVacaciones = Math.Round((await _context.Vacaciones
-                        .Where(v =>
-                            v.EmpleadoId == empleado.EmpleadoId &&
-                            v.Tipo == TipoVacacion.SinPago &&
-                            v.Estado == EstadoVacacion.Aprobada &&
-                            v.FechaInicio <= periodo.FechaFin &&
-                            v.FechaFin >= periodo.FechaInicio)
-                        .Select(v => v.MontoDeducido)
-                        .ToListAsync()).Sum(), 2);
-
-                    var totalDeducciones = Math.Round(
-                        deduccionCCSS +
-                        deduccionPrestamo +
-                        deduccionCredito +
-                        deduccionIncapacidad +
-                        deduccionVacaciones, 2);
-
-                    var netoAPagar = Math.Max(0,
-                        Math.Round(totalDevengado - totalDeducciones, 2));
-
-                    _context.PlanillasEmpleado.Add(new PlanillaEmpleado
-                    {
-                        PeriodoPagoId = periodoId,
-                        EmpleadoId = empleado.EmpleadoId,
-                        HorasOrdinarias = empleado.HorasQuincenales,
-                        HorasExtras = totalHorasExtras,
-                        HorasNoLaboradas = 0m,
-                        ValorHora = empleado.ValorHora,
-                        ValorHoraExtra = empleado.ValorHoraExtra,
-                        SalarioOrdinario = salarioOrdinario,
-                        AumentoAplicado = montoComisiones,
-                        MontoHorasExtras = montoHorasExtras,
-                        MontoFeriados = montoFeriados,
-                        TotalDevengado = totalDevengado,
-                        PorcentajeCCSS = PorcentajeCCSS,
-                        DeduccionCCSS = deduccionCCSS,
-                        DeduccionPrestamos = deduccionPrestamo,
-                        DeduccionCreditoFerreteria = deduccionCredito,
-                        DeduccionIncapacidad = deduccionIncapacidad,
-                        DeduccionVacaciones = deduccionVacaciones,
-                        DeduccionHorasNoLaboradas = 0m,
-                        OtrasDeducciones = 0m,
-                        TotalDeducciones = totalDeducciones,
-                        NetoAPagar = netoAPagar
-                    });
-                }
-
-                await _context.SaveChangesAsync();
-
-                await _auditoria.RegistrarAsync(
-                    HttpContext.Session.GetString("Usuario") ?? "",
-                    "Calcular planilla", "Planilla",
-                    $"PeriodoId: {periodoId} — {periodo.Descripcion} — Empleados: {empleados.Count}");
-
-                _logger.LogInformation("Planilla calculada: PeriodoId {P} Empleados {E}",
-                    periodoId, empleados.Count);
-
-                TempData["Success"] = $"Planilla calculada para {empleados.Count} empleado(s).";
+                TempData["Success"] = $"Planilla calculada correctamente para {empleados.Count} empleado(s).";
                 return RedirectToAction(nameof(Index), new { periodoId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al calcular planilla. PeriodoId: {P}", periodoId);
-                TempData["Error"] = "Ocurrió un error al calcular la planilla. Intentá de nuevo.";
+                _logger.LogError(ex, "Error al calcular planilla");
+                TempData["Error"] = "Ocurrió un error al calcular la planilla.";
                 return RedirectToAction(nameof(Index), new { periodoId });
             }
         }
 
-        // ── EDITAR LÍNEA ──────────────────────────────────────────────────────
-
+        // ── EDITAR GET ───────────────────────────────────────────────────────
         public async Task<IActionResult> Editar(int? id)
         {
             try
@@ -265,8 +407,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (planilla.PeriodoPago.Estado == EstadoPeriodo.Cerrado)
                 {
                     TempData["Error"] = "No se puede editar una planilla cerrada.";
-                    return RedirectToAction(nameof(Index),
-                        new { periodoId = planilla.PeriodoPagoId });
+                    return RedirectToAction(nameof(Index), new { periodoId = planilla.PeriodoPagoId });
                 }
 
                 return View(planilla);
@@ -279,15 +420,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
+        // ── EDITAR POST ───────────────────────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> Editar(int id, PlanillaEmpleado model)
         {
             try
             {
-                if (id != model.PlanillaEmpleadoId) return NotFound();
-
                 var registro = await _context.PlanillasEmpleado
                     .Include(pe => pe.PeriodoPago)
                     .Include(pe => pe.Empleado)
@@ -298,27 +437,28 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (registro.PeriodoPago.Estado == EstadoPeriodo.Cerrado)
                 {
                     TempData["Error"] = "No se puede editar una planilla cerrada.";
-                    return RedirectToAction(nameof(Index),
-                        new { periodoId = registro.PeriodoPagoId });
+                    return RedirectToAction(nameof(Index), new { periodoId = registro.PeriodoPagoId });
                 }
 
                 registro.AumentoAplicado = Math.Round(model.AumentoAplicado, 2);
                 registro.HorasNoLaboradas = Math.Round(model.HorasNoLaboradas, 2);
                 registro.OtrasDeducciones = Math.Round(model.OtrasDeducciones, 2);
-                registro.DeduccionVacaciones = Math.Round(model.DeduccionVacaciones, 2);
-
-                registro.DeduccionHorasNoLaboradas = Math.Round(
-                    registro.HorasNoLaboradas * registro.ValorHora, 2);
+                registro.DescripcionOtrasDeducciones = model.DescripcionOtrasDeducciones?.Trim();
 
                 registro.TotalDevengado = Math.Round(
                     registro.SalarioOrdinario + registro.AumentoAplicado +
                     registro.MontoHorasExtras + registro.MontoFeriados, 2);
 
                 registro.DeduccionCCSS = Math.Round(
-                    registro.TotalDevengado * (PorcentajeCCSS / 100m), 2);
+                    registro.TotalDevengado * (registro.PorcentajeCCSS / 100m), 2);
+
+                // ISR: se calcula sobre el salario bruto mensual (tramos progresivos)
+                registro.DeduccionRenta = CalcularImpuestoRenta(registro.TotalDevengado,
+                    registro.PeriodoPago, registro.Empleado.NumHijos, registro.Empleado.TieneConyuge);
 
                 registro.TotalDeducciones = Math.Round(
                     registro.DeduccionCCSS +
+                    registro.DeduccionRenta +
                     registro.DeduccionPrestamos +
                     registro.DeduccionCreditoFerreteria +
                     registro.DeduccionIncapacidad +
@@ -326,37 +466,24 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     registro.DeduccionHorasNoLaboradas +
                     registro.OtrasDeducciones, 2);
 
-                registro.NetoAPagar = Math.Max(0,
-                    Math.Round(registro.TotalDevengado - registro.TotalDeducciones, 2));
+                registro.NetoAPagar = Math.Max(0, registro.TotalDevengado - registro.TotalDeducciones);
 
-                _context.Update(registro);
                 await _context.SaveChangesAsync();
 
-                await _auditoria.RegistrarAsync(
-                    HttpContext.Session.GetString("Usuario") ?? "",
-                    "Editar línea planilla", "Planilla",
-                    $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre} — Neto: ₡{registro.NetoAPagar:N0}");
-
-                _logger.LogInformation("Línea planilla editada: ID {Id}", id);
-                TempData["Success"] = $"Planilla de {registro.Empleado.PrimerApellido} " +
-                    $"{registro.Empleado.Nombre} actualizada. Neto: ₡{registro.NetoAPagar:N0}";
-
-                return RedirectToAction(nameof(Index),
-                    new { periodoId = registro.PeriodoPagoId });
+                TempData["Success"] = $"Planilla actualizada - Neto: ₡{registro.NetoAPagar:N0}";
+                return RedirectToAction(nameof(Index), new { periodoId = registro.PeriodoPagoId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al editar línea planilla ID: {Id}", id);
+                _logger.LogError(ex, "Error al editar planilla ID: {Id}", id);
                 TempData["Error"] = "Error al guardar los cambios.";
                 return RedirectToAction(nameof(Index));
             }
         }
 
         // ── CERRAR PERÍODO ────────────────────────────────────────────────────
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> CerrarPeriodo(int periodoId)
         {
             try
@@ -367,7 +494,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     TempData["Error"] = "Período no encontrado.";
                     return RedirectToAction(nameof(Index), new { periodoId });
                 }
-
                 if (periodo.Estado == EstadoPeriodo.Cerrado)
                 {
                     TempData["Error"] = "Este período ya estaba cerrado.";
@@ -384,45 +510,63 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 }
 
                 var planillas = await _context.PlanillasEmpleado
-                    .Where(pe => pe.PeriodoPagoId == periodoId).ToListAsync();
+                    .Where(pe => pe.PeriodoPagoId == periodoId)
+                    .ToListAsync();
 
-                // ── Deducciones de préstamos + historial ──────────────────────
+                var empleadosConAbonoPrestamo = await _context.AbonosPrestamo
+                    .Include(a => a.Prestamo)
+                    .Where(a => a.Observaciones != null &&
+                                a.Observaciones.Contains("Deducción planilla") &&
+                                a.Observaciones.Contains(periodo.Descripcion))
+                    .Select(a => a.Prestamo.EmpleadoId)
+                    .ToListAsync();
+
+                var empleadosConAbonoCredito = await _context.AbonosCreditoFerreteria
+                    .Include(a => a.CreditoFerreteria)
+                    .Where(a => a.Observaciones != null &&
+                                a.Observaciones.Contains("Deducción planilla") &&
+                                a.Observaciones.Contains(periodo.Descripcion))
+                    .Select(a => a.CreditoFerreteria.EmpleadoId)
+                    .ToListAsync();
+
+                // Préstamos
                 foreach (var planilla in planillas.Where(p => p.DeduccionPrestamos > 0))
                 {
+                    if (empleadosConAbonoPrestamo.Contains(planilla.EmpleadoId)) continue;
                     var prestamo = await _context.Prestamos
-                        .FirstOrDefaultAsync(p =>
-                            p.EmpleadoId == planilla.EmpleadoId && p.Activo);
+                        .FirstOrDefaultAsync(p => p.EmpleadoId == planilla.EmpleadoId && p.Activo);
+                    if (prestamo == null) continue;
 
-                    if (prestamo != null)
+                    var saldoAnterior = prestamo.Monto;
+                    var montoAbono = Math.Round(Math.Min(planilla.DeduccionPrestamos, prestamo.Monto), 2);
+                    prestamo.Monto = Math.Max(0, Math.Round(prestamo.Monto - montoAbono, 2));
+                    if (prestamo.Monto <= 0) prestamo.Activo = false;
+
+                    _context.AbonosPrestamo.Add(new AbonoPrestamo
                     {
-                        var saldoAnterior = prestamo.Monto;
-                        prestamo.Monto = Math.Max(0,
-                            Math.Round(prestamo.Monto - planilla.DeduccionPrestamos, 2));
-                        if (prestamo.Monto <= 0) prestamo.Activo = false;
-
-                        _context.AbonosPrestamo.Add(new AbonoPrestamo
-                        {
-                            PrestamoId = prestamo.PrestamoId,
-                            Monto = planilla.DeduccionPrestamos,
-                            FechaAbono = DateTime.Now,
-                            Observaciones = $"Deducción planilla — {periodo.Descripcion} " +
-                                            $"— Saldo anterior: ₡{saldoAnterior:N0}"
-                        });
-                    }
+                        PrestamoId = prestamo.PrestamoId,
+                        Monto = montoAbono,
+                        FechaAbono = DateTime.Now,
+                        Observaciones = $"Deducción planilla — {periodo.Descripcion} " +
+                                        $"— Saldo anterior: ₡{saldoAnterior:N0} " +
+                                        $"— Nuevo saldo: ₡{prestamo.Monto:N0}"
+                    });
                 }
 
-                // ── Deducciones de créditos + historial ───────────────────────
+                // Créditos Ferretería
                 foreach (var planilla in planillas.Where(p => p.DeduccionCreditoFerreteria > 0))
                 {
-                    var creditos = await _context.CreditosFerreteria
-                        .Where(c => c.EmpleadoId == planilla.EmpleadoId && c.Activo)
-                        .ToListAsync();
-                    var montoRestante = planilla.DeduccionCreditoFerreteria;
+                    if (empleadosConAbonoCredito.Contains(planilla.EmpleadoId)) continue;
 
+                    var creditos = await _context.CreditosFerreteria
+                        .Where(c => c.EmpleadoId == planilla.EmpleadoId && c.Activo && c.Saldo > 0)
+                        .ToListAsync();
+
+                    var montoRestante = planilla.DeduccionCreditoFerreteria;
                     foreach (var credito in creditos)
                     {
                         if (montoRestante <= 0) break;
-                        var abono = Math.Min(Math.Min(credito.CuotaQuincenal, credito.Saldo), montoRestante);
+                        var abono = Math.Round(Math.Min(Math.Min(credito.CuotaQuincenal, credito.Saldo), montoRestante), 2);
                         var saldoAnterior = credito.Saldo;
                         credito.Saldo = Math.Max(0, Math.Round(credito.Saldo - abono, 2));
                         montoRestante -= abono;
@@ -434,7 +578,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                             Monto = abono,
                             FechaAbono = DateTime.Now,
                             Observaciones = $"Deducción planilla — {periodo.Descripcion} " +
-                                                  $"— Saldo anterior: ₡{saldoAnterior:N0}"
+                                            $"— Saldo anterior: ₡{saldoAnterior:N0} " +
+                                            $"— Nuevo saldo: ₡{credito.Saldo:N0}"
                         });
                     }
                 }
@@ -447,9 +592,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     "Cerrar período con planilla", "Planilla",
                     $"PeriodoId: {periodoId} — {periodo.Descripcion} — Empleados: {planillas.Count}");
 
-                _logger.LogInformation("Período cerrado con planilla: ID {P}", periodoId);
-                TempData["Success"] = $"Período {periodo.Descripcion} cerrado. " +
-                    "Saldos de préstamos y créditos actualizados correctamente.";
+                TempData["Success"] =
+                    $"Período {periodo.Descripcion} cerrado correctamente.\n\n" +
+                    "Se aplicaron las deducciones obligatorias:\n" +
+                    "• CCSS\n" +
+                    "• Retención del Impuesto sobre la Renta (ISR)";
 
                 return RedirectToAction(nameof(Index), new { periodoId });
             }
@@ -462,10 +609,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         }
 
         // ── REABRIR PERÍODO ───────────────────────────────────────────────────
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> ReabrirPeriodo(int periodoId)
         {
             try
@@ -476,12 +621,40 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     TempData["Error"] = "Período no encontrado.";
                     return RedirectToAction(nameof(Index), new { periodoId });
                 }
-
                 if (periodo.Estado == EstadoPeriodo.Abierto)
                 {
                     TempData["Error"] = "Este período ya estaba abierto.";
                     return RedirectToAction(nameof(Index), new { periodoId });
                 }
+
+                var descPeriodo = periodo.Descripcion;
+                var abonosPrestamo = await _context.AbonosPrestamo
+                    .Include(a => a.Prestamo)
+                    .Where(a => a.Observaciones != null &&
+                                a.Observaciones.Contains("Deducción planilla") &&
+                                a.Observaciones.Contains(descPeriodo))
+                    .ToListAsync();
+
+                foreach (var abono in abonosPrestamo)
+                {
+                    abono.Prestamo.Monto = Math.Round(abono.Prestamo.Monto + abono.Monto, 2);
+                    abono.Prestamo.Activo = true;
+                }
+                _context.AbonosPrestamo.RemoveRange(abonosPrestamo);
+
+                var abonosCredito = await _context.AbonosCreditoFerreteria
+                    .Include(a => a.CreditoFerreteria)
+                    .Where(a => a.Observaciones != null &&
+                                a.Observaciones.Contains("Deducción planilla") &&
+                                a.Observaciones.Contains(descPeriodo))
+                    .ToListAsync();
+
+                foreach (var abono in abonosCredito)
+                {
+                    abono.CreditoFerreteria.Saldo = Math.Round(abono.CreditoFerreteria.Saldo + abono.Monto, 2);
+                    abono.CreditoFerreteria.Activo = true;
+                }
+                _context.AbonosCreditoFerreteria.RemoveRange(abonosCredito);
 
                 periodo.Estado = EstadoPeriodo.Abierto;
                 await _context.SaveChangesAsync();
@@ -489,23 +662,20 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 await _auditoria.RegistrarAsync(
                     HttpContext.Session.GetString("Usuario") ?? "",
                     "Reabrir período desde planilla", "Planilla",
-                    $"PeriodoId: {periodoId} — {periodo.Descripcion}");
+                    $"PeriodoId: {periodoId} — {descPeriodo}");
 
-                _logger.LogInformation("Período reabierto desde planilla: ID {P}", periodoId);
-                TempData["Success"] = $"Período {periodo.Descripcion} reabierto. Podés recalcular la planilla.";
-
+                TempData["Success"] = $"Período {descPeriodo} reabierto correctamente. Podés recalcular la planilla.";
                 return RedirectToAction(nameof(Index), new { periodoId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al reabrir período desde planilla: {P}", periodoId);
+                _logger.LogError(ex, "Error al reabrir período: {P}", periodoId);
                 TempData["Error"] = "Error al reabrir el período. Intentá de nuevo.";
                 return RedirectToAction(nameof(Index), new { periodoId });
             }
         }
 
         // ── DESCARGAR PDF INDIVIDUAL ──────────────────────────────────────────
-
         [HttpGet]
         public async Task<IActionResult> DescargarPDF(int id)
         {
@@ -519,15 +689,14 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (planilla == null) return NotFound();
 
                 var pdfBytes = _servicioPDF.GenerarPDF(planilla);
-                var nombreArchivo = $"Comprobante_{planilla.Empleado.PrimerApellido}_" +
-                    $"{planilla.PeriodoPago.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";
+                var nombre = $"Comprobante_{planilla.Empleado.PrimerApellido}_{planilla.PeriodoPago.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";
 
                 await _auditoria.RegistrarAsync(
                     HttpContext.Session.GetString("Usuario") ?? "",
                     "Descargar PDF planilla", "Planilla",
                     $"{planilla.Empleado.PrimerApellido} {planilla.Empleado.Nombre}");
 
-                return File(pdfBytes, "application/pdf", nombreArchivo);
+                return File(pdfBytes, "application/pdf", nombre);
             }
             catch (Exception ex)
             {
@@ -556,35 +725,53 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     .ThenBy(pe => pe.Empleado.PrimerApellido)
                     .ToListAsync();
 
+                if (!planillas.Any())
+                {
+                    TempData["Error"] = "No hay datos de planilla para exportar.";
+                    return RedirectToAction(nameof(Index), new { periodoId });
+                }
+
                 using var workbook = new ClosedXML.Excel.XLWorkbook();
                 var ws = workbook.Worksheets.Add("Planilla");
 
-                // Encabezados
                 ws.Cell(1, 1).Value = "FERRETERÍA EL PANA SRL";
                 ws.Range(1, 1, 1, 17).Merge().Style
                     .Font.SetBold(true).Font.SetFontSize(14)
-                    .Alignment.SetHorizontal(ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
+                    .Alignment.SetHorizontal(
+                        ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
 
                 ws.Cell(2, 1).Value = "DEPARTAMENTO DE RECURSOS HUMANOS";
                 ws.Range(2, 1, 2, 17).Merge().Style
                     .Font.SetBold(true).Font.SetFontSize(12)
-                    .Alignment.SetHorizontal(ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
+                    .Alignment.SetHorizontal(
+                        ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
 
-                ws.Cell(3, 1).Value = $"PLANILLA QUINCENAL — {periodo.Descripcion}";
+                var tipoTextoExcel = periodo.TipoPeriodo switch
+                {
+                    TipoPeriodo.Semanal => "SEMANAL",
+                    TipoPeriodo.Mensual => "MENSUAL",
+                    _ => "QUINCENAL"
+                };
+                ws.Cell(3, 1).Value =
+                    $"PLANILLA {tipoTextoExcel} — {periodo.Descripcion}";
                 ws.Range(3, 1, 3, 17).Merge().Style
                     .Font.SetBold(true).Font.SetFontSize(11)
-                    .Alignment.SetHorizontal(ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
+                    .Alignment.SetHorizontal(
+                        ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
 
-                ws.Cell(4, 1).Value = $"PERÍODO: {periodo.FechaInicio:dd/MM/yyyy} AL {periodo.FechaFin:dd/MM/yyyy}";
+                ws.Cell(4, 1).Value =
+                    $"PERÍODO: {periodo.FechaInicio:dd/MM/yyyy} " +
+                    $"AL {periodo.FechaFin:dd/MM/yyyy}";
                 ws.Range(4, 1, 4, 17).Merge().Style
                     .Font.SetItalic(true)
-                    .Alignment.SetHorizontal(ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
+                    .Alignment.SetHorizontal(
+                        ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
 
-                // Columnas — ahora 17 (agregamos Vacaciones)
-                var headers = new[] {
+                var headers = new[]
+                {
                     "Nombre y Apellidos", "Cédula", "Departamento", "Puesto",
                     "Sal. Ordinario", "Hrs. Extras", "Comisión", "Feriados",
-                    "Total Devengado", "CCSS 10.83%", "Préstamo",
+                    "Total Devengado", $"CCSS {periodo.PorcentajeCCSS}%", "Préstamo",
                     "Cré. Ferretería", "Incapacidad", "Vac. Sin Pago",
                     "Hrs. No Lab.", "Total Deducciones", "Neto a Pagar"
                 };
@@ -592,14 +779,16 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 int fila = 6;
                 for (int col = 1; col <= headers.Length; col++)
                 {
-                    var cell = ws.Cell(fila, col);
-                    cell.Value = headers[col - 1];
-                    cell.Style
+                    ws.Cell(fila, col).Value = headers[col - 1];
+                    ws.Cell(fila, col).Style
                         .Font.SetBold(true)
                         .Font.SetFontColor(ClosedXML.Excel.XLColor.White)
-                        .Fill.SetBackgroundColor(ClosedXML.Excel.XLColor.FromHtml("#FF7A00"))
-                        .Alignment.SetHorizontal(ClosedXML.Excel.XLAlignmentHorizontalValues.Center)
-                        .Border.SetOutsideBorder(ClosedXML.Excel.XLBorderStyleValues.Thin);
+                        .Fill.SetBackgroundColor(
+                            ClosedXML.Excel.XLColor.FromHtml("#FF7A00"))
+                        .Alignment.SetHorizontal(
+                            ClosedXML.Excel.XLAlignmentHorizontalValues.Center)
+                        .Border.SetOutsideBorder(
+                            ClosedXML.Excel.XLBorderStyleValues.Thin);
                 }
 
                 fila = 7;
@@ -611,13 +800,17 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     ws.Range(fila, 1, fila, 17).Merge().Style
                         .Font.SetBold(true)
                         .Font.SetFontColor(ClosedXML.Excel.XLColor.White)
-                        .Fill.SetBackgroundColor(ClosedXML.Excel.XLColor.FromHtml("#333333"))
-                        .Alignment.SetHorizontal(ClosedXML.Excel.XLAlignmentHorizontalValues.Left);
+                        .Fill.SetBackgroundColor(
+                            ClosedXML.Excel.XLColor.FromHtml("#333333"))
+                        .Alignment.SetHorizontal(
+                            ClosedXML.Excel.XLAlignmentHorizontalValues.Left);
                     fila++;
 
                     foreach (var p in grupo)
                     {
-                        ws.Cell(fila, 1).Value = $"{p.Empleado.PrimerApellido} {p.Empleado.SegundoApellido} {p.Empleado.Nombre}";
+                        ws.Cell(fila, 1).Value =
+                            $"{p.Empleado.PrimerApellido} " +
+                            $"{p.Empleado.SegundoApellido} {p.Empleado.Nombre}";
                         ws.Cell(fila, 2).Value = p.Empleado.Cedula;
                         ws.Cell(fila, 3).Value = p.Empleado.Departamento;
                         ws.Cell(fila, 4).Value = p.Empleado.Puesto;
@@ -636,20 +829,23 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         ws.Cell(fila, 17).Value = p.NetoAPagar;
 
                         for (int col = 5; col <= 17; col++)
-                            ws.Cell(fila, col).Style.NumberFormat.Format = "₡#,##0.00";
+                            ws.Cell(fila, col).Style
+                                .NumberFormat.Format = "₡#,##0.00";
 
                         if (fila % 2 == 0)
                             ws.Range(fila, 1, fila, 17).Style
-                                .Fill.SetBackgroundColor(ClosedXML.Excel.XLColor.FromHtml("#FFF3E0"));
+                                .Fill.SetBackgroundColor(
+                                    ClosedXML.Excel.XLColor.FromHtml("#FFF3E0"));
 
                         ws.Range(fila, 1, fila, 17).Style
-                            .Border.SetOutsideBorder(ClosedXML.Excel.XLBorderStyleValues.Thin)
-                            .Border.SetInsideBorder(ClosedXML.Excel.XLBorderStyleValues.Hair);
+                            .Border.SetOutsideBorder(
+                                ClosedXML.Excel.XLBorderStyleValues.Thin)
+                            .Border.SetInsideBorder(
+                                ClosedXML.Excel.XLBorderStyleValues.Hair);
                         fila++;
                     }
 
-                    // Subtotal por departamento
-                    ws.Cell(fila, 1).Value = $"Subtotal {grupo.Key}";
+                    ws.Cell(fila, 1).Value = $"Subtotal — {grupo.Key}";
                     ws.Range(fila, 1, fila, 4).Merge();
                     ws.Cell(fila, 5).Value = grupo.Sum(p => p.SalarioOrdinario);
                     ws.Cell(fila, 6).Value = grupo.Sum(p => p.MontoHorasExtras);
@@ -667,14 +863,17 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                     ws.Range(fila, 1, fila, 17).Style
                         .Font.SetBold(true)
-                        .Fill.SetBackgroundColor(ClosedXML.Excel.XLColor.FromHtml("#FFE0B2"))
-                        .Border.SetOutsideBorder(ClosedXML.Excel.XLBorderStyleValues.Medium);
+                        .Fill.SetBackgroundColor(
+                            ClosedXML.Excel.XLColor.FromHtml("#FFE0B2"))
+                        .Border.SetOutsideBorder(
+                            ClosedXML.Excel.XLBorderStyleValues.Medium);
+
                     for (int col = 5; col <= 17; col++)
                         ws.Cell(fila, col).Style.NumberFormat.Format = "₡#,##0.00";
+
                     fila++;
                 }
 
-                // Total general
                 ws.Cell(fila, 1).Value = "TOTAL GENERAL";
                 ws.Range(fila, 1, fila, 4).Merge();
                 ws.Cell(fila, 5).Value = planillas.Sum(p => p.SalarioOrdinario);
@@ -694,8 +893,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ws.Range(fila, 1, fila, 17).Style
                     .Font.SetBold(true).Font.SetFontSize(11)
                     .Font.SetFontColor(ClosedXML.Excel.XLColor.White)
-                    .Fill.SetBackgroundColor(ClosedXML.Excel.XLColor.FromHtml("#FF7A00"))
-                    .Border.SetOutsideBorder(ClosedXML.Excel.XLBorderStyleValues.Medium);
+                    .Fill.SetBackgroundColor(
+                        ClosedXML.Excel.XLColor.FromHtml("#FF7A00"))
+                    .Border.SetOutsideBorder(
+                        ClosedXML.Excel.XLBorderStyleValues.Medium);
+
                 for (int col = 5; col <= 17; col++)
                     ws.Cell(fila, col).Style.NumberFormat.Format = "₡#,##0.00";
 
@@ -715,14 +917,17 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 workbook.SaveAs(stream);
                 stream.Position = 0;
 
-                var nombreArchivo = $"Planilla_{periodo.Descripcion.Replace(" ", "_").Replace("—", "")}.xlsx";
+                var nombre =
+                    $"Planilla_{periodo.Descripcion.Replace(" ", "_").Replace("—", "")}.xlsx";
+
                 return File(stream.ToArray(),
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    nombreArchivo);
+                    nombre);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al exportar Excel planilla. PeriodoId: {P}", periodoId);
+                _logger.LogError(ex,
+                    "Error al exportar Excel planilla. PeriodoId: {P}", periodoId);
                 TempData["Error"] = "Error al generar el Excel. Intentá de nuevo.";
                 return RedirectToAction(nameof(Index), new { periodoId });
             }
@@ -747,20 +952,273 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     .ThenBy(pe => pe.Empleado.PrimerApellido)
                     .ToListAsync();
 
+                if (!planillas.Any())
+                {
+                    TempData["Error"] = "No hay datos de planilla para exportar.";
+                    return RedirectToAction(nameof(Index), new { periodoId });
+                }
+
                 var pdfBytes = _servicioPDF.GenerarPDFPlanillaGeneral(planillas, periodo);
-                var nombreArchivo = $"Planilla_{periodo.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";
+                var nombre =
+                    $"Planilla_{periodo.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";
 
                 await _auditoria.RegistrarAsync(
                     HttpContext.Session.GetString("Usuario") ?? "",
                     "Exportar PDF planilla general", "Planilla",
                     $"PeriodoId: {periodoId} — {periodo.Descripcion}");
 
-                return File(pdfBytes, "application/pdf", nombreArchivo);
+                return File(pdfBytes, "application/pdf", nombre);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al exportar PDF planilla. PeriodoId: {P}", periodoId);
+                _logger.LogError(ex,
+                    "Error al exportar PDF planilla. PeriodoId: {P}", periodoId);
                 TempData["Error"] = "Error al generar el PDF. Intentá de nuevo.";
+                return RedirectToAction(nameof(Index), new { periodoId });
+            }
+        }
+
+        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EnviarPorEmail(int id)
+        {
+            try
+            {
+                var planilla = await _context.PlanillasEmpleado
+                    .Include(pe => pe.Empleado)
+                    .Include(pe => pe.PeriodoPago)
+                    .FirstOrDefaultAsync(pe => pe.PlanillaEmpleadoId == id);
+
+                if (planilla == null)
+                {
+                    TempData["Error"] = "Planilla no encontrada.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var correo = planilla.Empleado.CorreoElectronico;
+                if (string.IsNullOrWhiteSpace(correo))
+                {
+                    TempData["Error"] =
+                        $"{planilla.Empleado.PrimerApellido} " +
+                        $"{planilla.Empleado.Nombre} no tiene correo registrado.";
+                    return RedirectToAction(nameof(Index),
+                        new { periodoId = planilla.PeriodoPagoId });
+                }
+
+                var pdfBytes = _servicioPDF.GenerarPDFSinFirmas(planilla);
+                var nombreArchivo =
+                    $"Comprobante_{planilla.Empleado.PrimerApellido}_" +
+                    $"{planilla.PeriodoPago.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";
+
+                var emailSvc = HttpContext.RequestServices
+                    .GetRequiredService<EmailService>();
+
+                var asunto = $"Comprobante de Pago — {planilla.PeriodoPago.Descripcion}";
+                var cuerpo = $@"
+<div style='font-family:Arial,sans-serif;max-width:600px;'>
+    <div style='background:#1A1A2E;padding:20px;'>
+        <h2 style='color:#FF7A00;margin:0;'>Ferretería El Pana SRL</h2>
+        <p style='color:#888;margin:4px 0 0;font-size:13px;'>
+            Departamento de Recursos Humanos
+        </p>
+    </div>
+    <div style='padding:20px;border:1px solid #eee;'>
+        <p>Estimado(a) <strong>{planilla.Empleado.PrimerApellido}
+           {planilla.Empleado.Nombre}</strong>,</p>
+        <p>Adjunto encontrará su comprobante de pago correspondiente al
+           período <strong>{planilla.PeriodoPago.Descripcion}</strong>.</p>
+        <table style='width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;'>
+            <tr style='background:#f9f9f9;'>
+                <td style='padding:8px;border:1px solid #eee;'>Total Devengado</td>
+                <td style='padding:8px;border:1px solid #eee;
+                           font-weight:bold;color:#1B5E20;'>
+                    ₡{planilla.TotalDevengado:N2}
+                </td>
+            </tr>
+            <tr>
+                <td style='padding:8px;border:1px solid #eee;'>Total Deducciones</td>
+                <td style='padding:8px;border:1px solid #eee;color:#B71C1C;'>
+                    ₡{planilla.TotalDeducciones:N2}
+                </td>
+            </tr>
+            <tr style='background:#fff9f0;'>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    Neto a Pagar
+                </td>
+                <td style='padding:8px;border:1px solid #eee;
+                           font-weight:bold;font-size:16px;color:#FF7A00;'>
+                    ₡{planilla.NetoAPagar:N2}
+                </td>
+            </tr>
+        </table>
+        <p style='color:#888;font-size:12px;'>
+            Documento generado automáticamente por el Sistema GEPCP.
+            No responder a este correo.
+        </p>
+    </div>
+    <div style='background:#f5f5f5;padding:12px;text-align:center;
+                font-size:11px;color:#888;'>
+        Ferretería El Pana SRL · Cédula Jurídica: 3-102-745359
+    </div>
+</div>";
+
+                var enviado = await emailSvc.EnviarPDFAsync(
+                    correo,
+                    $"{planilla.Empleado.PrimerApellido} {planilla.Empleado.Nombre}",
+                    asunto, cuerpo, pdfBytes, nombreArchivo);
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Enviar comprobante por email", "Planilla",
+                    $"{planilla.Empleado.PrimerApellido} {planilla.Empleado.Nombre} " +
+                    $"→ {correo}");
+
+                TempData[enviado ? "Success" : "Error"] = enviado
+                    ? $"Comprobante enviado a {correo}."
+                    : "Error al enviar el correo. Verificá la configuración SMTP.";
+
+                return RedirectToAction(nameof(Index),
+                    new { periodoId = planilla.PeriodoPagoId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Error al enviar email planilla ID: {Id}", id);
+                TempData["Error"] = "Error al enviar el correo. Intentá de nuevo.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // ── ENVIAR PDF A TODOS POR EMAIL ──────────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EnviarTodosPorEmail(int periodoId)
+        {
+            try
+            {
+                var planillas = await _context.PlanillasEmpleado
+                    .Include(pe => pe.Empleado)
+                    .Include(pe => pe.PeriodoPago)
+                    .Where(pe => pe.PeriodoPagoId == periodoId)
+                    .ToListAsync();
+
+                if (!planillas.Any())
+                {
+                    TempData["Error"] = "No hay planillas para este período.";
+                    return RedirectToAction(nameof(Index), new { periodoId });
+                }
+
+                var emailSvc = HttpContext.RequestServices.GetRequiredService<EmailService>();
+                int enviados = 0;
+                int sinCorreo = 0;
+                int errores = 0;
+                var detalleErrores = new List<string>();
+
+                foreach (var planilla in planillas)
+                {
+                    var correo = planilla.Empleado.CorreoElectronico;
+                    if (string.IsNullOrWhiteSpace(correo))
+                    {
+                        sinCorreo++;
+                        continue;
+                    }
+
+                    try
+                    {
+                        var pdfBytes = _servicioPDF.GenerarPDFSinFirmas(planilla);
+                        var nombreArchivo =
+                            $"Comprobante_{planilla.Empleado.PrimerApellido}_" +
+                            $"{planilla.PeriodoPago.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";
+
+                        var asunto = $"Comprobante de Pago — {planilla.PeriodoPago.Descripcion}";
+                        var cuerpo = $@"
+<div style='font-family:Arial,sans-serif;max-width:600px;'>
+    <div style='background:#1A1A2E;padding:20px;'>
+        <h2 style='color:#FF7A00;margin:0;'>Ferretería El Pana SRL</h2>
+        <p style='color:#888;margin:4px 0 0;font-size:13px;'>
+            Departamento de Recursos Humanos
+        </p>
+    </div>
+    <div style='padding:20px;border:1px solid #eee;'>
+        <p>Estimado(a) <strong>{planilla.Empleado.PrimerApellido}
+           {planilla.Empleado.Nombre}</strong>,</p>
+        <p>Adjunto encontrará su comprobante de pago correspondiente al
+           período <strong>{planilla.PeriodoPago.Descripcion}</strong>.</p>
+        <table style='width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;'>
+            <tr style='background:#f9f9f9;'>
+                <td style='padding:8px;border:1px solid #eee;'>Total Devengado</td>
+                <td style='padding:8px;border:1px solid #eee;
+                           font-weight:bold;color:#1B5E20;'>
+                    ₡{planilla.TotalDevengado:N2}
+                </td>
+            </tr>
+            <tr>
+                <td style='padding:8px;border:1px solid #eee;'>Total Deducciones</td>
+                <td style='padding:8px;border:1px solid #eee;color:#B71C1C;'>
+                    ₡{planilla.TotalDeducciones:N2}
+                </td>
+            </tr>
+            <tr style='background:#fff9f0;'>
+                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
+                    Neto a Pagar
+                </td>
+                <td style='padding:8px;border:1px solid #eee;
+                           font-weight:bold;font-size:16px;color:#FF7A00;'>
+                    ₡{planilla.NetoAPagar:N2}
+                </td>
+            </tr>
+        </table>
+        <p style='color:#888;font-size:12px;'>
+            Documento generado automáticamente por el Sistema GEPCP.
+            No responder a este correo.
+        </p>
+    </div>
+    <div style='background:#f5f5f5;padding:12px;text-align:center;
+                font-size:11px;color:#888;'>
+        Ferretería El Pana SRL · Cédula Jurídica: 3-102-745359
+    </div>
+</div>";
+
+                        var enviado = await emailSvc.EnviarPDFAsync(
+                            correo,
+                            $"{planilla.Empleado.PrimerApellido} {planilla.Empleado.Nombre}",
+                            asunto, cuerpo, pdfBytes, nombreArchivo);
+
+                        if (enviado)
+                            enviados++;
+                        else
+                        {
+                            errores++;
+                            detalleErrores.Add(planilla.Empleado.PrimerApellido);
+                        }
+                    }
+                    catch
+                    {
+                        errores++;
+                        detalleErrores.Add(planilla.Empleado.PrimerApellido);
+                    }
+                }
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Enviar comprobantes masivo por email", "Planilla",
+                    $"PeriodoId: {periodoId} — Enviados: {enviados}, Sin correo: {sinCorreo}, Errores: {errores}");
+
+                var msg = $"✅ {enviados} comprobante(s) enviado(s) correctamente.";
+                if (sinCorreo > 0)
+                    msg += $"\n⚠️ {sinCorreo} empleado(s) sin correo registrado.";
+                if (errores > 0)
+                    msg += $"\n❌ {errores} error(es): {string.Join(", ", detalleErrores)}";
+
+                TempData[errores == 0 ? "Success" : "Warning"] = msg;
+                return RedirectToAction(nameof(Index), new { periodoId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar correos masivos. PeriodoId: {P}", periodoId);
+                TempData["Error"] = "Error al enviar los correos. Intentá de nuevo.";
                 return RedirectToAction(nameof(Index), new { periodoId });
             }
         }

@@ -5,49 +5,83 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="bi bi-plus-circle"></i> Nuevo Período de Pago</h2>
+    <h2 class="mb-0">
+        <i class="bi bi-plus-circle"></i> Nuevo Período de Pago
+    </h2>
     <a asp-action="Index" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
-<div class="card shadow-sm border-0" style="max-width:620px;">
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger mb-3">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <strong>No se pudo crear el período:</strong>
+        <ul class="mb-0 mt-1">
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+<div class="card shadow-sm border-0">
     <div class="card-body p-4">
-
-        @* Errores del servidor *@
-        @if (!ViewData.ModelState.IsValid)
-        {
-            <div class="alert alert-danger mb-3">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <strong>No se pudo crear el período:</strong>
-                <ul class="mb-0 mt-1">
-                    @foreach (var error in ViewData.ModelState.Values
-                                            .SelectMany(v => v.Errors))
-                    {
-                        <li>@error.ErrorMessage</li>
-                    }
-                </ul>
-            </div>
-        }
-
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
+
             <div class="row g-3">
 
-                <div class="col-md-4">
+                @* ── Tipo de período ── *@
+                <div class="col-md-3">
+                    <label asp-for="TipoPeriodo" class="form-label fw-bold">
+                        <i class="bi bi-people"></i> Tipo de Período
+                        <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="TipoPeriodo" class="form-select"
+                            id="selectTipoPeriodo">
+                        <option value="1">Quincenal</option>
+                        <option value="2">Semanal</option>
+                        <option value="3">Mensual</option>
+                    </select>
+                    <div class="form-text text-muted" id="tipoPeriodoHint">
+                        Quincenal: empleados con pago cada 15 días.
+                    </div>
+                    <span asp-validation-for="TipoPeriodo" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2">
+                    <label asp-for="PorcentajeCCSS" class="form-label fw-bold">
+                        <i class="bi bi-percent"></i> % CCSS
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="PorcentajeCCSS" type="number" step="0.01"
+                           min="1" max="30"
+                           class="form-control" />
+                    <div class="form-text text-muted">Actualmente 10.83%</div>
+                    <span asp-validation-for="PorcentajeCCSS" class="text-danger small"></span>
+                </div>
+
+                @* ── Año ── *@
+                <div class="col-md-2">
                     <label asp-for="Anio" class="form-label fw-bold">
-                        <i class="bi bi-calendar"></i> Año <span class="text-danger">*</span>
+                        <i class="bi bi-calendar"></i> Año
+                        <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Anio" type="number" min="2020" max="2099"
-                           class="form-control form-control-lg" id="inputAnio" />
+                           class="form-control" id="inputAnio" />
                     <span asp-validation-for="Anio" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-4">
+                @* ── Mes ── *@
+                <div class="col-md-3">
                     <label asp-for="Mes" class="form-label fw-bold">
-                        <i class="bi bi-calendar2"></i> Mes <span class="text-danger">*</span>
+                        <i class="bi bi-calendar2"></i> Mes
+                        <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Mes" class="form-select form-select-lg" id="selectMes">
+                    <select asp-for="Mes" class="form-select"
+                            id="selectMes">
                         <option value="1">Enero</option>
                         <option value="2">Febrero</option>
                         <option value="3">Marzo</option>
@@ -64,49 +98,346 @@
                     <span asp-validation-for="Mes" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-4">
+                @* ── Quincena (se oculta para semanal/mensual) ── *@
+                <div class="col-md-2" id="divQuincena">
                     <label asp-for="Quincena" class="form-label fw-bold">
-                        <i class="bi bi-calendar2-week"></i> Quincena <span class="text-danger">*</span>
+                        <i class="bi bi-calendar2-week"></i> Quincena
+                        <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Quincena" class="form-select form-select-lg" id="selectQuincena">
+                    <select asp-for="Quincena" class="form-select"
+                            id="selectQuincena">
                         <option value="1">Primera (1–15)</option>
                         <option value="2">Segunda (16–fin)</option>
                     </select>
                     <span asp-validation-for="Quincena" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6">
+                @* ── Semana del mes (solo visible para semanal) ── *@
+                <div class="col-md-2" id="divSemana" style="display:none;">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-calendar2-week"></i> Semana
+                        <span class="text-danger">*</span>
+                    </label>
+                    <select id="selectSemana" class="form-select">
+                        <option value="1">Semana 1 (días 1–7)</option>
+                        <option value="2">Semana 2 (días 8–14)</option>
+                        <option value="3">Semana 3 (días 15–21)</option>
+                        <option value="4">Semana 4 (días 22–28)</option>
+                        <option value="5">Semana 5 (días 29–fin)</option>
+                    </select>
+                </div>
+
+                @* ── Fecha inicio ── *@
+                <div class="col-md-2">
                     <label asp-for="FechaInicio" class="form-label fw-bold">
-                        <i class="bi bi-calendar-check"></i> Fecha Inicio <span class="text-danger">*</span>
+                        <i class="bi bi-calendar-check"></i> Fecha Inicio
+                        <span class="text-danger">*</span>
                     </label>
                     <input asp-for="FechaInicio" type="date"
-                           class="form-control form-control-lg" id="inputFechaInicio" />
+                           class="form-control"
+                           id="inputFechaInicio" />
                     <span asp-validation-for="FechaInicio" class="text-danger small"></span>
                 </div>
 
-                <div class="col-md-6">
+                @* ── Fecha fin ── *@
+                <div class="col-md-2">
                     <label asp-for="FechaFin" class="form-label fw-bold">
-                        <i class="bi bi-calendar-x"></i> Fecha Fin <span class="text-danger">*</span>
+                        <i class="bi bi-calendar-x"></i> Fecha Fin
+                        <span class="text-danger">*</span>
                     </label>
                     <input asp-for="FechaFin" type="date"
-                           class="form-control form-control-lg" id="inputFechaFin" />
+                           class="form-control"
+                           id="inputFechaFin" />
                     <span asp-validation-for="FechaFin" class="text-danger small"></span>
                 </div>
 
+                @* ── Preview ── *@
                 <div class="col-12">
-                    <div class="alert alert-info py-2 small mb-0" id="previewPeriodo">
-                        <i class="bi bi-info-circle"></i>
-                        Las fechas se calculan automáticamente al seleccionar mes y quincena.
+                    <div id="previewPeriodo"
+                         class="alert alert-info py-3 mb-0 d-flex align-items-center gap-3">
+                        <i class="bi bi-calendar2-check fs-4"></i>
+                        <div id="previewTexto">
+                            Seleccioná el tipo de período, año, mes y quincena.
+                        </div>
+                    </div>
+                </div>
+
+                @* ── Tarjetas resumen ── *@
+                <div class="col-12" id="resumenDias" style="display:none;">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm text-center py-2">
+                                <div class="fw-bold fs-4" style="color:#FF7A00;"
+                                     id="resumenDiasNum">
+                                    —
+                                </div>
+                                <div class="text-muted"
+                                     style="font-size:0.72rem;">
+                                    Días del período
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm text-center py-2">
+                                <div class="fw-bold" style="color:#1a4a1a;font-size:0.9rem;"
+                                     id="resumenTipo">
+                                    —
+                                </div>
+                                <div class="text-muted"
+                                     style="font-size:0.72rem;">
+                                    Tipo de empleados
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm text-center py-2">
+                                <div class="fw-bold fs-5" id="resumenInicio">—</div>
+                                <div class="text-muted"
+                                     style="font-size:0.72rem;">
+                                    Inicio
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm text-center py-2">
+                                <div class="fw-bold fs-5" id="resumenFin">—</div>
+                                <div class="text-muted"
+                                     style="font-size:0.72rem;">
+                                    Fin
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ══════════════════════════════════════════════════════════════
+                   ── Configuración CCSS e ISR (colapsable) ──
+                   ══════════════════════════════════════════════════════════════ *@
+                <div class="col-12 mt-2">
+                    <div class="card border-0" style="background:#f8f9fa;">
+                        <div class="card-body p-0">
+                            <button class="btn btn-link text-decoration-none w-100 text-start p-3"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#collapseConfigCCSS_ISR"
+                                    aria-expanded="false"
+                                    aria-controls="collapseConfigCCSS_ISR">
+                                <i class="bi bi-gear-fill text-secondary"></i>
+                                <span class="fw-bold text-dark">Configuración avanzada — CCSS e ISR</span>
+                                <span class="text-muted small ms-2">(clic para expandir)</span>
+                                <i class="bi bi-chevron-down float-end text-muted"></i>
+                            </button>
+                            <div class="collapse" id="collapseConfigCCSS_ISR">
+                                <div class="px-3 pb-3">
+
+                                    @* ── Desglose CCSS Obrero ── *@
+                                    <h6 class="fw-bold mt-2 mb-3">
+                                        <i class="bi bi-hospital text-success"></i> Desglose CCSS Obrero (lo que se le rebaja al trabajador)
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label asp-for="PorcentajeSEM" class="form-label fw-bold">% S.E.M.</label>
+                                            <input asp-for="PorcentajeSEM" type="number" step="0.01"
+                                                   min="0" max="20" class="form-control" />
+                                            <div class="form-text text-muted">Seguro de Enfermedad y Maternidad — financia servicios de salud, medicamentos, hospitalización e incapacidades (5.50%)</div>
+                                            <span asp-validation-for="PorcentajeSEM" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label asp-for="PorcentajeIVM" class="form-label fw-bold">% I.V.M.</label>
+                                            <input asp-for="PorcentajeIVM" type="number" step="0.01"
+                                                   min="0" max="20" class="form-control" />
+                                            <div class="form-text text-muted">Invalidez, Vejez y Muerte — aporte para pensión del régimen básico de la CCSS. En 2026: 4.33% (sube cada trienio)</div>
+                                            <span asp-validation-for="PorcentajeIVM" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label asp-for="PorcentajeBP" class="form-label fw-bold">% Banco Popular</label>
+                                            <input asp-for="PorcentajeBP" type="number" step="0.01"
+                                                   min="0" max="10" class="form-control" />
+                                            <div class="form-text text-muted">Ahorro obligatorio — 0.50% trabajador + 0.50% patronal a nombre del empleado (1.00%)</div>
+                                            <span asp-validation-for="PorcentajeBP" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="card border-0 bg-white shadow-sm text-center py-3 mt-4">
+                                                <div class="fw-bold fs-5 text-success" id="totalCCSSCalc">10.83%</div>
+                                                <div class="text-muted" style="font-size:0.75rem;">Total CCSS Obrero</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr class="my-3" />
+
+                                    @* ── Tramos ISR ── *@
+                                    <h6 class="fw-bold mb-3">
+                                        <i class="bi bi-cash-stack text-warning"></i> Tramos Impuesto sobre la Renta (valores mensuales)
+                                    </h6>
+
+                                    @* Tramo 1 — Exento *@
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <label asp-for="ISR_Tramo1_Hasta" class="form-label fw-bold">Tramo 1 — Exento hasta</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">₡</span>
+                                                <input asp-for="ISR_Tramo1_Hasta" type="number" step="1000" min="0" class="form-control" id="isrTramo1Hasta" />
+                                            </div>
+                                            <div class="form-text text-muted">Hasta ₡918,000 → Exento (0%)</div>
+                                            <span asp-validation-for="ISR_Tramo1_Hasta" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <div class="alert alert-light border-0 py-2 mt-4" style="font-size:0.82rem;">
+                                                <i class="bi bi-shield-check text-success"></i>
+                                                Salario mensual bruto hasta este monto no paga impuesto de renta.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @* Tramo 2 — 10% *@
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <label asp-for="ISR_Tramo2_Hasta" class="form-label fw-bold">Tramo 2 — Hasta</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">₡</span>
+                                                <input asp-for="ISR_Tramo2_Hasta" type="number" step="1000" min="0" class="form-control" id="isrTramo2Hasta" />
+                                            </div>
+                                            <div class="form-text text-muted">De ₡918,001 a ₡1,347,000</div>
+                                            <span asp-validation-for="ISR_Tramo2_Hasta" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label asp-for="ISR_Tramo2_Porcentaje" class="form-label fw-bold">%</label>
+                                            <div class="input-group">
+                                                <input asp-for="ISR_Tramo2_Porcentaje" type="number" step="0.01" min="0" max="100" class="form-control" />
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <span asp-validation-for="ISR_Tramo2_Porcentaje" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="alert alert-light border-0 py-2 mt-4" style="font-size:0.82rem;">
+                                                10% sobre el exceso de ₡918,000
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @* Tramo 3 — 15% *@
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <label asp-for="ISR_Tramo3_Hasta" class="form-label fw-bold">Tramo 3 — Hasta</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">₡</span>
+                                                <input asp-for="ISR_Tramo3_Hasta" type="number" step="1000" min="0" class="form-control" id="isrTramo3Hasta" />
+                                            </div>
+                                            <div class="form-text text-muted">De ₡1,347,001 a ₡2,364,000</div>
+                                            <span asp-validation-for="ISR_Tramo3_Hasta" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label asp-for="ISR_Tramo3_Porcentaje" class="form-label fw-bold">%</label>
+                                            <div class="input-group">
+                                                <input asp-for="ISR_Tramo3_Porcentaje" type="number" step="0.01" min="0" max="100" class="form-control" />
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <span asp-validation-for="ISR_Tramo3_Porcentaje" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="alert alert-light border-0 py-2 mt-4" style="font-size:0.82rem;">
+                                                15% sobre el exceso de ₡1,347,000
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @* Tramo 4 — 20% *@
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <label asp-for="ISR_Tramo4_Hasta" class="form-label fw-bold">Tramo 4 — Hasta</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">₡</span>
+                                                <input asp-for="ISR_Tramo4_Hasta" type="number" step="1000" min="0" class="form-control" id="isrTramo4Hasta" />
+                                            </div>
+                                            <div class="form-text text-muted">De ₡2,364,001 a ₡4,727,000</div>
+                                            <span asp-validation-for="ISR_Tramo4_Hasta" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label asp-for="ISR_Tramo4_Porcentaje" class="form-label fw-bold">%</label>
+                                            <div class="input-group">
+                                                <input asp-for="ISR_Tramo4_Porcentaje" type="number" step="0.01" min="0" max="100" class="form-control" />
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <span asp-validation-for="ISR_Tramo4_Porcentaje" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="alert alert-light border-0 py-2 mt-4" style="font-size:0.82rem;">
+                                                20% sobre el exceso de ₡2,364,000
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @* Tramo 5 — 25% *@
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <div class="alert alert-light border-0 py-2" style="font-size:0.85rem;">
+                                                <i class="bi bi-arrow-up-circle text-danger"></i>
+                                                <strong>Tramo 5:</strong> Más de ₡4,727,000
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label asp-for="ISR_Tramo5_Porcentaje" class="form-label fw-bold">%</label>
+                                            <div class="input-group">
+                                                <input asp-for="ISR_Tramo5_Porcentaje" type="number" step="0.01" min="0" max="100" class="form-control" />
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <span asp-validation-for="ISR_Tramo5_Porcentaje" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="alert alert-light border-0 py-2 mt-4" style="font-size:0.82rem;">
+                                                25% sobre el exceso de ₡4,727,000
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @* Campos hidden para los "Desde" — se sincronizan con JS *@
+                                    <input asp-for="ISR_Tramo2_Desde" type="hidden" id="isrTramo2Desde" />
+                                    <input asp-for="ISR_Tramo3_Desde" type="hidden" id="isrTramo3Desde" />
+                                    <input asp-for="ISR_Tramo4_Desde" type="hidden" id="isrTramo4Desde" />
+                                    <input asp-for="ISR_Tramo5_Desde" type="hidden" id="isrTramo5Desde" />
+
+                                    <div class="alert alert-info mt-2 py-2" style="font-size:0.82rem;">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>Nota:</strong> Los tramos ISR son valores <strong>mensuales</strong>.
+                                        El sistema proyecta el bruto del período a mensual (×2 quincenal, ×4.33 semanal),
+                                        aplica los tramos progresivos, y divide la retención entre el factor del período.
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ── Nota ── *@
+                <div class="col-12">
+                    <div class="card border-0"
+                         style="background:#f0f7ff;
+                        border-left:3px solid #0d6efd !important;">
+                        <div class="card-body py-2 px-3"
+                             style="font-size:0.82rem;color:#444;">
+                            <i class="bi bi-info-circle text-primary"></i>
+                            <strong>Reglas por tipo:</strong>
+                            <strong>Quincenal</strong> — procesa empleados con pago quincenal
+                            (días 1–15 o 16–fin de mes).
+                            <strong>Semanal</strong> — procesa empleados con pago semanal
+                            (7 días).
+                            <strong>Mensual</strong> — procesa empleados con pago mensual
+                            (todo el mes).
+                        </div>
                     </div>
                 </div>
 
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn-lg px-5">
+                <button type="submit" class="btn btn-success btn px-5">
                     <i class="bi bi-check-circle"></i> Crear Período
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn px-5">
+                    Cancelar
+                </a>
             </div>
         </form>
     </div>
@@ -120,43 +451,151 @@
         var meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
             'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-        function actualizarFechas() {
-            var anio = parseInt(document.getElementById('inputAnio').value)
-                || new Date().getFullYear();
-            var mes = parseInt(document.getElementById('selectMes').value);
-            var quincena = parseInt(document.getElementById('selectQuincena').value);
-
-            var fechaInicio, fechaFin;
-            if (quincena === 1) {
-                fechaInicio = new Date(anio, mes - 1, 1);
-                fechaFin = new Date(anio, mes - 1, 15);
-            } else {
-                fechaInicio = new Date(anio, mes - 1, 16);
-                fechaFin = new Date(anio, mes, 0); // último día del mes
-            }
-
-            var fmt = function(d) {
-                return d.getFullYear() + '-' +
-                    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-                    String(d.getDate()).padStart(2, '0');
-            };
-
-            document.getElementById('inputFechaInicio').value = fmt(fechaInicio);
-            document.getElementById('inputFechaFin').value = fmt(fechaFin);
-
-            var preview = document.getElementById('previewPeriodo');
-            preview.className = 'alert alert-success py-2 small mb-0';
-            preview.innerHTML =
-                '<i class="bi bi-calendar2-check"></i> ' +
-                'Período: <strong>Quincena ' + quincena + ' — ' +
-                meses[mes] + ' ' + anio + '</strong>' +
-                ' (' + fechaInicio.getDate() + '/' + mes + '/' + anio +
-                ' al ' + fechaFin.getDate() + '/' + mes + '/' + anio + ')';
+        function diasEnMes(anio, mes) {
+            return new Date(anio, mes, 0).getDate();
         }
 
-        document.getElementById('inputAnio').addEventListener('input', actualizarFechas);
-        document.getElementById('selectMes').addEventListener('change', actualizarFechas);
-        document.getElementById('selectQuincena').addEventListener('change', actualizarFechas);
-        actualizarFechas();
+        function padZ(n) {
+            return String(n).padStart(2, '0');
+        }
+
+        function fmt(anio, mes, dia) {
+            return anio + '-' + padZ(mes) + '-' + padZ(dia);
+        }
+
+        function fmtCorto(anio, mes, dia) {
+            return padZ(dia) + '/' + padZ(mes) + '/' + anio;
+        }
+
+        // ── Sincronizar % CCSS total con desglose ──
+        function sincronizarCCSS() {
+            var sem = parseFloat(document.getElementById('PorcentajeSEM').value) || 0;
+            var ivm = parseFloat(document.getElementById('PorcentajeIVM').value) || 0;
+            var bp = parseFloat(document.getElementById('PorcentajeBP').value) || 0;
+            var total = sem + ivm + bp;
+            document.getElementById('PorcentajeCCSS').value = total.toFixed(2);
+            document.getElementById('totalCCSSCalc').textContent = total.toFixed(2) + '%';
+        }
+
+        var semEl = document.getElementById('PorcentajeSEM');
+        var ivmEl = document.getElementById('PorcentajeIVM');
+        var bpEl = document.getElementById('PorcentajeBP');
+        if (semEl) semEl.addEventListener('input', sincronizarCCSS);
+        if (ivmEl) ivmEl.addEventListener('input', sincronizarCCSS);
+        if (bpEl) bpEl.addEventListener('input', sincronizarCCSS);
+
+        function actualizarUI() {
+            var tipo = parseInt(document.getElementById('selectTipoPeriodo').value);
+            var anio = parseInt(document.getElementById('inputAnio').value);
+            var mes = parseInt(document.getElementById('selectMes').value);
+            var quincena = parseInt(document.getElementById('selectQuincena').value);
+            var semana = parseInt(document.getElementById('selectSemana').value);
+            var hint = document.getElementById('tipoPeriodoHint');
+
+            // Mostrar/ocultar controles según tipo
+            if (tipo === 2) {
+                // Semanal
+                document.getElementById('divQuincena').style.display = 'none';
+                document.getElementById('divSemana').style.display = 'block';
+                hint.textContent = 'Semanal: empleados con pago semanal (7 días).';
+            } else if (tipo === 3) {
+                // Mensual
+                document.getElementById('divQuincena').style.display = 'none';
+                document.getElementById('divSemana').style.display = 'none';
+                hint.textContent = 'Mensual: empleados con pago mensual.';
+            } else {
+                // Quincenal
+                document.getElementById('divQuincena').style.display = 'block';
+                document.getElementById('divSemana').style.display = 'none';
+                hint.textContent = 'Quincenal: empleados con pago cada 15 días.';
+            }
+
+            if (!anio || anio < 2020 || !mes) return;
+
+            var diaInicio, diaFin;
+
+            if (tipo === 1) {
+                // Quincenal
+                if (quincena === 1) {
+                    diaInicio = 1;
+                    diaFin = 15;
+                } else {
+                    diaInicio = 16;
+                    diaFin = diasEnMes(anio, mes);
+                }
+            } else if (tipo === 2) {
+                // Semanal
+                var inicios = [1, 8, 15, 22, 29];
+                diaInicio = inicios[semana - 1] || 1;
+                diaFin = Math.min(diaInicio + 6, diasEnMes(anio, mes));
+            } else {
+                // Mensual
+                diaInicio = 1;
+                diaFin = diasEnMes(anio, mes);
+            }
+
+            document.getElementById('inputFechaInicio').value = fmt(anio, mes, diaInicio);
+            document.getElementById('inputFechaFin').value = fmt(anio, mes, diaFin);
+
+            var dias = diaFin - diaInicio + 1;
+            var tipoTexto = tipo === 2 ? 'Semanal'
+                : tipo === 3 ? 'Mensual'
+                    : 'Quincenal';
+            var tipoEmpleados = tipo === 2
+                ? 'Empleados semanales'
+                : tipo === 3
+                    ? 'Empleados mensuales'
+                    : 'Empleados quincenales';
+
+            // Preview
+            var preview = document.getElementById('previewPeriodo');
+            preview.className =
+                'alert alert-success py-3 mb-0 d-flex align-items-center gap-3';
+            document.getElementById('previewTexto').innerHTML =
+                '<strong>' + tipoTexto + '</strong> — '
+                + meses[mes] + ' ' + anio
+                + ' &nbsp;·&nbsp; '
+                + fmtCorto(anio, mes, diaInicio)
+                + ' al '
+                + fmtCorto(anio, mes, diaFin)
+                + ' &nbsp;·&nbsp; <strong>' + dias + ' días</strong>';
+
+            // Tarjetas
+            document.getElementById('resumenDias').style.display = 'block';
+            document.getElementById('resumenDiasNum').textContent = dias;
+            document.getElementById('resumenTipo').textContent = tipoEmpleados;
+            document.getElementById('resumenInicio').textContent =
+                fmtCorto(anio, mes, diaInicio);
+            document.getElementById('resumenFin').textContent =
+                fmtCorto(anio, mes, diaFin);
+        }
+
+        document.getElementById('selectTipoPeriodo').addEventListener('change', actualizarUI);
+        document.getElementById('inputAnio').addEventListener('input', actualizarUI);
+        document.getElementById('selectMes').addEventListener('change', actualizarUI);
+        document.getElementById('selectQuincena').addEventListener('change', actualizarUI);
+        document.getElementById('selectSemana').addEventListener('change', actualizarUI);
+
+        // ── Sincronizar campos "Desde" con los "Hasta" del tramo anterior ──
+        function sincronizarTramosISR() {
+            var t1 = document.getElementById('isrTramo1Hasta');
+            var t2 = document.getElementById('isrTramo2Hasta');
+            var t3 = document.getElementById('isrTramo3Hasta');
+            var t4 = document.getElementById('isrTramo4Hasta');
+            if (t1) document.getElementById('isrTramo2Desde').value = t1.value;
+            if (t2) document.getElementById('isrTramo3Desde').value = t2.value;
+            if (t3) document.getElementById('isrTramo4Desde').value = t3.value;
+            if (t4) document.getElementById('isrTramo5Desde').value = t4.value;
+        }
+
+        var isrInputs = ['isrTramo1Hasta', 'isrTramo2Hasta', 'isrTramo3Hasta', 'isrTramo4Hasta'];
+        isrInputs.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('input', sincronizarTramosISR);
+        });
+
+        actualizarUI();
+        sincronizarCCSS();
+        sincronizarTramosISR();
     </script>
 }

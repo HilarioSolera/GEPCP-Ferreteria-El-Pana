@@ -175,6 +175,16 @@ else
                                        class="btn btn-sm btn-outline-danger" title="PDF">
                                     <i class="bi bi-file-earmark-pdf"></i>
                                 </a>
+                                @if (!string.IsNullOrEmpty(c.Empleado.CorreoElectronico))
+                                {
+                                    <form asp-action="EnviarPorEmail" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@c.ComisionId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar correo">
+                                            <i class="bi bi-envelope"></i>
+                                        </button>
+                                    </form>
+                                }
                                 <form asp-action="Delete" method="post" class="d-inline"
                                       onsubmit="return confirm('¿Eliminar comisión de ₡@c.Monto.ToString("N0") de @c.Empleado.PrimerApellido?')">
                                     @Html.AntiForgeryToken()

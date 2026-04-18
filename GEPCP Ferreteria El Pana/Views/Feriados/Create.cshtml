@@ -11,53 +11,63 @@
     </a>
 </div>
 
-<div class="card shadow-sm border-0" style="max-width: 500px;">
+<div class="card shadow-sm border-0">
     <div class="card-body p-4">
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
-            <div class="row g-3">
 
-                <div class="col-12">
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-3">
+                    <ul class="mb-0">
+                        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@e.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <div class="row g-3">
+                <div class="col-md-4">
                     <label asp-for="Fecha" class="form-label fw-bold">
                         <i class="bi bi-calendar-event"></i> Fecha <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Fecha" type="date"
-                           class="form-control form-control-lg" />
+                    <input asp-for="Fecha" type="date" class="form-control" />
                     <span asp-validation-for="Fecha" class="text-danger small"></span>
                 </div>
 
-                <div class="col-12">
+                <div class="col-md-8">
                     <label asp-for="Nombre" class="form-label fw-bold">
-                        <i class="bi bi-tag"></i> Nombre <span class="text-danger">*</span>
+                        <i class="bi bi-tag"></i> Nombre del Feriado <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Nombre" class="form-control form-control-lg"
+                    <input asp-for="Nombre" class="form-control"
                            maxlength="100" placeholder="Ej: Día del Trabajador" />
                     <span asp-validation-for="Nombre" class="text-danger small"></span>
                 </div>
 
                 <div class="col-12">
                     <label asp-for="Tipo" class="form-label fw-bold">
-                        <i class="bi bi-flag"></i> Tipo <span class="text-danger">*</span>
+                        <i class="bi bi-flag"></i> Tipo de Feriado <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Tipo" class="form-select form-select-lg">
-                        <option value="1">Obligatorio</option>
-                        <option value="2">No Obligatorio</option>
+                    <select asp-for="Tipo" class="form-select">
+                        <option value="1">Obligatorio (pago doble si se trabaja)</option>
+                        <option value="2">No Obligatorio (pago normal si se trabaja)</option>
                     </select>
-                    <div class="form-text text-muted">
+                    <div class="form-text text-muted mt-2">
                         <i class="bi bi-info-circle"></i>
-                        Obligatorio: debe pagarse doble si el empleado trabaja.
-                        No Obligatorio: pago normal si trabaja.
+                        <strong>Obligatorio:</strong> El empleado recibe pago doble si labora ese día.<br>
+                        <strong>No Obligatorio:</strong> Solo recibe el pago normal.
                     </div>
                     <span asp-validation-for="Tipo" class="text-danger small"></span>
                 </div>
-
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn-lg px-5">
+            <div class="mt-4 d-flex gap-3">
+                <button type="submit" class="btn btn-success btn px-5">
                     <i class="bi bi-check-circle"></i> Guardar Feriado
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn px-5">Cancelar</a>
             </div>
         </form>
     </div>

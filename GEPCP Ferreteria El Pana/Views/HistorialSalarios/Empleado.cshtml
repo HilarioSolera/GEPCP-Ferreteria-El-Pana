@@ -16,6 +16,17 @@
         </small>
     </div>
     <div class="d-flex gap-2">
+        @if (Model.Any() && !string.IsNullOrWhiteSpace(emp?.CorreoElectronico))
+        {
+            <form asp-action="EnviarPorEmail" method="post" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="empleadoId" value="@emp?.EmpleadoId" />
+                <button type="submit" class="btn btn-outline-primary"
+                        title="Enviar historial por correo electrónico">
+                    <i class="bi bi-envelope"></i> Enviar por Email
+                </button>
+            </form>
+        }
         <a asp-controller="Empleados" asp-action="Details"
                asp-route-id="@emp?.EmpleadoId"
                class="btn btn-outline-secondary">

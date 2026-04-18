@@ -54,7 +54,7 @@
                         <span class="text-danger">*</span>
                     </label>
                     <select name="PeriodoPagoId" id="selectPeriodo"
-                            class="form-select form-select-lg">
+                            class="form-select">
                         <option value="">— Seleccione un período —</option>
                         @foreach (var p in ViewBag.PeriodosSelect as IEnumerable<dynamic>
                                                                     ?? Enumerable.Empty<dynamic>())
@@ -76,7 +76,7 @@
                         <i class="bi bi-calendar"></i> Fecha <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Fecha" type="date" id="inputFecha"
-                           class="form-control form-control-lg" />
+                           class="form-control" />
                     <span asp-validation-for="Fecha" class="text-danger small"></span>
                 </div>
 
@@ -86,7 +86,7 @@
                         <i class="bi bi-cash"></i> Monto (₡) <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Monto" type="number" min="1" step="0.01"
-                           max="9999999.99" class="form-control form-control-lg" />
+                           max="9999999.99" class="form-control" />
                     <span asp-validation-for="Monto" class="text-danger small"></span>
                 </div>
 
@@ -96,7 +96,7 @@
                         <i class="bi bi-chat-text"></i> Descripción
                         <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Descripcion" class="form-control form-control-lg"
+                    <input asp-for="Descripcion" class="form-control"
                            maxlength="200" />
                     <span asp-validation-for="Descripcion" class="text-danger small"></span>
                 </div>
@@ -104,10 +104,10 @@
             </div>
 
             <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-warning btn-lg px-5">
+                <button type="submit" class="btn btn-warning btn px-5">
                     <i class="bi bi-check-circle"></i> Guardar Cambios
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn-lg px-5">
+                <a asp-action="Index" class="btn btn-secondary btn px-5">
                     Cancelar
                 </a>
             </div>

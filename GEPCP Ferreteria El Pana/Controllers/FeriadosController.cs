@@ -13,15 +13,21 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<FeriadosController> _logger;
         private readonly AuditoriaService _auditoria;
+        private readonly ComprobantePlanillaService _servicioPDF;
+        private readonly EmailService _email;
 
         public FeriadosController(
             ApplicationDbContext context,
             ILogger<FeriadosController> logger,
-            AuditoriaService auditoria)
+            AuditoriaService auditoria,
+            ComprobantePlanillaService servicioPDF,
+            EmailService email)
         {
             _context = context;
             _logger = logger;
             _auditoria = auditoria;
+            _servicioPDF = servicioPDF;
+            _email = email;
         }
 
         public async Task<IActionResult> Index(int? anio)
@@ -458,6 +464,85 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             {
                 _logger.LogError(ex, "Error al eliminar pago feriado ID: {Id}", pagoFeriadoId);
                 TempData["Error"] = "Error al eliminar. Intentá de nuevo.";
+                return RedirectToAction(nameof(PagosPorPeriodo), new { periodoId });
+            }
+        }
+
+        // ── DESCARGAR BOLETA PDF ───────────────────────────────────────────────
+
+        public async Task<IActionResult> DescargarBoletaFeriado(int id)
+        {
+            try
+            {
+                var pago = await _context.PagosFeriado
+                    .Include(pf => pf.Empleado)
+                    .Include(pf => pf.Feriado)
+                    .Include(pf => pf.PeriodoPago)
+                    .FirstOrDefaultAsync(pf => pf.PagoFeriadoId == id);
+
+                if (pago == null)
+                {
+                    TempData["Error"] = "Pago de feriado no encontrado.";
+                    return RedirectToAction(nameof(PagosPorPeriodo));
+                }
+
+                var pdf = _servicioPDF.GenerarPDFFeriado(pago);
+                return File(pdf, "application/pdf",
+                    $"Feriado_{pago.Empleado.PrimerApellido}_{pago.Feriado.Nombre}_{pago.Feriado.Fecha:yyyyMMdd}.pdf");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al generar PDF de feriado ID: {Id}", id);
+                TempData["Error"] = "Error al generar el PDF.";
+                return RedirectToAction(nameof(PagosPorPeriodo));
+            }
+        }
+
+        // ── ENVIAR POR EMAIL ──────────────────────────────────────────────────
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EnviarPorEmail(int id, int periodoId)
+        {
+            try
+            {
+                var pago = await _context.PagosFeriado
+                    .Include(pf => pf.Empleado)
+                    .Include(pf => pf.Feriado)
+                    .Include(pf => pf.PeriodoPago)
+                    .FirstOrDefaultAsync(pf => pf.PagoFeriadoId == id);
+
+                if (pago == null)
+                {
+                    TempData["Error"] = "Pago de feriado no encontrado.";
+                    return RedirectToAction(nameof(PagosPorPeriodo), new { periodoId });
+                }
+
+                var correo = pago.Empleado.CorreoElectronico;
+                if (string.IsNullOrWhiteSpace(correo))
+                {
+                    TempData["Error"] = "El empleado no tiene correo registrado.";
+                    return RedirectToAction(nameof(PagosPorPeriodo), new { periodoId });
+                }
+
+                var pdf = _servicioPDF.GenerarPDFFeriadoSinFirmas(pago);
+                var asunto = $"Boleta de Feriado — {pago.Feriado.Nombre} — {pago.Feriado.Fecha:dd/MM/yyyy}";
+
+                await _email.EnviarPDFAsync(
+                    correo,
+                    $"{pago.Empleado.Nombre} {pago.Empleado.PrimerApellido}",
+                    asunto,
+                    $"Adjunto su boleta de pago de feriado: {pago.Feriado.Nombre} ({pago.Feriado.Fecha:dd/MM/yyyy}).",
+                    pdf,
+                    $"Feriado_{pago.Empleado.PrimerApellido}_{pago.Feriado.Nombre}.pdf");
+
+                TempData["Success"] = $"Boleta enviada a {correo}.";
+                return RedirectToAction(nameof(PagosPorPeriodo), new { periodoId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar email feriado ID: {Id}", id);
+                TempData["Error"] = "Error al enviar el correo. Intentá de nuevo.";
                 return RedirectToAction(nameof(PagosPorPeriodo), new { periodoId });
             }
         }

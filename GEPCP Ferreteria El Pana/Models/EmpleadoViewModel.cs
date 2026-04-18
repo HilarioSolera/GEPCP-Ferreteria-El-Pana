@@ -111,6 +111,18 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Teléfono Contacto de Emergencia")]
         public string? ContactoEmergenciaTelefono { get; set; }
 
+        [Required]
+        [Display(Name = "Tipo de Pago")]
+        public TipoPago TipoPago { get; set; } = TipoPago.Quincenal;
+
+        // ── ISR: Créditos fiscales ───────────────────────────────────────────
+        [Display(Name = "Número de Hijos")]
+        [Range(0, 20, ErrorMessage = "Debe ser entre 0 y 20")]
+        public int NumHijos { get; set; } = 0;
+
+        [Display(Name = "¿Tiene Cónyuge?")]
+        public bool TieneConyuge { get; set; } = false;
+
         // ── Calculados (no mapeados a BD) ───────────────────────────────────
         public int HorasMensuales => TipoJornada == TipoJornada.Completa ? 240 : 120;
         public int HorasQuincenales => TipoJornada == TipoJornada.Completa ? 120 : 60;
@@ -151,5 +163,31 @@ namespace GEPCP_Ferreteria_El_Pana.Models
 
         [NotMapped]
         public decimal SalarioDiario => SalarioBase / 30;
+
+        [NotMapped]
+        public int HorasPorPeriodo => TipoPago switch
+        {
+            TipoPago.Semanal => HorasMensuales / 4,
+            TipoPago.Mensual => HorasMensuales,
+            _ => HorasQuincenales
+        };
+
+        [NotMapped]
+        public decimal FactorCuotaPrestamo => TipoPago switch
+        {
+            TipoPago.Semanal => 4m,
+            TipoPago.Mensual => 1m,
+            _ => 2m
+        };
+
+        [NotMapped]
+        public string DescripcionTipoPago => TipoPago switch
+        {
+            TipoPago.Semanal => "Semanal",
+            TipoPago.Mensual => "Mensual",
+            _ => "Quincenal"
+        };
     }
+
+
 }
