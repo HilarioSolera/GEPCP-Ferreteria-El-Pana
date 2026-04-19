@@ -791,11 +791,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ModelState.AddModelError("CuotaMensual",
                     "La cuota no puede ser mayor al monto del préstamo.");
             }
-            else if (salarioQuincenal > 0 && model.CuotaMensual > salarioQuincenal)
+            else if (salarioQuincenal > 0 && model.CuotaMensual > salarioQuincenal * 0.50m)
             {
+                // Art. 172 CT: las deducciones no pueden reducir el salario
+                // por debajo de lo necesario. Límite prudencial: 50% del salario por período.
                 ModelState.AddModelError("CuotaMensual",
-                    $"La cuota (₡{model.CuotaMensual:N0}) no puede superar el salario " +
-                    $"del período del empleado (₡{salarioQuincenal:N0}).");
+                    $"La cuota (₡{model.CuotaMensual:N0}) no puede superar el 50% del salario " +
+                    $"del período (₡{Math.Round(salarioQuincenal * 0.50m, 0):N0}). Art. 172 CT.");
             }
 
             if (model.FechaPrestamo == default)

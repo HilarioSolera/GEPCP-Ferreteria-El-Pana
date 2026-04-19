@@ -115,8 +115,15 @@
                             <span class="text-muted ms-2 small" id="empCedula"></span>
                             <span class="badge bg-secondary ms-1" id="empPuesto"></span>
                         </div>
-                        <div class="text-end d-flex align-items-center gap-2">
-                            <div class="fw-bold" id="empValorHora"></div>
+                        <div class="text-end d-flex align-items-center gap-3">
+                            <div>
+                                <div class="fw-bold" id="empSalario" style="font-size:0.95rem;"></div>
+                                <div class="text-muted" style="font-size:0.72rem;">Salario Base</div>
+                            </div>
+                            <div>
+                                <div class="fw-bold" id="empValorHora" style="font-size:0.95rem;"></div>
+                                <div class="text-muted" style="font-size:0.72rem;">Valor Hora</div>
+                            </div>
                             <button type="button" class="btn btn-sm btn-outline-danger"
                                     id="btnLimpiarEmpleado">
                                 <i class="bi bi-x"></i>
@@ -266,10 +273,15 @@
                     window._empResults = empleados;
                     div.innerHTML = empleados.map(function(e, i) {
                         var vh = e.valorHora || 0;
+                        var sb = e.salarioBase || 0;
                         var vhTexto = vh > 0
                             ? '₡' + vh.toLocaleString('es-CR',
                                 { minimumFractionDigits: 2 }) + '/hr'
                             : '—';
+                        var sbTexto = sb > 0
+                            ? '₡' + sb.toLocaleString('es-CR',
+                                { minimumFractionDigits: 0 })
+                            : '';
                         return '<div class="p-2 border-bottom emp-item"'
                             + ' data-index="' + i + '"'
                             + ' style="cursor:pointer;background:#fff;">'
@@ -278,7 +290,10 @@
                             + e.cedula + ' — ' + e.puesto
                             + ' <span class="badge bg-light text-secondary">'
                             + (e.tipoPago || '') + '</span>'
-                            + '<span class="float-end fw-bold">' + vhTexto + '</span>'
+                            + '<span class="float-end">'
+                            + (sbTexto ? '<span class="text-dark fw-bold">' + sbTexto + '</span> · ' : '')
+                            + '<span class="fw-bold">' + vhTexto + '</span>'
+                            + '</span>'
                             + '</div></div>';
                     }).join('');
                     div.querySelectorAll('.emp-item').forEach(function(el) {
@@ -293,7 +308,8 @@
                             var emp = window._empResults[idx];
                             if (emp) seleccionarEmpleado(
                                 emp.id, emp.nombre, emp.cedula,
-                                emp.puesto, emp.valorHora || 0);
+                                emp.puesto, emp.valorHora || 0,
+                                emp.salarioBase || 0);
                         });
                     });
                     div.style.display = 'block';
@@ -303,14 +319,19 @@
                 });
         }
 
-        function seleccionarEmpleado(id, nombre, cedula, puesto, valorHora) {
+        function seleccionarEmpleado(id, nombre, cedula, puesto, valorHora, salarioBase) {
             valorHora = valorHora || 0;
+            salarioBase = salarioBase || 0;
             empleadoActual = { id: id, nombre: nombre, cedula: cedula,
-                puesto: puesto, valorHora: valorHora };
+                puesto: puesto, valorHora: valorHora, salarioBase: salarioBase };
             document.getElementById('EmpleadoId').value = id;
             document.getElementById('empNombre').textContent = nombre;
             document.getElementById('empCedula').textContent = cedula;
             document.getElementById('empPuesto').textContent = puesto;
+            document.getElementById('empSalario').textContent = salarioBase > 0
+                ? '₡' + salarioBase.toLocaleString('es-CR',
+                    { minimumFractionDigits: 0 })
+                : '—';
             document.getElementById('empValorHora').textContent = valorHora > 0
                 ? '₡' + valorHora.toLocaleString('es-CR',
                     { minimumFractionDigits: 2 }) + '/hr'

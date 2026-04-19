@@ -362,9 +362,6 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 if (planilla.DeduccionIncapacidad > 0)
                                     FilaDed("Incapacidad", "",
                                         $"₡{planilla.DeduccionIncapacidad:N2}");
-                                if (planilla.DeduccionVacaciones > 0)
-                                    FilaDed("Vacaciones Sin Pago", "",
-                                        $"₡{planilla.DeduccionVacaciones:N2}");
                                 if (planilla.OtrasDeducciones > 0)
                                 {
                                     var labelOtras = string.IsNullOrWhiteSpace(planilla.DescripcionOtrasDeducciones)
@@ -1275,7 +1272,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "FECHA INICIO:", $"{vacacion.FechaInicio:dd/MM/yyyy}",
                                     "FECHA FIN:", $"{vacacion.FechaFin:dd/MM/yyyy}");
                                 FilaDatos(t, "DÍAS SOLICITADOS:", $"{vacacion.DiasHabiles:N1} día(s)",
-                                    "TIPO:", vacacion.Tipo == TipoVacacion.ConPago ? "Con Pago" : "Sin Pago");
+                                    "TIPO:", "Con Pago");
                             });
 
                             SeccionLabel(inner, "Resumen de Días por Período (Art. 153 Código de Trabajo CR)");
@@ -1397,7 +1394,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "FECHA INICIO:", $"{vacacion.FechaInicio:dd/MM/yyyy}",
                                     "FECHA FIN:", $"{vacacion.FechaFin:dd/MM/yyyy}");
                                 FilaDatos(t, "DÍAS SOLICITADOS:", $"{vacacion.DiasHabiles:N1} día(s)",
-                                    "TIPO:", vacacion.Tipo == TipoVacacion.ConPago ? "Con Pago" : "Sin Pago");
+                                    "TIPO:", "Con Pago");
                             });
 
                             SeccionLabel(inner, "Resumen de Días (Art. 153 Código de Trabajo CR)");
@@ -1429,37 +1426,13 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .Text($"{saldoTras:N1}").FontSize(18).Bold().FontColor(Verde);
                             });
 
-                            if (vacacion.Tipo == TipoVacacion.SinPago && vacacion.MontoDeducido > 0)
+                            inner.Item().PaddingTop(8).Background(VerdeFondo).Padding(10).Row(r =>
                             {
-                                SeccionLabel(inner, "Deducción en Planilla");
-                                inner.Item().Table(t =>
-                                {
-                                    t.ColumnsDefinition(c => { c.RelativeColumn(6); c.RelativeColumn(4); });
-                                    t.Cell().Background(GrisFondo).Padding(4)
-                                        .Text("CONCEPTO").Bold().FontSize(8);
-                                    t.Cell().Background(GrisFondo).Padding(4).AlignRight()
-                                        .Text("MONTO").Bold().FontSize(8);
-                                    t.Cell().Padding(3)
-                                        .Text($"Vacaciones sin pago — {vacacion.DiasHabiles} días × ₡{vacacion.SalarioDiario:N2}/día")
-                                        .FontSize(8);
-                                    t.Cell().Padding(3).AlignRight()
-                                        .Text($"₡{vacacion.MontoDeducido:N2}").FontSize(8);
-                                    t.Cell().Background(RojoFondo).Padding(4)
-                                        .Text("TOTAL A DEDUCIR").Bold().FontSize(8);
-                                    t.Cell().Background(RojoFondo).Padding(4).AlignRight()
-                                        .Text($"₡{vacacion.MontoDeducido:N2}").Bold().FontSize(8).FontColor(Rojo);
-                                });
-                            }
-                            else if (vacacion.Tipo == TipoVacacion.ConPago)
-                            {
-                                inner.Item().PaddingTop(8).Background(VerdeFondo).Padding(10).Row(r =>
-                                {
-                                    r.ConstantItem(4).Background(Verde).Text("");
-                                    r.RelativeItem().PaddingLeft(8)
-                                        .Text("Vacaciones con pago — El empleado recibirá su salario ordinario durante el período de vacaciones.")
-                                        .FontColor(Verde).Bold().FontSize(9);
-                                });
-                            }
+                                r.ConstantItem(4).Background(Verde).Text("");
+                                r.RelativeItem().PaddingLeft(8)
+                                    .Text("Vacaciones con pago — El empleado recibirá su salario ordinario durante el período de vacaciones.")
+                                    .FontColor(Verde).Bold().FontSize(9);
+                            });
 
                             SeccionLabel(inner, "Observaciones");
                             inner.Item().Background(GrisFondo).Padding(8)
@@ -2498,9 +2471,6 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 if (planilla.DeduccionIncapacidad > 0)
                                     FilaDed("Incapacidad", "",
                                         $"₡{planilla.DeduccionIncapacidad:N2}");
-                                if (planilla.DeduccionVacaciones > 0)
-                                    FilaDed("Vacaciones Sin Pago", "",
-                                        $"₡{planilla.DeduccionVacaciones:N2}");
                                 if (planilla.OtrasDeducciones > 0)
                                     FilaDed("Otras Deducciones", "",
                                         $"₡{planilla.OtrasDeducciones:N2}");

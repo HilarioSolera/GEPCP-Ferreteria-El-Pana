@@ -16,7 +16,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         private readonly ComprobantePlanillaService _servicioPDF;
         private readonly AuditoriaService _auditoria;
 
-        private const decimal LimiteHorasAdvertencia = 48m;
+        private const decimal LimiteHorasAdvertencia = 24m; // Art. 136 CT: 4 hrs/día × 6 días
 
         public HorasExtrasController(
             ApplicationDbContext context,
@@ -754,11 +754,15 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
             if (model.TotalHoras <= 0)
                 ModelState.AddModelError("TotalHoras", "Las horas deben ser mayor a cero.");
-            else if (model.TotalHoras > 999.99m)
-                ModelState.AddModelError("TotalHoras", "El total de horas no puede superar 999.99.");
+            else if (model.TotalHoras > 48m)
+                ModelState.AddModelError("TotalHoras",
+                    "El total de horas extras no puede superar 48 por período. " +
+                    "Art. 136 CT: máximo 4 horas extra por día laborado.");
 
-            if (model.Porcentaje <= 0)
-                ModelState.AddModelError("Porcentaje", "El porcentaje debe ser mayor a cero.");
+            // Art. 139 CT: las horas extras se pagan con un 50% de recargo mínimo (1.5x)
+            if (model.Porcentaje < 1.5m)
+                ModelState.AddModelError("Porcentaje",
+                    "El porcentaje mínimo es 1.5 (tiempo y medio) según Art. 139 del Código de Trabajo.");
             else if (model.Porcentaje > 3)
                 ModelState.AddModelError("Porcentaje", "El porcentaje no puede superar 3 (300%).");
 

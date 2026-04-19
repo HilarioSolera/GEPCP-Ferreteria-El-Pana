@@ -132,13 +132,39 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
+                // ── Art. 153 CT CR: mínimo 50 semanas laboradas ─────────────
+                var diasLaborados = (DateTime.Today - empleado.FechaIngreso).TotalDays;
+                if (diasLaborados < 350) // 50 semanas × 7 días
+                {
+                    ModelState.AddModelError(string.Empty,
+                        $"El empleado no ha cumplido las 50 semanas de trabajo continuo requeridas " +
+                        $"(Art. 153 CT CR). Lleva {diasLaborados:N0} días ({diasLaborados / 7:N0} semanas). " +
+                        $"Faltan {350 - diasLaborados:N0} días.");
+                    return View(model);
+                }
+
                 // ── Calcular días disponibles ─────────────────────────────────
                 var (diasBase, diasTomados, disponibles) =
                     await CalcularDisponiblesInterno(model.EmpleadoId);
 
+                // ── Art. 159 CT CR: máximo 2 fracciones por período ───────────
+                var ingreso = empleado.FechaIngreso;
+                var periodosCompletos = (int)((decimal)(DateTime.Today - ingreso).TotalDays / 350);
+                var inicioPeriodoActual = ingreso.AddDays(periodosCompletos * 350);
+                var solicitudesEnPeriodo = await _context.Vacaciones
+                    .CountAsync(v => v.EmpleadoId == model.EmpleadoId &&
+                                     v.Estado != EstadoVacacion.Rechazada &&
+                                     v.FechaInicio >= inicioPeriodoActual);
+                if (solicitudesEnPeriodo >= 2)
+                {
+                    ModelState.AddModelError(string.Empty,
+                        "Ya existen 2 solicitudes de vacaciones en este período. " +
+                        "Art. 159 CT CR: las vacaciones pueden fraccionarse hasta en dos períodos como máximo.");
+                    return View(model);
+                }
+
                 // ── Validar días al aprobar ───────────────────────────────────
                 if (model.Estado == EstadoVacacion.Aprobada &&
-                    model.Tipo == TipoVacacion.ConPago &&
                     model.DiasHabiles > disponibles)
                 {
                     ModelState.AddModelError("DiasHabiles",
@@ -152,9 +178,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 model.SalarioDiario = Math.Round(empleado.SalarioBase / DiasSalarioMensual, 2);
                 model.RegistradoPor = HttpContext.Session.GetString("Usuario") ?? "";
                 model.FechaRegistro = DateTime.Now;
-                model.MontoDeducido = model.Tipo == TipoVacacion.SinPago
-                    ? Math.Round(model.DiasHabiles * model.SalarioDiario, 2)
-                    : 0;
+                model.MontoDeducido = 0;
 
                 _context.Add(model);
                 await _context.SaveChangesAsync();
@@ -262,8 +286,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 }
 
                 // ── Validar días al aprobar ───────────────────────────────────
-                if (model.Estado == EstadoVacacion.Aprobada &&
-                    model.Tipo == TipoVacacion.ConPago)
+                if (model.Estado == EstadoVacacion.Aprobada)
                 {
                     var (_, _, disponibles) = await CalcularDisponiblesInterno(model.EmpleadoId, id);
                     if (model.DiasHabiles > disponibles)
@@ -284,6 +307,33 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     }
                 }
 
+                // ── Art. 159 CT CR: máximo 2 fracciones por período ───────────
+                var empEdit = await _context.Empleados.FindAsync(model.EmpleadoId);
+                if (empEdit != null)
+                {
+                    var ingresoEdit = empEdit.FechaIngreso;
+                    var periodosEdit = (int)((decimal)(DateTime.Today - ingresoEdit).TotalDays / 350);
+                    var inicioPerEdit = ingresoEdit.AddDays(periodosEdit * 350);
+                    var solicitudesEdit = await _context.Vacaciones
+                        .CountAsync(v => v.EmpleadoId == model.EmpleadoId &&
+                                         v.Estado != EstadoVacacion.Rechazada &&
+                                         v.VacacionId != id &&
+                                         v.FechaInicio >= inicioPerEdit);
+                    if (solicitudesEdit >= 2)
+                    {
+                        ModelState.AddModelError(string.Empty,
+                            "Ya existen 2 solicitudes en este período (Art. 159 CT CR: máximo 2 fracciones).");
+                        var (db4, dt4, disp4) = await CalcularDisponiblesInterno(model.EmpleadoId, id);
+                        ViewBag.EmpleadoNombre = $"{empEdit.PrimerApellido} {empEdit.Nombre}";
+                        ViewBag.EmpleadoCedula = empEdit.Cedula;
+                        ViewBag.SalarioDiario = registro.SalarioDiario;
+                        ViewBag.DiasBase = db4;
+                        ViewBag.DiasTomados = dt4;
+                        ViewBag.DiasDisponibles = disp4;
+                        return View(model);
+                    }
+                }
+
                 var estadoAnterior = registro.Estado;
                 var diasAnteriores = registro.DiasHabiles;
                 var tipoAnterior = registro.Tipo;
@@ -295,9 +345,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 registro.Estado = model.Estado;
                 registro.Observaciones = model.Observaciones;
                 registro.DiasDisponiblesAlRegistrar = model.DiasDisponiblesAlRegistrar;
-                registro.MontoDeducido = registro.Tipo == TipoVacacion.SinPago
-                    ? Math.Round(registro.DiasHabiles * registro.SalarioDiario, 2)
-                    : 0;
+                registro.MontoDeducido = 0;
 
                 _context.Update(registro);
                 await _context.SaveChangesAsync();
@@ -447,35 +495,39 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         // ── API: Calcular días entre fechas ───────────────────────────────────
 
         [HttpGet]
-        public IActionResult CalcularDias(string fechaInicio, string fechaFin, bool excluirFds = true)
+        public IActionResult CalcularDias(string fechaInicio, string fechaFin)
         {
             try
             {
                 if (!DateTime.TryParse(fechaInicio, out var fi) ||
                     !DateTime.TryParse(fechaFin, out var ff))
-                    return Json(new { ok = false, dias = 0 });
+                    return Json(new { ok = false, dias = 0, error = "" });
 
                 if (ff < fi)
-                    return Json(new { ok = false, dias = 0 });
+                    return Json(new { ok = false, dias = 0, error = "La fecha de fin debe ser posterior a la de inicio." });
 
-                decimal dias = 0;
-                var actual = fi;
+                // Validar que no sean fines de semana
+                var errores = new List<string>();
+                if (fi.DayOfWeek == DayOfWeek.Saturday || fi.DayOfWeek == DayOfWeek.Sunday)
+                    errores.Add("La fecha de inicio no puede ser sábado ni domingo.");
+                if (ff.DayOfWeek == DayOfWeek.Saturday || ff.DayOfWeek == DayOfWeek.Sunday)
+                    errores.Add("La fecha de fin no puede ser sábado ni domingo.");
+                if (errores.Any())
+                    return Json(new { ok = false, dias = 0, error = string.Join(" ", errores) });
 
-                while (actual <= ff)
-                {
-                    if (!excluirFds ||
-                        (actual.DayOfWeek != DayOfWeek.Saturday &&
-                         actual.DayOfWeek != DayOfWeek.Sunday))
-                        dias++;
-                    actual = actual.AddDays(1);
-                }
+                // Art. 153 CT CR: siempre días hábiles (lun-vie)
+                int dias = ContarDiasHabiles(fi, ff);
 
-                return Json(new { ok = true, dias });
+                // Validar máximo 12 días
+                if (dias > (int)DiasLey)
+                    return Json(new { ok = true, dias, error = $"Máximo {DiasLey} días hábiles por período (Art. 153 CT CR)." });
+
+                return Json(new { ok = true, dias, error = "" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al calcular días");
-                return Json(new { ok = false, dias = 0 });
+                return Json(new { ok = false, dias = 0, error = "Error al calcular." });
             }
         }
 
@@ -612,6 +664,52 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             if (model.DiasHabiles <= 0)
                 ModelState.AddModelError("DiasHabiles",
                     "Los días deben ser mayor a cero.");
+
+            // Art. 153 CT CR: vacaciones son días hábiles, no pueden iniciar/terminar en fin de semana
+            if (model.FechaInicio != default &&
+                (model.FechaInicio.DayOfWeek == DayOfWeek.Saturday || model.FechaInicio.DayOfWeek == DayOfWeek.Sunday))
+                ModelState.AddModelError("FechaInicio",
+                    "La fecha de inicio no puede ser sábado ni domingo (Art. 153 CT CR: días hábiles).");
+
+            if (model.FechaFin != default &&
+                (model.FechaFin.DayOfWeek == DayOfWeek.Saturday || model.FechaFin.DayOfWeek == DayOfWeek.Sunday))
+                ModelState.AddModelError("FechaFin",
+                    "La fecha de fin no puede ser sábado ni domingo (Art. 153 CT CR: días hábiles).");
+
+            // Art. 153 CT CR: máximo 12 días hábiles por período de 50 semanas
+            if (model.DiasHabiles > DiasLey)
+                ModelState.AddModelError("DiasHabiles",
+                    $"No se pueden solicitar más de {DiasLey} días por período (Art. 153 CT CR).");
+
+            // Días deben ser enteros (la ley no contempla medios días)
+            if (model.DiasHabiles > 0 && model.DiasHabiles != Math.Floor(model.DiasHabiles))
+                ModelState.AddModelError("DiasHabiles",
+                    "Los días de vacaciones deben ser enteros (Art. 153 CT CR).");
+
+            // Validar que los días hábiles coincidan con el rango de fechas
+            if (model.FechaInicio != default && model.FechaFin != default && model.FechaFin >= model.FechaInicio)
+            {
+                var diasReales = ContarDiasHabiles(model.FechaInicio, model.FechaFin);
+                if (model.DiasHabiles > diasReales)
+                    ModelState.AddModelError("DiasHabiles",
+                        $"Los días solicitados ({model.DiasHabiles}) superan los días hábiles del rango seleccionado ({diasReales}).");
+            }
+        }
+
+        /// <summary>
+        /// Cuenta días hábiles (lun-vie) entre dos fechas inclusivas.
+        /// </summary>
+        private static int ContarDiasHabiles(DateTime inicio, DateTime fin)
+        {
+            int dias = 0;
+            var actual = inicio;
+            while (actual <= fin)
+            {
+                if (actual.DayOfWeek != DayOfWeek.Saturday && actual.DayOfWeek != DayOfWeek.Sunday)
+                    dias++;
+                actual = actual.AddDays(1);
+            }
+            return dias;
         }
 
         // ── BOLETA PDF ────────────────────────────────────────────────

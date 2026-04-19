@@ -13,7 +13,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         public int PeriodoPagoId { get; set; }
 
         [Required(ErrorMessage = "El total de horas es obligatorio.")]
-        [Range(0.5, 999.99, ErrorMessage = "Las horas deben estar entre 0.5 y 999.99.")]
+        [Range(0.5, 48, ErrorMessage = "Art. 136 CT: máximo 4 horas extra por día (48 por período).")]
         [Display(Name = "Total Horas")]
         public decimal TotalHoras { get; set; }
 
@@ -22,7 +22,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         public decimal ValorHora { get; set; }
 
         [Required(ErrorMessage = "El porcentaje es obligatorio.")]
-        [Range(1.0, 3.0, ErrorMessage = "El porcentaje debe estar entre 1.0 y 3.0.")]
+        [Range(1.5, 3.0, ErrorMessage = "Art. 139 CT: el recargo mínimo es 1.5 (tiempo y medio).")]
         [Display(Name = "Porcentaje")]
         public decimal Porcentaje { get; set; } = 1.5m;
 

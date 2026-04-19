@@ -123,7 +123,6 @@ else
                     <th>Período</th>
                     <th class="text-center">Días</th>
                     <th class="text-center">Tipo</th>
-                    <th class="text-end">Deducción</th>
                     <th class="text-center">Estado</th>
                     <th>Registrado por</th>
                     <th class="text-center">Acciones</th>
@@ -150,17 +149,7 @@ else
                         </td>
                         <td class="text-center fw-bold">@v.DiasHabiles.ToString("N1")</td>
                         <td class="text-center">
-                            @if (v.Tipo == GEPCP_Ferreteria_El_Pana.Models.TipoVacacion.ConPago)
-                            {
-                                <span class="badge bg-success">Con Pago</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">Sin Pago</span>
-                            }
-                        </td>
-                        <td class="text-end fw-bold @(v.MontoDeducido > 0 ? "text-danger" : "text-muted")">
-                            @(v.MontoDeducido > 0 ? $"₡{v.MontoDeducido:N0}" : "—")
+                            <span class="badge bg-success">Con Pago</span>
                         </td>
                         <td class="text-center">
                             <span class="badge @badgeEstado">@v.Estado</span>

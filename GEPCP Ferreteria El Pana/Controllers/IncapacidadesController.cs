@@ -125,18 +125,48 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 model.TotalDias = (model.FechaFin - model.FechaInicio).Days + 1;
                 var divisor = _reglas.SalarioDivisorMensual > 0 ? _reglas.SalarioDivisorMensual : 30;
                 var salarioDiario = Math.Round(empleado.SalarioBase / divisor, 2);
-                model.MontoPorDia = Math.Round(salarioDiario * (model.PorcentajePago / 100m), 2);
+
+                // ── Cálculo según ley CR por tipo de incapacidad ──────────
+                Enum.TryParse<TipoIncapacidad>(model.TipoIncapacidad, out var tipoInc);
 
                 if (model.Entidad == EntidadIncapacidad.CCSS)
                 {
-                    model.DiasPagadosPatrono = Math.Min(model.TotalDias, 3);
-                    model.MontoTotal = Math.Round(model.MontoPorDia * model.DiasPagadosPatrono, 2);
                     model.ResponsablePago = ResponsablePago.CCSS;
+
+                    if (tipoInc == TipoIncapacidad.LicenciaMaternidad)
+                    {
+                        // Art. 95 CT: Patrono paga 50%, CCSS paga 50% durante 4 meses
+                        model.PorcentajePago = 50;
+                        model.MontoPorDia = Math.Round(salarioDiario * 0.50m, 2);
+                        model.DiasPagadosPatrono = model.TotalDias;
+                        model.MontoTotal = Math.Round(model.MontoPorDia * model.DiasPagadosPatrono, 2);
+                    }
+                    else if (tipoInc == TipoIncapacidad.LicenciaPaternidad)
+                    {
+                        // Ley 9877: Patrono paga 100% por 2 días hábiles
+                        model.PorcentajePago = 100;
+                        model.MontoPorDia = salarioDiario;
+                        model.DiasPagadosPatrono = model.TotalDias;
+                        model.ResponsablePago = ResponsablePago.Patrono;
+                        model.MontoTotal = Math.Round(model.MontoPorDia * model.DiasPagadosPatrono, 2);
+                    }
+                    else
+                    {
+                        // Enfermedad común: Patrono paga 50% primeros 3 días,
+                        // CCSS paga 60% a partir del día 4
+                        model.DiasPagadosPatrono = Math.Min(model.TotalDias, 3);
+                        model.PorcentajePago = 50;
+                        model.MontoPorDia = Math.Round(salarioDiario * 0.50m, 2);
+                        model.MontoTotal = Math.Round(model.MontoPorDia * model.DiasPagadosPatrono, 2);
+                    }
                 }
-                else
+                else // INS
                 {
+                    // Accidente laboral/tránsito: INS paga 60% desde el día 1
                     model.DiasPagadosPatrono = 0;
-                    model.MontoTotal = 0;
+                    model.PorcentajePago = 60;
+                    model.MontoPorDia = Math.Round(salarioDiario * 0.60m, 2);
+                    model.MontoTotal = 0; // Patrono no paga, INS cubre
                     model.ResponsablePago = ResponsablePago.INS;
                 }
 
@@ -234,17 +264,40 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 {
                     var divisor = _reglas.SalarioDivisorMensual > 0 ? _reglas.SalarioDivisorMensual : 30;
                     var salarioDiario = Math.Round(empleado.SalarioBase / divisor, 2);
-                    registro.MontoPorDia = Math.Round(salarioDiario * (model.PorcentajePago / 100m), 2);
+                    Enum.TryParse<TipoIncapacidad>(model.TipoIncapacidad, out var tipoInc);
 
                     if (registro.Entidad == EntidadIncapacidad.CCSS)
                     {
-                        registro.DiasPagadosPatrono = Math.Min(registro.TotalDias, 3);
-                        registro.MontoTotal = Math.Round(registro.MontoPorDia * registro.DiasPagadosPatrono, 2);
                         registro.ResponsablePago = ResponsablePago.CCSS;
+
+                        if (tipoInc == TipoIncapacidad.LicenciaMaternidad)
+                        {
+                            registro.PorcentajePago = 50;
+                            registro.MontoPorDia = Math.Round(salarioDiario * 0.50m, 2);
+                            registro.DiasPagadosPatrono = registro.TotalDias;
+                            registro.MontoTotal = Math.Round(registro.MontoPorDia * registro.DiasPagadosPatrono, 2);
+                        }
+                        else if (tipoInc == TipoIncapacidad.LicenciaPaternidad)
+                        {
+                            registro.PorcentajePago = 100;
+                            registro.MontoPorDia = salarioDiario;
+                            registro.DiasPagadosPatrono = registro.TotalDias;
+                            registro.ResponsablePago = ResponsablePago.Patrono;
+                            registro.MontoTotal = Math.Round(registro.MontoPorDia * registro.DiasPagadosPatrono, 2);
+                        }
+                        else
+                        {
+                            registro.DiasPagadosPatrono = Math.Min(registro.TotalDias, 3);
+                            registro.PorcentajePago = 50;
+                            registro.MontoPorDia = Math.Round(salarioDiario * 0.50m, 2);
+                            registro.MontoTotal = Math.Round(registro.MontoPorDia * registro.DiasPagadosPatrono, 2);
+                        }
                     }
                     else
                     {
                         registro.DiasPagadosPatrono = 0;
+                        registro.PorcentajePago = 60;
+                        registro.MontoPorDia = Math.Round(salarioDiario * 0.60m, 2);
                         registro.MontoTotal = 0;
                         registro.ResponsablePago = ResponsablePago.INS;
                     }
@@ -528,7 +581,53 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ModelState.AddModelError("FechaFin", "La fecha de fin no puede ser anterior a la de inicio.");
 
             if (model.Entidad == EntidadIncapacidad.CCSS && string.IsNullOrWhiteSpace(model.TiqueteCCSS))
-                ModelState.AddModelError("TiqueteCCSS", "El tiquete CCSS es obligatorio.");
+                ModelState.AddModelError("TiqueteCCSS", "El tiquete CCSS es obligatorio para incapacidades de la CCSS.");
+
+            // ── Validaciones por tipo según ley de Costa Rica ──────────────
+            if (model.FechaInicio != default && model.FechaFin != default)
+            {
+                var dias = (model.FechaFin - model.FechaInicio).Days + 1;
+
+                if (Enum.TryParse<TipoIncapacidad>(model.TipoIncapacidad, out var tipo))
+                {
+                    switch (tipo)
+                    {
+                        case TipoIncapacidad.LicenciaMaternidad:
+                            // Art. 95 CT: licencia de maternidad = 4 meses (aprox. 120 días)
+                            if (dias < 112 || dias > 128)
+                                ModelState.AddModelError("FechaFin",
+                                    "La licencia de maternidad debe ser de aproximadamente 4 meses (112-128 días) según Art. 95 del Código de Trabajo.");
+                            if (model.Entidad != EntidadIncapacidad.CCSS)
+                                ModelState.AddModelError("Entidad",
+                                    "La licencia de maternidad es responsabilidad de la CCSS.");
+                            break;
+
+                        case TipoIncapacidad.LicenciaPaternidad:
+                            // Ley 9877: licencia de paternidad = 2 días hábiles
+                            if (dias > 4)
+                                ModelState.AddModelError("FechaFin",
+                                    "La licencia de paternidad es de máximo 2 días hábiles según Ley 9877.");
+                            break;
+
+                        case TipoIncapacidad.AccidenteLaboral:
+                            // Los accidentes laborales son responsabilidad del INS
+                            if (model.Entidad != EntidadIncapacidad.INS)
+                                ModelState.AddModelError("Entidad",
+                                    "Los accidentes laborales deben ser reportados al INS, no a la CCSS.");
+                            break;
+                    }
+                }
+
+                // Validar que la incapacidad no exceda 1 año
+                if (dias > 365)
+                    ModelState.AddModelError("FechaFin",
+                        "La incapacidad no puede exceder 365 días. Para extensiones, registre una nueva.");
+            }
+
+            // Porcentaje de pago debe estar entre 0 y 100
+            if (model.PorcentajePago < 0 || model.PorcentajePago > 100)
+                ModelState.AddModelError("PorcentajePago",
+                    "El porcentaje de pago debe estar entre 0% y 100%.");
         }
     }
 }

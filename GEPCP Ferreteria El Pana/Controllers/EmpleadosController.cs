@@ -138,10 +138,24 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             else if (model.FechaIngreso < new DateTime(1990, 1, 1))
                 ModelState.AddModelError("FechaIngreso", "La fecha de ingreso no puede ser anterior a 1990.");
 
+            // Art. 88-89 CT: edad mínima para trabajar = 15 años (con autorización)
+            if (model.FechaNacimiento.HasValue)
+            {
+                var edad = DateTime.Today.Year - model.FechaNacimiento.Value.Year;
+                if (model.FechaNacimiento.Value.Date > DateTime.Today.AddYears(-edad)) edad--;
+                if (edad < 15)
+                    ModelState.AddModelError("FechaNacimiento",
+                        "Art. 88 CT: la edad mínima para trabajar en Costa Rica es 15 años.");
+            }
+
             if (model.SalarioBase < 0)
                 ModelState.AddModelError("SalarioBase", "El salario no puede ser negativo.");
             else if (model.SalarioBase > 9_999_999.99m)
                 ModelState.AddModelError("SalarioBase", "El salario excede el límite máximo permitido.");
+            else if (model.SalarioBase > 0 && model.SalarioBase < 100_000m)
+                ModelState.AddModelError("SalarioBase",
+                    "El salario parece estar por debajo del salario mínimo de ley. " +
+                    "Verificá que cumple con el Decreto de Salarios Mínimos vigente.");
 
             if (!EsTelefonoValido(model.Telefono))
                 ModelState.AddModelError("Telefono",

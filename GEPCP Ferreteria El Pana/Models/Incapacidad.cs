@@ -17,13 +17,13 @@ namespace GEPCP_Ferreteria_El_Pana.Models
 
     public enum TipoIncapacidad
     {
-        EnfermedadComun,
-        AccidenteTransito,
-        AccidenteLaboral,
-        LicenciaMaternidad,
-        LicenciaPaternidad,  // ← agregar esto
-        Recuperacion,
-        Otro
+        EnfermedadComun = 1,
+        AccidenteTransito = 2,
+        AccidenteLaboral = 3,
+        LicenciaMaternidad = 4,  // Art. 95 CT: 4 meses (1 antes, 3 después del parto)
+        LicenciaPaternidad = 5,  // Ley 9877: 2 días hábiles
+        Recuperacion = 6,
+        Otro = 7
     }
 
     public class Incapacidad

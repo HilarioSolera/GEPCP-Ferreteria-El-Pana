@@ -574,19 +574,30 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             if (model.Anio < 2020 || model.Anio > DateTime.Today.Year + 1)
                 ModelState.AddModelError("Anio", "El año no es válido.");
 
+            // Art. 87 CT: Período de cálculo = 1 dic año anterior al 30 nov año actual
             if (model.FechaInicio == default)
                 ModelState.AddModelError("FechaInicio", "La fecha de inicio es obligatoria.");
+            else if (model.FechaInicio.Month != 12 || model.FechaInicio.Day != 1)
+                ModelState.AddModelError("FechaInicio",
+                    "Art. 87 CT: el período de aguinaldo inicia el 1° de diciembre del año anterior.");
 
             if (model.FechaFin == default)
                 ModelState.AddModelError("FechaFin", "La fecha fin es obligatoria.");
+            else if (model.FechaFin.Month != 11 || model.FechaFin.Day != 30)
+                ModelState.AddModelError("FechaFin",
+                    "Art. 87 CT: el período de aguinaldo finaliza el 30 de noviembre.");
 
             if (model.FechaInicio != default && model.FechaFin != default &&
                 model.FechaFin <= model.FechaInicio)
                 ModelState.AddModelError("FechaFin",
                     "La fecha fin debe ser posterior a la fecha inicio.");
 
+            // Art. 87 CT: Pago en los primeros 20 días de diciembre
             if (model.FechaPago == default)
                 ModelState.AddModelError("FechaPago", "La fecha de pago es obligatoria.");
+            else if (model.FechaPago.Month != 12 || model.FechaPago.Day > 20)
+                ModelState.AddModelError("FechaPago",
+                    "Art. 87 CT: el aguinaldo debe pagarse en los primeros 20 días de diciembre.");
         }
         // ── APIs PARA BUSCADOR ───────────────────────────────────────────────────
 

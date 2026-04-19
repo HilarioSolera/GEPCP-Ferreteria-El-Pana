@@ -300,15 +300,7 @@ foreach (var empleado in empleados)
     var salarioDiario = Math.Round(empleado.SalarioBase / 30m, 2);
     var deduccionIncapacidad = Math.Round(salarioDiario * diasIncapacidad, 2);
 
-    var deduccionVacaciones = Math.Round((await _context.Vacaciones
-        .Where(v =>
-            v.EmpleadoId == empleado.EmpleadoId &&
-            v.Tipo == TipoVacacion.SinPago &&
-            v.Estado == EstadoVacacion.Aprobada &&
-            v.FechaInicio <= periodo.FechaFin &&
-            v.FechaFin >= periodo.FechaInicio)
-        .Select(v => v.MontoDeducido)
-        .ToListAsync()).Sum(), 2);
+    var deduccionVacaciones = 0m;
 
     var totalDeducciones = Math.Round(
         deduccionCCSS + deduccionRenta +

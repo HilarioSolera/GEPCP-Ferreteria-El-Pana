@@ -393,7 +393,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "FECHA INICIO:", $"{vacacion.FechaInicio:dd/MM/yyyy}",
                                     "FECHA FIN:", $"{vacacion.FechaFin:dd/MM/yyyy}");
                                 FilaDatos(t, "DÍAS SOLICITADOS:", $"{vacacion.DiasHabiles:N1} día(s)",
-                                    "TIPO:", vacacion.Tipo == TipoVacacion.ConPago ? "Con Pago" : "Sin Pago");
+                                    "TIPO:", "Con Pago");
                             });
 
                             SeccionLabel(inner, "Resumen de Días (Art. 153 Código de Trabajo CR)");
