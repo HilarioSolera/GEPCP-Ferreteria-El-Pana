@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
@@ -54,7 +54,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "% CCSS Empleado")]
         public decimal PorcentajeCCSS { get; set; } = 10.83m;
 
-        // ── CCSS desglosada ───────────────────────────────────────────────
+        // CCSS desglosada
         [Display(Name = "% SEM (Seguro Enfermedad y Maternidad)")]
         public decimal PorcentajeSEM { get; set; } = 5.50m;
 
@@ -64,7 +64,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "% Banco Popular")]
         public decimal PorcentajeBP { get; set; } = 1.00m;
 
-        // ── ISR Tramos editables ──────────────────────────────────────────
+        // ISR Tramos editables
         [Display(Name = "ISR Tramo 1 — Exento hasta (₡)")]
         public decimal ISR_Tramo1_Hasta { get; set; } = 918000m;
 
@@ -94,14 +94,14 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "ISR Tramo 5 — %")]
         public decimal ISR_Tramo5_Porcentaje { get; set; } = 25m;
 
-        // ── Créditos fiscales ISR ─────────────────────────────────────────
+        // Créditos fiscales ISR
         [Display(Name = "Crédito por hijo (₡/mes)")]
         public decimal ISR_CreditoHijo { get; set; } = 0m;
 
         [Display(Name = "Crédito por cónyuge (₡/mes)")]
         public decimal ISR_CreditoConyuge { get; set; } = 0m;
 
-        // ── Navegación ────────────────────────────────────────────────────
+        // Navegación
         public ICollection<PlanillaEmpleado> PlanillasEmpleado { get; set; }
             = new List<PlanillaEmpleado>();
         public ICollection<HorasExtras> HorasExtras { get; set; }
@@ -109,7 +109,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         public ICollection<PagoFeriado> PagosFeriado { get; set; }
             = new List<PagoFeriado>();
 
-        // ── Propiedades calculadas ────────────────────────────────────────
+        // Propiedades calculadas
         public string Descripcion => TipoPeriodo switch
         {
             TipoPeriodo.Semanal =>

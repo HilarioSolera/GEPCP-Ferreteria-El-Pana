@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Models;
@@ -27,7 +27,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _servicioPDF = servicioPDF;
         }
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
+        // INDEX
 
         public async Task<IActionResult> Index(
             string? busqueda, string? estado, bool verTodos = false)
@@ -89,7 +89,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE ────────────────────────────────────────────────────────────
+        // CREATE
 
         public IActionResult Create()
         {
@@ -139,6 +139,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     $"Crédito de ₡{model.MontoTotal:N0} registrado para " +
                     $"{empleado.PrimerApellido} {empleado.Nombre}.";
 
+                // Recomendacion si la cuota es muy alta respecto al salario
+                var salarioQuinc = Math.Round(empleado.SalarioBase / empleado.FactorCuotaPrestamo, 2);
+                if (salarioQuinc > 0 && model.CuotaQuincenal > salarioQuinc * 0.3m)
+                    TempData["Warning"] = "La cuota quincenal supera el 30% del salario quincenal del empleado. Verificá que sea sostenible.";
+                else
+                    TempData["Recomendacion"] = "Recordá que las cuotas se deducen automáticamente al calcular la planilla.";
+
                 return RedirectToAction(nameof(Index), new { verTodos = true });
             }
             catch (Exception ex)
@@ -149,7 +156,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── REGISTRAR ABONO ───────────────────────────────────────────────────
+        // REGISTRAR ABONO
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -233,7 +240,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index), new { verTodos = true });
         }
 
-        // ── CORREGIR ABONO ────────────────────────────────────────────────────
+        // CORREGIR ABONO
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -304,7 +311,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index), new { verTodos = true });
         }
 
-        // ── ELIMINAR ABONO ────────────────────────────────────────────────────
+        // ELIMINAR ABONO
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -352,7 +359,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index), new { verTodos = true });
         }
 
-        // ── ELIMINAR CRÉDITO CERRADO ──────────────────────────────────────────
+        // ELIMINAR CRÉDITO CERRADO
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -400,7 +407,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index), new { verTodos = true });
         }
 
-        // ── CERRAR ────────────────────────────────────────────────────────────
+        // CERRAR
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -436,6 +443,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 TempData["Success"] =
                     $"Crédito de {credito.Empleado.PrimerApellido} " +
                     $"{credito.Empleado.Nombre} cerrado.";
+
+                if (credito.Saldo > 0)
+                    TempData["Warning"] = $"El crédito se cerró con un saldo pendiente de ₡{credito.Saldo:N0}. Este monto no se descontará en futuras planillas.";
             }
             catch (Exception ex)
             {
@@ -446,7 +456,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index), new { verTodos = true });
         }
 
-        // ── REABRIR ───────────────────────────────────────────────────────────
+        // REABRIR
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -491,7 +501,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index), new { verTodos = true });
         }
 
-        // ── DESCARGAR PDF ─────────────────────────────────────────────────────
+        // DESCARGAR PDF
 
         [HttpGet]
         public async Task<IActionResult> DescargarPDF(int id)
@@ -528,7 +538,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+        // ENVIAR PDF POR EMAIL
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -653,9 +663,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── APIs ──────────────────────────────────────────────────────────────
+        // APIs
 
-        // ==================== BuscarEmpleados ====================
+        // BuscarEmpleados
         [HttpGet]
         public async Task<IActionResult> BuscarEmpleados(string? termino)
         {
@@ -682,7 +692,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     salarioQuincenal = Math.Round(
                         e.SalarioBase / (e.TipoPago == TipoPago.Semanal ? 4m :
                                          e.TipoPago == TipoPago.Mensual ? 1m : 2m), 2),
-                    tipoPago = e.TipoPago.ToString(),   // ← AGREGAR ESTA LÍNEA
+                    tipoPago = e.TipoPago.ToString(),
                     tieneActivo = _context.Prestamos.Any(
                         p => p.EmpleadoId == e.EmpleadoId && p.Activo)
                 })
@@ -691,7 +701,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return Json(empleados);
         }
 
-        // ==================== TodosLosEmpleados ====================
+        // TodosLosEmpleados
         [HttpGet]
         public async Task<IActionResult> TodosLosEmpleados()
         {
@@ -709,7 +719,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     salarioQuincenal = Math.Round(
                         e.SalarioBase / (e.TipoPago == TipoPago.Semanal ? 4m :
                                          e.TipoPago == TipoPago.Mensual ? 1m : 2m), 2),
-                    tipoPago = e.TipoPago.ToString(),   // ← AGREGAR ESTA LÍNEA
+                    tipoPago = e.TipoPago.ToString(),
                     tieneActivo = _context.Prestamos.Any(
                         p => p.EmpleadoId == e.EmpleadoId && p.Activo)
                 })
@@ -718,7 +728,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return Json(empleados);
         }
 
-        // ── HELPERS ───────────────────────────────────────────────────────────
+        // HELPERS
 
         private void AplicarValidaciones(CreditoFerreteria model, decimal salarioQuincenal)
         {

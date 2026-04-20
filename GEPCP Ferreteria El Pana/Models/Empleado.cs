@@ -1,15 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
 
     public enum TipoJornada
     {
-        Completa = 1,   // 240 horas mensuales
-        MediaJornada = 2 // 120 horas mensuales
+        Completa = 1,
+        MediaJornada = 2
     }
     public enum FormaPago
     {
@@ -53,19 +51,13 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Required]
         [StringLength(100)]
         public string Puesto { get; set; } = string.Empty;
-
-        // ── NUEVO: Departamento ────────────────────────
         [Required]
         [StringLength(100)]
         [Display(Name = "Departamento")]
         public string Departamento { get; set; } = "Ventas";
-
-        // ── NUEVO: Tipo de jornada ─────────────────────
         [Required]
         [Display(Name = "Tipo de Jornada")]
         public TipoJornada TipoJornada { get; set; } = TipoJornada.Completa;
-
-        // ── NUEVO: Fecha de ingreso ────────────────────
         [Required]
         [Display(Name = "Fecha de Ingreso")]
         [DataType(DataType.Date)]
@@ -75,14 +67,12 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Salario Base Mensual (₡)")]
         public decimal SalarioBase { get; set; }
 
-        // ── Tipo de contrato ────────────────────────────────────────
         [Display(Name = "Tipo de Contrato")]
         public TipoContrato TipoContrato { get; set; } = TipoContrato.Indefinido;
 
         [Display(Name = "Fecha de Vencimiento de Contrato")]
         public DateTime? FechaVencimientoContrato { get; set; }
 
-        // ── Dirección ───────────────────────────────────────────────
         [StringLength(100)]
         [Display(Name = "Provincia")]
         public string? DireccionProvincia { get; set; }
@@ -95,11 +85,14 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Distrito")]
         public string? DireccionDistrito { get; set; }
 
+        [StringLength(100)]
+        [Display(Name = "Barrio")]
+        public string? DireccionBarrio { get; set; }
+
         [StringLength(300)]
         [Display(Name = "Dirección Exacta")]
         public string? DireccionExacta { get; set; }
 
-        // ── Contacto de emergencia ──────────────────────────────────
         [StringLength(100)]
         [Display(Name = "Contacto de Emergencia")]
         public string? ContactoEmergenciaNombre { get; set; }
@@ -108,7 +101,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Teléfono de Emergencia")]
         public string? ContactoEmergenciaTelefono { get; set; }
 
-        // ── CALCULADO: Valor hora = SalarioBase / HorasMensuales ──
+        // Valor hora segun salario base y tipo de jornada
         [NotMapped]
         public int HorasMensuales => TipoJornada == TipoJornada.Completa ? 240 : 120;
 
@@ -148,7 +141,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [NotMapped]
         public decimal ValorHoraExtra => Math.Round(ValorHora * 1.5m, 2);
 
-        // ── ISR: Créditos fiscales ───────────────────────────
+        // Creditos fiscales para calculo de ISR
         [Display(Name = "Número de Hijos")]
         public int NumHijos { get; set; } = 0;
 
@@ -166,8 +159,6 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Correo Electrónico")]
         public string? CorreoElectronico { get; set; }
 
-        // En Models/Empleado.cs agregar:
-
         [StringLength(30)]
         [Display(Name = "Número de Cuenta SINPE/Banco")]
         public string? NumeroCuenta { get; set; }
@@ -184,7 +175,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         public TipoPago TipoPago { get; set; } = TipoPago.Quincenal;
 
 
-        // ── Navegación ─────────────────────────────────
+        // Colecciones de navegacion
         public ICollection<Comision> Comisiones { get; set; } = new List<Comision>();
         public ICollection<Planilla> Planillas { get; set; } = new List<Planilla>();
         public ICollection<Prestamo> Prestamos { get; set; } = new List<Prestamo>();

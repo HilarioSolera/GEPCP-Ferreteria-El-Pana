@@ -23,7 +23,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         private static readonly Color Oscuro = Color.FromHex("1A1A2E");
         private static readonly Color Blanco = Color.FromHex("FFFFFF");
 
-        // ── HORAS EXTRAS SIN FIRMAS ───────────────────────────────────────────
+        // HORAS EXTRAS SIN FIRMAS
         public static byte[] GenerarPDFHorasExtrasSinFirmas(this ComprobantePlanillaService service, HorasExtras hx)
         {
             var logo = ObtenerLogoBytes(service);
@@ -101,7 +101,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── INCAPACIDAD SIN FIRMAS ────────────────────────────────────────────
+        // INCAPACIDAD SIN FIRMAS
         public static byte[] GenerarPDFIncapacidadSinFirmas(this ComprobantePlanillaService service, Incapacidad inc)
         {
             var logo = ObtenerLogoBytes(service);
@@ -193,7 +193,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── AGUINALDO SIN FIRMAS ──────────────────────────────────────────────
+        // AGUINALDO SIN FIRMAS
         public static byte[] GenerarPDFAguinaldoSinFirmas(this ComprobantePlanillaService service, Aguinaldo ag)
         {
             var logo = ObtenerLogoBytes(service);
@@ -274,7 +274,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── COMISIÓN SIN FIRMAS ───────────────────────────────────────────────
+        // COMISIÓN SIN FIRMAS
         public static byte[] GenerarPDFComisionSinFirmas(this ComprobantePlanillaService service, Comision comision)
         {
             var logo = ObtenerLogoBytes(service);
@@ -341,7 +341,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── BOLETA VACACIONES SIN FIRMAS ──────────────────────────────────────
+        // BOLETA VACACIONES SIN FIRMAS
         public static byte[] GenerarBoletaVacacionesSinFirmas(this ComprobantePlanillaService service,
             Vacacion vacacion, decimal diasBase, decimal diasTomados, decimal disponibles)
         {
@@ -438,7 +438,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── PRÉSTAMO SIN FIRMAS ───────────────────────────────────────────────
+        // PRÉSTAMO SIN FIRMAS
         public static byte[] GenerarFiniquitoPrestamoSinFirmas(this ComprobantePlanillaService service, Prestamo prestamo)
         {
             var logo = ObtenerLogoBytes(service);
@@ -539,7 +539,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── HELPERS PRIVADOS ──────────────────────────────────────────────────
+        // HELPERS PRIVADOS
 
         private static byte[]? ObtenerLogoBytes(ComprobantePlanillaService service)
         {

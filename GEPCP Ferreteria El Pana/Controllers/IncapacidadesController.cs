@@ -1,4 +1,4 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
@@ -32,7 +32,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _auditoria = auditoria;
         }
 
-        // ====================== INDEX ======================
+        // INDEX
         public async Task<IActionResult> Index(string? busqueda, string? entidad, bool verTodos = false)
         {
             ViewBag.Busqueda = busqueda;
@@ -74,7 +74,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return View(incapacidades);
         }
 
-        // ====================== CREATE ======================
+        // CREATE
         public async Task<IActionResult> Create()
         {
             await CargarEmpleadosViewBag();
@@ -126,7 +126,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 var divisor = _reglas.SalarioDivisorMensual > 0 ? _reglas.SalarioDivisorMensual : 30;
                 var salarioDiario = Math.Round(empleado.SalarioBase / divisor, 2);
 
-                // ── Cálculo según ley CR por tipo de incapacidad ──────────
+                // Cálculo según ley CR por tipo de incapacidad
                 Enum.TryParse<TipoIncapacidad>(model.TipoIncapacidad, out var tipoInc);
 
                 if (model.Entidad == EntidadIncapacidad.CCSS)
@@ -189,7 +189,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ====================== EDIT ======================
+        // EDIT
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null || id <= 0) return NotFound();
@@ -322,7 +322,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ====================== DELETE ======================
+        // DELETE
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -357,7 +357,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ====================== PDF ======================
+        // PDF
         [HttpGet]
         public async Task<IActionResult> DescargarPDF(int id)
         {
@@ -387,7 +387,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+        // ENVIAR PDF POR EMAIL
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -500,7 +500,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ====================== BUSCADOR EMPLEADOS ======================
+        // BUSCADOR EMPLEADOS
         [HttpGet]
         public async Task<IActionResult> BuscarEmpleados(string? termino)
         {
@@ -548,7 +548,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return Json(empleados);
         }
 
-        // ====================== HELPERS ======================
+        // HELPERS
         private async Task CargarEmpleadosViewBag(int? selectedId = null)
         {
             ViewBag.Empleados = await _context.Empleados
@@ -583,7 +583,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             if (model.Entidad == EntidadIncapacidad.CCSS && string.IsNullOrWhiteSpace(model.TiqueteCCSS))
                 ModelState.AddModelError("TiqueteCCSS", "El tiquete CCSS es obligatorio para incapacidades de la CCSS.");
 
-            // ── Validaciones por tipo según ley de Costa Rica ──────────────
+            // Validaciones por tipo según ley de Costa Rica
             if (model.FechaInicio != default && model.FechaFin != default)
             {
                 var dias = (model.FechaFin - model.FechaInicio).Days + 1;

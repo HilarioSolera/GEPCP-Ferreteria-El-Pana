@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
@@ -29,7 +29,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Modificado por")]
         public string? ModificadoPor { get; set; }
 
-        // ── Navegación ────────────────────────────────────────────────────────
+        // Navegación
         public Empleado Empleado { get; set; } = null!;
     }
 }

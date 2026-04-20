@@ -1,4 +1,4 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
@@ -30,7 +30,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _auditoria = auditoria;
         }
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
+        // INDEX
 
         public async Task<IActionResult> Index(int? periodoId, string? busqueda, bool verTodos = false)
         {
@@ -111,7 +111,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE ────────────────────────────────────────────────────────────
+        // CREATE
 
         public async Task<IActionResult> Create(int? periodoId)
         {
@@ -173,7 +173,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                // ── Validar que la fecha esté dentro del rango del período ────
+                // Validar que la fecha esté dentro del rango del período
                 if (model.Fecha != default &&
                     (model.Fecha < periodo.FechaInicio || model.Fecha > periodo.FechaFin))
                 {
@@ -184,7 +184,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                // ── Validar duplicado ─────────────────────────────────────────
+                // Validar duplicado
                 var existe = await _context.HorasExtras.AnyAsync(h =>
                     h.EmpleadoId == model.EmpleadoId &&
                     h.PeriodoPagoId == model.PeriodoPagoId);
@@ -222,7 +222,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (model.TotalHoras > LimiteHorasAdvertencia)
                     TempData["Warning"] = $"Horas extras registradas (₡{model.MontoTotal:N0}). " +
-                        $"⚠️ El total de {model.TotalHoras} horas supera el límite recomendado de {LimiteHorasAdvertencia} hrs quincenales.";
+                        $"El total de {model.TotalHoras} horas supera el límite recomendado de {LimiteHorasAdvertencia} hrs quincenales.";
                 else
                     TempData["Success"] = $"Horas extras de ₡{model.MontoTotal:N0} registradas correctamente.";
 
@@ -244,7 +244,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── EDIT ──────────────────────────────────────────────────────────────
+        // EDIT
 
         public async Task<IActionResult> Edit(int? id)
         {
@@ -318,7 +318,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         new { periodoId = registro.PeriodoPagoId });
                 }
 
-                // ── Validar que la fecha esté dentro del rango del período ────
+                // Validar que la fecha esté dentro del rango del período
                 if (model.Fecha != default &&
                     (model.Fecha < registro.PeriodoPago.FechaInicio ||
                      model.Fecha > registro.PeriodoPago.FechaFin))
@@ -336,13 +336,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                // ── Capturar valores anteriores ANTES de modificar ────────────
+                // Capturar valores anteriores ANTES de modificar
                 var fechaAnterior = registro.Fecha;
                 var montoAnterior = registro.MontoTotal;
                 var horasAnterior = registro.TotalHoras;
                 var pctAnterior = registro.Porcentaje;
 
-                // ── Aplicar cambios ───────────────────────────────────────────
+                // Aplicar cambios
                 registro.TotalHoras = model.TotalHoras;
                 registro.Porcentaje = model.Porcentaje;
                 registro.Fecha = model.Fecha;
@@ -362,7 +362,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 _logger.LogInformation("Horas extras editadas: ID {Id} Monto {M}",
                     id, registro.MontoTotal);
 
-                // ── Construir mensaje según qué cambió ────────────────────────
+                // Construir mensaje según qué cambió
                 var partes = new List<string>();
 
                 bool cambioFecha = registro.Fecha != fechaAnterior;
@@ -405,7 +405,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── DELETE ────────────────────────────────────────────────────────────
+        // DELETE
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -453,7 +453,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── API: Calcular monto ───────────────────────────────────────────────
+        // API: Calcular monto
 
         [HttpGet]
         public async Task<IActionResult> CalcularMonto(
@@ -546,10 +546,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
             return Json(empleados);
         }
-        // ── API: Todos los empleados
-
-
-        // ── API: Rango del período ────────────────────────────────────────────
+        // API: Todos los empleados
+        // API: Rango del período
 
         [HttpGet]
         public async Task<IActionResult> ObtenerRangoPeriodo(int periodoId)
@@ -578,7 +576,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── DESCARGAR PDF ─────────────────────────────────────────────────────
+        // DESCARGAR PDF
 
         [HttpGet]
         public async Task<IActionResult> DescargarPDF(int id)
@@ -611,7 +609,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+        // ENVIAR PDF POR EMAIL
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -728,7 +726,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── HELPERS ───────────────────────────────────────────────────────────
+        // HELPERS
 
         private async Task CargarViewBagPeriodos(int? periodoId = null)
         {

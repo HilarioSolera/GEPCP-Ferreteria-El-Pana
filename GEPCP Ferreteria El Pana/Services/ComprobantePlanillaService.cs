@@ -1,4 +1,4 @@
-﻿using QuestPDF.Fluent;
+using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using GEPCP_Ferreteria_El_Pana.Models;
@@ -18,7 +18,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             _env = env;
         }
 
-        // ── PALETA GLOBAL ─────────────────────────────────────────────────────
+        // PALETA GLOBAL
         private static readonly Color Naranja = Color.FromHex("FF7A00");
         private static readonly Color NaranjaOsc = Color.FromHex("E56E00");
         private static readonly Color GrisClaro = Color.FromHex("DDDDDD");
@@ -32,7 +32,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         private static readonly Color Oscuro = Color.FromHex("1A1A2E");
         private static readonly Color Blanco = Color.FromHex("FFFFFF");
 
-        // ── HELPERS ───────────────────────────────────────────────────────────
+        // HELPERS
         private string LogoPath =>
             Path.Combine(_env.WebRootPath, "images", "logo-el-pana.jpg");
 
@@ -124,6 +124,32 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             });
         }
 
+        // Firmas compactas para boletas A5
+        private static void FirmasCompactas(ColumnDescriptor col,
+            string nombreEmp, string cedula, string autorizado = "Recursos Humanos / Jefatura")
+        {
+            col.Item().PaddingTop(14).Table(t =>
+            {
+                t.ColumnsDefinition(c => { c.RelativeColumn(5); c.RelativeColumn(1); c.RelativeColumn(4); });
+
+                t.Cell().Padding(3).Column(c =>
+                {
+                    c.Item().Text("RECIBO CONFORME").Bold().FontSize(7).FontColor(GrisTexto);
+                    c.Item().PaddingTop(20).BorderBottom(0.5f).BorderColor(Color.FromHex("AAAAAA")).Text("");
+                    c.Item().PaddingTop(2).AlignCenter().Text(nombreEmp).FontSize(7).Italic();
+                    c.Item().AlignCenter().Text(cedula).FontSize(6).FontColor(GrisTexto);
+                });
+                t.Cell().Text("");
+                t.Cell().Padding(3).Column(c =>
+                {
+                    c.Item().Text("AUTORIZADO POR").Bold().FontSize(7).FontColor(GrisTexto);
+                    c.Item().PaddingTop(20).BorderBottom(0.5f).BorderColor(Color.FromHex("AAAAAA")).Text("");
+                    c.Item().PaddingTop(2).AlignCenter().Text(autorizado).FontSize(7).Italic();
+                    c.Item().AlignCenter().Text("Ferretería El Pana SRL").FontSize(6).FontColor(GrisTexto);
+                });
+            });
+        }
+
         // Bloque de firmas reutilizable
         private static void Firmas(ColumnDescriptor col,
             string nombreEmp, string cedula, string autorizado = "Recursos Humanos / Jefatura")
@@ -150,7 +176,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             });
         }
 
-        // ── COMPROBANTE PLANILLA ──────────────────────────────────────────────
+        // COMPROBANTE PLANILLA
         public byte[] GenerarPDF(PlanillaEmpleado planilla)
         {
             var logo = ObtenerLogoBytes();
@@ -160,16 +186,16 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             {
                 container.Page(page =>
                 {
-                    page.Size(PageSizes.A4);
+                    page.Size(PageSizes.A5);
                     page.Margin(0);
-                    page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial"));
+                    page.DefaultTextStyle(x => x.FontSize(8).FontFamily("Arial"));
 
                     page.Content().Column(col =>
                     {
                         Encabezado(col, logo, "COMPROBANTE DE PAGO",
                             $"Período: {planilla.PeriodoPago.FechaInicio:dd/MM/yyyy} — {planilla.PeriodoPago.FechaFin:dd/MM/yyyy}");
 
-                        col.Item().Padding(20).Column(inner =>
+                        col.Item().Padding(12).Column(inner =>
                         {
                             // Datos empleado
                             SeccionLabel(inner, "Datos del Empleado");
@@ -231,161 +257,71 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             inner.Item().Table(t =>
                             {
                                 t.ColumnsDefinition(c =>
-                                { c.RelativeColumn(6); c.RelativeColumn(2); c.RelativeColumn(2); });
+                                { c.RelativeColumn(6); c.RelativeColumn(2); });
 
-                                void FilaDed(string c, string pct, string m, bool total = false)
+                                void FilaDed(string c, string m, bool total = false)
                                 {
                                     var bg = total ? RojoFondo : Blanco;
                                     if (total)
                                     {
-                                        t.Cell().Background(bg).Padding(3).Text(c).FontSize(8).Bold();
-                                        t.Cell().Background(bg).Padding(3).AlignCenter().Text(pct).FontSize(8);
-                                        t.Cell().Background(bg).Padding(3).AlignRight()
-                                            .Text(m).FontSize(8).Bold().FontColor(Rojo);
+                                        t.Cell().Background(bg).Padding(2).Text(c).FontSize(7.5f).Bold();
+                                        t.Cell().Background(bg).Padding(2).AlignRight()
+                                            .Text(m).FontSize(7.5f).Bold().FontColor(Rojo);
                                     }
                                     else
                                     {
-                                        t.Cell().Background(bg).Padding(3).Text(c).FontSize(8);
-                                        t.Cell().Background(bg).Padding(3).AlignCenter().Text(pct).FontSize(8);
-                                        t.Cell().Background(bg).Padding(3).AlignRight()
-                                            .Text(m).FontSize(8).FontColor(Color.FromHex("222222"));
+                                        t.Cell().Background(bg).Padding(2).Text(c).FontSize(7.5f);
+                                        t.Cell().Background(bg).Padding(2).AlignRight()
+                                            .Text(m).FontSize(7.5f).FontColor(Color.FromHex("222222"));
                                     }
                                 }
 
-                                // CCSS desglosada (fallback a valores estándar si el período no los tiene)
-                                var totalBruto = planilla.TotalDevengado;
-                                var per = planilla.PeriodoPago;
-                                var factorMes = per.TipoPeriodo switch
-                                {
-                                    TipoPeriodo.Semanal => 52m / 12m,
-                                    TipoPeriodo.Mensual => 1m,
-                                    _ => 2m
-                                };
-                                var brutoMensual = totalBruto * factorMes;
-                                var pctSEM = per.PorcentajeSEM > 0 ? per.PorcentajeSEM : 5.50m;
-                                var pctIVM = per.PorcentajeIVM > 0 ? per.PorcentajeIVM : 4.33m;
-                                var pctBP  = per.PorcentajeBP  > 0 ? per.PorcentajeBP  : 1.00m;
-                                var sem = Math.Round(totalBruto * (pctSEM / 100m), 2);
-                                var ivm = Math.Round(totalBruto * (pctIVM / 100m), 2);
-                                var bp = Math.Round(totalBruto * (pctBP / 100m), 2);
+                                foreach (var h in new[] { "DEDUCCIÓN", "MONTO" })
+                                    t.Cell().Background(Naranja).Padding(3)
+                                        .Text(h).Bold().FontSize(7.5f).FontColor(Blanco);
 
-                                // Header deducciones
-                                foreach (var h in new[] { "CONCEPTO", "%", "MONTO" })
-                                    t.Cell().Background(Naranja).Padding(4)
-                                        .Text(h).Bold().FontSize(8).FontColor(Blanco);
-
-                                // Salario bruto mensual (referencia)
-                                t.Cell().ColumnSpan(3).Padding(3)
-                                    .Text($"Salario Bruto Mensual (referencia): ₡{brutoMensual:N2}")
-                                    .Bold().FontSize(8).FontColor(Color.FromHex("333333"));
-
-                                // Sub-header Cargas Sociales
-                                t.Cell().ColumnSpan(3).Background(GrisFondo).Padding(3)
-                                    .Text($"CARGAS SOCIALES (CCSS) — {planilla.PorcentajeCCSS:N2}%")
-                                    .Bold().FontSize(7.5f).FontColor(Color.FromHex("555555"));
-
-                                FilaDed("   Seguro Enfermedad y Maternidad (SEM)", $"{pctSEM:N2}%",
-                                    $"₡{sem:N2}");
-                                FilaDed("   Invalidez, Vejez y Muerte (IVM)", $"{pctIVM:N2}%",
-                                    $"₡{ivm:N2}");
-                                FilaDed("   Banco Popular (Aporte trabajador)", $"{pctBP:N2}%",
-                                    $"₡{bp:N2}");
-                                FilaDed("Subtotal CCSS",
-                                    $"{planilla.PorcentajeCCSS:N2}%",
+                                FilaDed($"Cargas Sociales (CCSS) — {planilla.PorcentajeCCSS:N2}%",
                                     $"₡{planilla.DeduccionCCSS:N2}");
 
-                                // ISR (Impuesto sobre la Renta)
                                 if (planilla.DeduccionRenta > 0)
-                                {
-                                    var baseImponibleMensual = brutoMensual;
-                                    // Fallback ISR tramos (protección contra valores en 0)
-                                    var t2D = per.ISR_Tramo2_Desde > 0 ? per.ISR_Tramo2_Desde : 918000m;
-                                    var t2H = per.ISR_Tramo2_Hasta > 0 ? per.ISR_Tramo2_Hasta : 1347000m;
-                                    var t2P = per.ISR_Tramo2_Porcentaje > 0 ? per.ISR_Tramo2_Porcentaje : 10m;
-                                    var t3D = per.ISR_Tramo3_Desde > 0 ? per.ISR_Tramo3_Desde : 1347000m;
-                                    var t3H = per.ISR_Tramo3_Hasta > 0 ? per.ISR_Tramo3_Hasta : 2364000m;
-                                    var t3P = per.ISR_Tramo3_Porcentaje > 0 ? per.ISR_Tramo3_Porcentaje : 15m;
-                                    var t4D = per.ISR_Tramo4_Desde > 0 ? per.ISR_Tramo4_Desde : 2364000m;
-                                    var t4H = per.ISR_Tramo4_Hasta > 0 ? per.ISR_Tramo4_Hasta : 4727000m;
-                                    var t4P = per.ISR_Tramo4_Porcentaje > 0 ? per.ISR_Tramo4_Porcentaje : 20m;
-                                    var t5D = per.ISR_Tramo5_Desde > 0 ? per.ISR_Tramo5_Desde : 4727000m;
-                                    var t5P = per.ISR_Tramo5_Porcentaje > 0 ? per.ISR_Tramo5_Porcentaje : 25m;
-
-                                    t.Cell().ColumnSpan(3).Background(GrisFondo).Padding(3)
-                                        .Text($"IMPUESTO SOBRE LA RENTA (ISR) — Base mensual: ₡{baseImponibleMensual:N2}")
-                                        .Bold().FontSize(7.5f).FontColor(Color.FromHex("555555"));
-
-                                    if (baseImponibleMensual > t2D)
-                                        FilaDed($"   Excedente ₡{t2D:N0} – ₡{t2H:N0}",
-                                            $"{t2P:N0}%",
-                                            $"₡{Math.Round(Math.Min(Math.Max(baseImponibleMensual - t2D, 0), t2H - t2D) * (t2P / 100m) / factorMes, 2):N2}");
-                                    if (baseImponibleMensual > t3D)
-                                        FilaDed($"   Excedente ₡{t3D:N0} – ₡{t3H:N0}",
-                                            $"{t3P:N0}%",
-                                            $"₡{Math.Round(Math.Min(Math.Max(baseImponibleMensual - t3D, 0), t3H - t3D) * (t3P / 100m) / factorMes, 2):N2}");
-                                    if (baseImponibleMensual > t4D)
-                                        FilaDed($"   Excedente ₡{t4D:N0} – ₡{t4H:N0}",
-                                            $"{t4P:N0}%",
-                                            $"₡{Math.Round(Math.Min(Math.Max(baseImponibleMensual - t4D, 0), t4H - t4D) * (t4P / 100m) / factorMes, 2):N2}");
-                                    if (baseImponibleMensual > t5D)
-                                        FilaDed($"   Excedente sobre ₡{t5D:N0}",
-                                            $"{t5P:N0}%",
-                                            $"₡{Math.Round((baseImponibleMensual - t5D) * (t5P / 100m) / factorMes, 2):N2}");
-
-                                    // Créditos fiscales
-                                    var credHijos = emp.NumHijos * per.ISR_CreditoHijo;
-                                    var credConyuge = emp.TieneConyuge ? per.ISR_CreditoConyuge : 0m;
-                                    var totalCreditos = credHijos + credConyuge;
-                                    if (totalCreditos > 0)
-                                        FilaDed($"   Créditos fiscales ({emp.NumHijos} hijo(s), {(emp.TieneConyuge ? "cónyuge" : "sin cónyuge")})",
-                                            "", $"-₡{Math.Round(totalCreditos / factorMes, 2):N2}");
-
-                                    FilaDed("Subtotal ISR (retención por período)", "",
+                                    FilaDed("Impuesto sobre la Renta (ISR)",
                                         $"₡{planilla.DeduccionRenta:N2}");
-                                }
-                                else
-                                {
-                                    FilaDed("Impuesto sobre la Renta (ISR)", "Exento",
-                                        $"₡0.00");
-                                }
 
-                                // Otras deducciones
                                 if (planilla.DeduccionCreditoFerreteria > 0)
-                                    FilaDed("Crédito Ferretería", "",
+                                    FilaDed("Crédito Ferretería",
                                         $"₡{planilla.DeduccionCreditoFerreteria:N2}");
                                 if (planilla.DeduccionPrestamos > 0)
-                                    FilaDed("Préstamo Personal", "",
+                                    FilaDed("Préstamo Personal",
                                         $"₡{planilla.DeduccionPrestamos:N2}");
                                 if (planilla.DeduccionHorasNoLaboradas > 0)
-                                    FilaDed("Horas No Laboradas", "",
+                                    FilaDed("Horas No Laboradas",
                                         $"₡{planilla.DeduccionHorasNoLaboradas:N2}");
                                 if (planilla.DeduccionIncapacidad > 0)
-                                    FilaDed("Incapacidad", "",
+                                    FilaDed("Incapacidad",
                                         $"₡{planilla.DeduccionIncapacidad:N2}");
                                 if (planilla.OtrasDeducciones > 0)
                                 {
                                     var labelOtras = string.IsNullOrWhiteSpace(planilla.DescripcionOtrasDeducciones)
                                         ? "Otras Deducciones"
                                         : planilla.DescripcionOtrasDeducciones;
-                                    FilaDed(labelOtras, "", $"₡{planilla.OtrasDeducciones:N2}");
+                                    FilaDed(labelOtras, $"₡{planilla.OtrasDeducciones:N2}");
                                 }
 
-                                // Total
-                                FilaDed("TOTAL DEDUCCIONES", "",
+                                FilaDed("TOTAL DEDUCCIONES",
                                     $"₡{planilla.TotalDeducciones:N2}", true);
                             });
 
                             // Neto
-                            inner.Item().PaddingTop(10).Background(Oscuro).Padding(12).Row(row =>
+                            inner.Item().PaddingTop(6).Background(Oscuro).Padding(8).Row(row =>
                             {
                                 row.RelativeItem().Text("NETO A PAGAR")
-                                    .Bold().FontSize(14).FontColor(Blanco);
-                                row.ConstantItem(180).AlignRight()
+                                    .Bold().FontSize(12).FontColor(Blanco);
+                                row.ConstantItem(150).AlignRight()
                                     .Text($"₡{planilla.NetoAPagar:N2}")
-                                    .Bold().FontSize(18).FontColor(Naranja);
+                                    .Bold().FontSize(14).FontColor(Naranja);
                             });
 
-                            Firmas(inner,
+                            FirmasCompactas(inner,
                                 $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                 emp.Cedula);
                             PiePagina(inner);
@@ -395,7 +331,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── HORAS EXTRAS ─────────────────────────────────────────────────────
+        // HORAS EXTRAS
         public byte[] GenerarPDFHorasExtras(HorasExtras hx)
         {
             var logo = ObtenerLogoBytes();
@@ -637,7 +573,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── INCAPACIDAD ───────────────────────────────────────────────────────
+        // INCAPACIDAD
         public byte[] GenerarPDFIncapacidad(Incapacidad inc)
         {
             var logo = ObtenerLogoBytes();
@@ -837,7 +773,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── AGUINALDO ─────────────────────────────────────────────────────────
+        // AGUINALDO
         public byte[] GenerarPDFAguinaldo(Aguinaldo ag)
         {
             var logo = ObtenerLogoBytes();
@@ -921,7 +857,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── AGUINALDO SIN FIRMAS (para envío por email) ────────────────────────
+        // AGUINALDO SIN FIRMAS (para envío por email)
 
         public byte[] GenerarPDFAguinaldoSinFirmas(Aguinaldo ag)
         {
@@ -1011,7 +947,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── PLANILLA GENERAL ──────────────────────────────────────────────────
+        // PLANILLA GENERAL
         public byte[] GenerarPDFPlanillaGeneral(
             List<PlanillaEmpleado> planillas, PeriodoPago periodo)
         {
@@ -1143,7 +1079,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             t.Cell().Padding(2).AlignRight().Text($"₡{p.NetoAPagar:N0}").Bold()
                 .FontSize(7).FontColor(Verde);
         }
-        // ── COMISIÓN ──────────────────────────────────────────────────────────
+        // COMISIÓN
         public byte[] GenerarPDFComision(Comision comision)
         {
             var logo = ObtenerLogoBytes();
@@ -1213,7 +1149,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── BOLETA VACACIONES ─────────────────────────────────────────────────
+        // BOLETA VACACIONES
         public byte[] GenerarBoletaVacaciones(
             Vacacion vacacion, decimal diasBase, decimal diasTomados,
             decimal disponibles, string emisor)
@@ -1447,7 +1383,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── PRÉSTAMO — activo o saldado ───────────────────────────────────────
+        // PRÉSTAMO — activo o saldado
         public byte[] GenerarFiniquitoPrestamo(Prestamo prestamo)
         {
             var logo = ObtenerLogoBytes();
@@ -1801,7 +1737,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── GENERAR PDF CRÉDITO FERRETERÍA ────────────────────────────────────────
+        // GENERAR PDF CRÉDITO FERRETERÍA
 
         public byte[] GenerarPDFCredito(CreditoFerreteria credito)
         {
@@ -1850,7 +1786,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
 
                         col.Item().Padding(20).Column(inner =>
                         {
-                            // ── Datos del empleado ────────────────────────────────
+                            // Datos del empleado
                             SeccionLabel(inner, "Datos del Empleado");
                             inner.Item().Table(t =>
                             {
@@ -1866,7 +1802,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     "PUESTO:", emp.Puesto);
                             });
 
-                            // ── Datos del crédito ─────────────────────────────────
+                            // Datos del crédito
                             SeccionLabel(inner, "Detalle del Crédito");
                             inner.Item().Table(t =>
                             {
@@ -1893,7 +1829,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .Text(credito.Descripcion).FontSize(9);
                             });
 
-                            // ── Banner de estado ──────────────────────────────────
+                            // Banner de estado
                             inner.Item().PaddingTop(8)
                                 .Background(esSaldado ? VerdeFondo : Color.FromHex("FFF3E0"))
                                 .Padding(10).Row(r =>
@@ -1904,7 +1840,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                         .Bold().FontSize(9).FontColor(colorEstado);
                                 });
 
-                            // ── Historial de abonos ───────────────────────────────
+                            // Historial de abonos
                             if (abonos.Any())
                             {
                                 SeccionLabel(inner, "Historial Completo de Abonos");
@@ -1986,7 +1922,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 });
                             }
 
-                            // ── Resumen final si está saldado ─────────────────────
+                            // Resumen final si está saldado
                             if (esSaldado)
                             {
                                 inner.Item().PaddingTop(8).Background(VerdeFondo).Padding(12).Row(r =>
@@ -2074,7 +2010,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .FontSize(8).FontColor(Color.FromHex("1565C0")).Italic();
                             });
 
-                            // ── Datos del empleado ────────────────────────────────
+                            // Datos del empleado
                             SeccionLabel(inner, "Datos del Empleado");
                             inner.Item().Table(t =>
                             {
@@ -2090,7 +2026,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     "PUESTO:", emp.Puesto);
                             });
 
-                            // ── Datos del crédito ─────────────────────────────────
+                            // Datos del crédito
                             SeccionLabel(inner, "Detalle del Crédito");
                             inner.Item().Table(t =>
                             {
@@ -2117,7 +2053,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .Text(credito.Descripcion).FontSize(9);
                             });
 
-                            // ── Banner de estado ──────────────────────────────────
+                            // Banner de estado
                             inner.Item().PaddingTop(8)
                                 .Background(esSaldado ? VerdeFondo : Color.FromHex("FFF3E0"))
                                 .Padding(10).Row(r =>
@@ -2128,7 +2064,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                         .Bold().FontSize(9).FontColor(colorEstado);
                                 });
 
-                            // ── Historial de abonos ───────────────────────────────
+                            // Historial de abonos
                             if (abonos.Any())
                             {
                                 SeccionLabel(inner, "Historial Completo de Abonos");
@@ -2210,7 +2146,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 });
                             }
 
-                            // ── Resumen final si está saldado ─────────────────────
+                            // Resumen final si está saldado
                             if (esSaldado)
                             {
                                 inner.Item().PaddingTop(8).Background(VerdeFondo).Padding(12).Row(r =>
@@ -2240,7 +2176,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── VERSIÓN SIN FIRMAS (para envío por email) ─────────────────────────
+        // VERSIÓN SIN FIRMAS (para envío por email)
 
         public byte[] GenerarPDFSinFirmas(PlanillaEmpleado planilla)
         {
@@ -2251,27 +2187,26 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             {
                 container.Page(page =>
                 {
-                    page.Size(PageSizes.A4);
+                    page.Size(PageSizes.A5);
                     page.Margin(0);
-                    page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial"));
+                    page.DefaultTextStyle(x => x.FontSize(8).FontFamily("Arial"));
                     page.Content().Column(col =>
                     {
                         Encabezado(col, logo, "COMPROBANTE DE PAGO — COPIA DIGITAL",
                             $"Período: {planilla.PeriodoPago.FechaInicio:dd/MM/yyyy} " +
                             $"— {planilla.PeriodoPago.FechaFin:dd/MM/yyyy}");
 
-                        col.Item().Padding(20).Column(inner =>
+                        col.Item().Padding(12).Column(inner =>
                         {
-                            // Banner informativo
                             inner.Item().Background(Color.FromHex("E3F2FD"))
-                                .Padding(8).Row(r =>
+                                .Padding(6).Row(r =>
                                 {
                                     r.ConstantItem(4)
                                         .Background(Color.FromHex("1565C0")).Text("");
-                                    r.RelativeItem().PaddingLeft(8)
+                                    r.RelativeItem().PaddingLeft(6)
                                         .Text("Documento generado digitalmente por el " +
                                               "Sistema GEPCP. No requiere firma física.")
-                                        .FontSize(8).FontColor(Color.FromHex("1565C0"))
+                                        .FontSize(7).FontColor(Color.FromHex("1565C0"))
                                         .Italic();
                                 });
 
@@ -2349,143 +2284,67 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             inner.Item().Table(t =>
                             {
                                 t.ColumnsDefinition(c =>
-                                {
-                                    c.RelativeColumn(6); c.RelativeColumn(2);
-                                    c.RelativeColumn(2);
-                                });
+                                { c.RelativeColumn(6); c.RelativeColumn(2); });
 
-                                void FilaDed(string c, string pct,
-                                    string m, bool total = false)
+                                void FilaDed(string c, string m, bool total = false)
                                 {
                                     var bg = total ? RojoFondo : Blanco;
                                     if (total)
                                     {
-                                        t.Cell().Background(bg).Padding(3)
-                                            .Text(c).FontSize(8).Bold();
-                                        t.Cell().Background(bg).Padding(3)
-                                            .AlignCenter().Text(pct).FontSize(8);
-                                        t.Cell().Background(bg).Padding(3)
-                                            .AlignRight().Text(m).FontSize(8)
+                                        t.Cell().Background(bg).Padding(2)
+                                            .Text(c).FontSize(7.5f).Bold();
+                                        t.Cell().Background(bg).Padding(2)
+                                            .AlignRight().Text(m).FontSize(7.5f)
                                             .Bold().FontColor(Rojo);
                                     }
                                     else
                                     {
-                                        t.Cell().Background(bg).Padding(3)
-                                            .Text(c).FontSize(8);
-                                        t.Cell().Background(bg).Padding(3)
-                                            .AlignCenter().Text(pct).FontSize(8);
-                                        t.Cell().Background(bg).Padding(3)
-                                            .AlignRight().Text(m).FontSize(8)
+                                        t.Cell().Background(bg).Padding(2)
+                                            .Text(c).FontSize(7.5f);
+                                        t.Cell().Background(bg).Padding(2)
+                                            .AlignRight().Text(m).FontSize(7.5f)
                                             .FontColor(Color.FromHex("222222"));
                                     }
                                 }
-                                // CCSS desglosada (fallback a valores estándar si el período no los tiene)
-                                var totalBruto2 = planilla.TotalDevengado;
-                                var per2 = planilla.PeriodoPago;
-                                var factorMes2 = per2.TipoPeriodo switch
-                                {
-                                    TipoPeriodo.Semanal => 52m / 12m,
-                                    TipoPeriodo.Mensual => 1m,
-                                    _ => 2m
-                                };
-                                var brutoMensual2 = totalBruto2 * factorMes2;
-                                var pctSEM2 = per2.PorcentajeSEM > 0 ? per2.PorcentajeSEM : 5.50m;
-                                var pctIVM2 = per2.PorcentajeIVM > 0 ? per2.PorcentajeIVM : 4.33m;
-                                var pctBP2  = per2.PorcentajeBP  > 0 ? per2.PorcentajeBP  : 1.00m;
-                                var sem2 = Math.Round(totalBruto2 * (pctSEM2 / 100m), 2);
-                                var ivm2 = Math.Round(totalBruto2 * (pctIVM2 / 100m), 2);
-                                var bp2 = Math.Round(totalBruto2 * (pctBP2 / 100m), 2);
 
-                                foreach (var h in new[] { "CONCEPTO", "%", "MONTO" })
-                                    t.Cell().Background(Naranja).Padding(4)
-                                        .Text(h).Bold().FontSize(8).FontColor(Blanco);
+                                foreach (var h in new[] { "DEDUCCIÓN", "MONTO" })
+                                    t.Cell().Background(Naranja).Padding(3)
+                                        .Text(h).Bold().FontSize(7.5f).FontColor(Blanco);
 
-                                // Salario bruto mensual (referencia)
-                                t.Cell().ColumnSpan(3).Padding(3)
-                                    .Text($"Salario Bruto Mensual (referencia): ₡{brutoMensual2:N2}")
-                                    .Bold().FontSize(8).FontColor(Color.FromHex("333333"));
-
-                                t.Cell().ColumnSpan(3).Background(GrisFondo).Padding(3)
-                                    .Text($"CARGAS SOCIALES (CCSS) — {planilla.PorcentajeCCSS:N2}%")
-                                    .Bold().FontSize(7.5f).FontColor(Color.FromHex("555555"));
-
-                                FilaDed("   Seguro Enfermedad y Maternidad (SEM)", $"{pctSEM2:N2}%",
-                                    $"₡{sem2:N2}");
-                                FilaDed("   Invalidez, Vejez y Muerte (IVM)", $"{pctIVM2:N2}%",
-                                    $"₡{ivm2:N2}");
-                                FilaDed("   Banco Popular (Aporte trabajador)", $"{pctBP2:N2}%",
-                                    $"₡{bp2:N2}");
-                                FilaDed("Subtotal CCSS",
-                                    $"{planilla.PorcentajeCCSS:N2}%",
+                                FilaDed($"Cargas Sociales (CCSS) — {planilla.PorcentajeCCSS:N2}%",
                                     $"₡{planilla.DeduccionCCSS:N2}");
 
                                 if (planilla.DeduccionRenta > 0)
-                                {
-                                    var baseImponibleMensual2 = brutoMensual2;
-                                    t.Cell().ColumnSpan(3).Background(GrisFondo).Padding(3)
-                                        .Text($"IMPUESTO SOBRE LA RENTA (ISR) — Base mensual: ₡{baseImponibleMensual2:N2}")
-                                        .Bold().FontSize(7.5f).FontColor(Color.FromHex("555555"));
-
-                                    if (baseImponibleMensual2 > per2.ISR_Tramo2_Desde)
-                                        FilaDed($"   Excedente ₡{per2.ISR_Tramo2_Desde:N0} – ₡{per2.ISR_Tramo2_Hasta:N0}",
-                                            $"{per2.ISR_Tramo2_Porcentaje:N0}%",
-                                            $"₡{Math.Round(Math.Min(Math.Max(baseImponibleMensual2 - per2.ISR_Tramo2_Desde, 0), per2.ISR_Tramo2_Hasta - per2.ISR_Tramo2_Desde) * (per2.ISR_Tramo2_Porcentaje / 100m) / factorMes2, 2):N2}");
-                                    if (baseImponibleMensual2 > per2.ISR_Tramo3_Desde)
-                                        FilaDed($"   Excedente ₡{per2.ISR_Tramo3_Desde:N0} – ₡{per2.ISR_Tramo3_Hasta:N0}",
-                                            $"{per2.ISR_Tramo3_Porcentaje:N0}%",
-                                            $"₡{Math.Round(Math.Min(Math.Max(baseImponibleMensual2 - per2.ISR_Tramo3_Desde, 0), per2.ISR_Tramo3_Hasta - per2.ISR_Tramo3_Desde) * (per2.ISR_Tramo3_Porcentaje / 100m) / factorMes2, 2):N2}");
-                                    if (baseImponibleMensual2 > per2.ISR_Tramo4_Desde)
-                                        FilaDed($"   Excedente ₡{per2.ISR_Tramo4_Desde:N0} – ₡{per2.ISR_Tramo4_Hasta:N0}",
-                                            $"{per2.ISR_Tramo4_Porcentaje:N0}%",
-                                            $"₡{Math.Round(Math.Min(Math.Max(baseImponibleMensual2 - per2.ISR_Tramo4_Desde, 0), per2.ISR_Tramo4_Hasta - per2.ISR_Tramo4_Desde) * (per2.ISR_Tramo4_Porcentaje / 100m) / factorMes2, 2):N2}");
-                                    if (baseImponibleMensual2 > per2.ISR_Tramo5_Desde)
-                                        FilaDed($"   Excedente sobre ₡{per2.ISR_Tramo5_Desde:N0}",
-                                            $"{per2.ISR_Tramo5_Porcentaje:N0}%",
-                                            $"₡{Math.Round((baseImponibleMensual2 - per2.ISR_Tramo5_Desde) * (per2.ISR_Tramo5_Porcentaje / 100m) / factorMes2, 2):N2}");
-
-                                    // Créditos fiscales
-                                    var credHijos2 = emp.NumHijos * per2.ISR_CreditoHijo;
-                                    var credConyuge2 = emp.TieneConyuge ? per2.ISR_CreditoConyuge : 0m;
-                                    var totalCreditos2 = credHijos2 + credConyuge2;
-                                    if (totalCreditos2 > 0)
-                                        FilaDed($"   Créditos fiscales ({emp.NumHijos} hijo(s), {(emp.TieneConyuge ? "cónyuge" : "sin cónyuge")})",
-                                            "", $"-₡{Math.Round(totalCreditos2 / factorMes2, 2):N2}");
-
-                                    FilaDed("Subtotal ISR (retención por período)", "",
+                                    FilaDed("Impuesto sobre la Renta (ISR)",
                                         $"₡{planilla.DeduccionRenta:N2}");
-                                }
-                                else
-                                {
-                                    FilaDed("Impuesto sobre la Renta (ISR)", "Exento",
-                                        $"₡0.00");
-                                }
+
                                 if (planilla.DeduccionCreditoFerreteria > 0)
-                                    FilaDed("Crédito Ferretería", "",
+                                    FilaDed("Crédito Ferretería",
                                         $"₡{planilla.DeduccionCreditoFerreteria:N2}");
                                 if (planilla.DeduccionPrestamos > 0)
-                                    FilaDed("Préstamo Personal", "",
+                                    FilaDed("Préstamo Personal",
                                         $"₡{planilla.DeduccionPrestamos:N2}");
                                 if (planilla.DeduccionHorasNoLaboradas > 0)
-                                    FilaDed("Horas No Laboradas", "",
+                                    FilaDed("Horas No Laboradas",
                                         $"₡{planilla.DeduccionHorasNoLaboradas:N2}");
                                 if (planilla.DeduccionIncapacidad > 0)
-                                    FilaDed("Incapacidad", "",
+                                    FilaDed("Incapacidad",
                                         $"₡{planilla.DeduccionIncapacidad:N2}");
                                 if (planilla.OtrasDeducciones > 0)
-                                    FilaDed("Otras Deducciones", "",
+                                    FilaDed("Otras Deducciones",
                                         $"₡{planilla.OtrasDeducciones:N2}");
-                                FilaDed("TOTAL DEDUCCIONES", "",
+                                FilaDed("TOTAL DEDUCCIONES",
                                     $"₡{planilla.TotalDeducciones:N2}", true);
                             });
 
-                            inner.Item().PaddingTop(10).Background(Oscuro)
-                                .Padding(12).Row(row =>
+                            inner.Item().PaddingTop(6).Background(Oscuro)
+                                .Padding(8).Row(row =>
                                 {
                                     row.RelativeItem().Text("NETO A PAGAR")
-                                        .Bold().FontSize(14).FontColor(Blanco);
-                                    row.ConstantItem(180).AlignRight()
+                                        .Bold().FontSize(12).FontColor(Blanco);
+                                    row.ConstantItem(150).AlignRight()
                                         .Text($"₡{planilla.NetoAPagar:N2}")
-                                        .Bold().FontSize(18).FontColor(Naranja);
+                                        .Bold().FontSize(14).FontColor(Naranja);
                                 });
 
                             PiePagina(inner, "Copia digital — válida sin firma");
@@ -2495,7 +2354,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             }).GeneratePdf();
         }
 
-        // ── BOLETA FERIADO ────────────────────────────────────────────────────
+        // BOLETA FERIADO
         public byte[] GenerarPDFFeriado(PagoFeriado pago)
         {
             return GenerarPDFFeriadoInterno(pago, conFirmas: true);

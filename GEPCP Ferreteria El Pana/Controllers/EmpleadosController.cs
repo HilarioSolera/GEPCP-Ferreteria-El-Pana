@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using GEPCP_Ferreteria_El_Pana.Data;
@@ -19,7 +19,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         private readonly ILogger<EmpleadosController> _logger;
         private readonly AuditoriaService _auditoria;
         private readonly HttpClient _httpClient;
-        private static readonly List<string> DepartamentosValidos = Departamentos.Lista;
+
 
         public EmpleadosController(
             ApplicationDbContext context,
@@ -33,15 +33,15 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _httpClient = httpClientFactory.CreateClient();
         }
 
-        // ── HELPERS ───────────────────────────────────────────────────────────
+        // HELPERS
 
         private async Task<SelectList> ObtenerPuestosSelectList(string? selectedPuesto = null)
         {
             var puestos = await _context.Puestos
-                .Where(p => p.Activo).OrderBy(p => p.Nombre)
-                .Select(p => new { p.Nombre, p.SalarioBase })
+                .Where(p => p.Activo).OrderBy(p => p.Departamento).ThenBy(p => p.Nombre)
+                .Select(p => new { Value = p.Nombre, Text = p.Nombre + " (" + p.Codigo + ") — " + p.Departamento })
                 .ToListAsync();
-            return new SelectList(puestos, "Nombre", "Nombre", selectedPuesto);
+            return new SelectList(puestos, "Value", "Text", selectedPuesto);
         }
 
         private static string SanitizarTexto(string? input)
@@ -89,6 +89,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             DireccionProvincia = e.DireccionProvincia,
             DireccionCanton = e.DireccionCanton,
             DireccionDistrito = e.DireccionDistrito,
+            DireccionBarrio = e.DireccionBarrio,
             DireccionExacta = e.DireccionExacta,
             TipoPago = e.TipoPago,
             // Contacto emergencia
@@ -128,7 +129,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
             if (string.IsNullOrWhiteSpace(model.Departamento))
                 ModelState.AddModelError("Departamento", "El departamento es obligatorio.");
-            else if (!DepartamentosValidos.Contains(model.Departamento.Trim()))
+            else if (!_context.Puestos.Any(p => p.Departamento == model.Departamento.Trim() && p.Activo))
                 ModelState.AddModelError("Departamento", "Seleccioná un departamento válido.");
 
             if (model.FechaIngreso == default)
@@ -187,7 +188,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     "El teléfono de emergencia solo puede contener números, guiones y paréntesis.");
         }
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
+        // INDEX
 
         public async Task<IActionResult> Index(string? busqueda, bool mostrarTodos = false, string filtroEstado = "activos")
         {
@@ -239,7 +240,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── DETAILS ───────────────────────────────────────────────────────────
+        // DETAILS
 
         public async Task<IActionResult> Details(int? id)
         {
@@ -276,7 +277,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE ────────────────────────────────────────────────────────────
+        // CREATE
 
         public async Task<IActionResult> Create()
         {
@@ -335,6 +336,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                                             ? null : SanitizarTexto(model.DireccionCanton),
                     DireccionDistrito = string.IsNullOrWhiteSpace(model.DireccionDistrito)
                                             ? null : SanitizarTexto(model.DireccionDistrito),
+                    DireccionBarrio = string.IsNullOrWhiteSpace(model.DireccionBarrio)
+                                            ? null : SanitizarTexto(model.DireccionBarrio),
                     DireccionExacta = string.IsNullOrWhiteSpace(model.DireccionExacta)
                                             ? null : SanitizarTexto(model.DireccionExacta),
                     ContactoEmergenciaNombre = string.IsNullOrWhiteSpace(model.ContactoEmergenciaNombre)
@@ -357,12 +360,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 _logger.LogInformation("Empleado creado: {Cedula} - {Nombre} {Apellido}",
                     empleado.Cedula, empleado.Nombre, empleado.PrimerApellido);
 
-                // ── Aviso de antigüedad mínima ────────────────────────────────────
+                // Aviso de antigüedad mínima
                 var diasDesdeIngreso = (DateTime.Today - empleado.FechaIngreso).Days;
                 if (diasDesdeIngreso < 15)
                     TempData["Warning"] =
                         $"Empleado '{empleado.PrimerApellido} {empleado.Nombre}' creado. " +
-                        $"⚠️ Tiene {diasDesdeIngreso} día(s) de antigüedad — " +
+                        $"Tiene {diasDesdeIngreso} día(s) de antigüedad — " +
                         "no será incluido en la planilla hasta completar 15 días.";
                 else
                     TempData["Success"] =
@@ -387,7 +390,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 return View(model);
             }
         }
-        // ── EDIT ──────────────────────────────────────────────────────────────
+        // EDIT
 
         public async Task<IActionResult> Edit(int? id)
         {
@@ -467,6 +470,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                                                       ? null : SanitizarTexto(model.DireccionCanton);
                 empleado.DireccionDistrito = string.IsNullOrWhiteSpace(model.DireccionDistrito)
                                                       ? null : SanitizarTexto(model.DireccionDistrito);
+                empleado.DireccionBarrio = string.IsNullOrWhiteSpace(model.DireccionBarrio)
+                                                      ? null : SanitizarTexto(model.DireccionBarrio);
                 empleado.DireccionExacta = string.IsNullOrWhiteSpace(model.DireccionExacta)
                                                       ? null : SanitizarTexto(model.DireccionExacta);
                 // Contacto emergencia
@@ -517,7 +522,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── ACTIVAR / DESACTIVAR ──────────────────────────────────────────────
+        // ACTIVAR / DESACTIVAR
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -577,7 +582,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ── DELETE ────────────────────────────────────────────────────────────
+        // DELETE
 
         public async Task<IActionResult> Delete(int? id)
         {
@@ -642,7 +647,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ── API: salario por puesto ────────────────────────────────────────────
+        // API: salario por puesto
 
         [HttpGet]
         public async Task<IActionResult> ObtenerSalarioPuesto(string nombre)
@@ -650,20 +655,67 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             try
             {
                 if (string.IsNullOrWhiteSpace(nombre))
-                    return Json(new { salario = (decimal?)null });
+                    return Json(new { salario = (decimal?)null, codigo = (string?)null });
                 var puesto = await _context.Puestos
                     .AsNoTracking()
                     .FirstOrDefaultAsync(p => p.Nombre == nombre && p.Activo);
-                return Json(new { salario = puesto?.SalarioBase });
+                return Json(new { salario = puesto?.SalarioBase, codigo = puesto?.Codigo });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener salario del puesto: {Nombre}", nombre);
-                return Json(new { salario = (decimal?)null });
+                return Json(new { salario = (decimal?)null, codigo = (string?)null });
             }
         }
 
-        // ── API: consulta cédula gometa.org ───────────────────────────────────
+        // API: puestos por departamento (cascada)
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerPuestosPorDepartamento(string departamento)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(departamento))
+                    return Json(new List<object>());
+                var puestos = await _context.Puestos
+                    .AsNoTracking()
+                    .Where(p => p.Departamento == departamento && p.Activo)
+                    .OrderBy(p => p.Nombre)
+                    .Select(p => new { p.Nombre, p.Codigo, p.SalarioBase })
+                    .ToListAsync();
+                return Json(puestos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener puestos del departamento: {Dept}", departamento);
+                return Json(new List<object>());
+            }
+        }
+
+        // API: lista de departamentos activos
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerDepartamentos()
+        {
+            try
+            {
+                var deptos = await _context.Puestos
+                    .AsNoTracking()
+                    .Where(p => p.Activo)
+                    .Select(p => p.Departamento)
+                    .Distinct()
+                    .OrderBy(d => d)
+                    .ToListAsync();
+                return Json(deptos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener departamentos");
+                return Json(new List<string>());
+            }
+        }
+
+        // API: consulta cédula gometa.org
 
         [HttpGet]
         public async Task<IActionResult> ConsultarCedulaTSE(string cedula)
@@ -709,7 +761,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── HELPERS PRIVADOS ──────────────────────────────────────────────────
+        // HELPERS PRIVADOS
 
         private static string ObtenerCampo(System.Text.Json.JsonElement data, string campo)
         {
@@ -725,7 +777,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 .TextInfo.ToTitleCase(input.ToLower());
         }
 
-        // ── HISTORIAL PDF ────────────────────────────────────────────────────
+        // HISTORIAL PDF
 
         public async Task<IActionResult> DescargarHistorial(int id)
         {
@@ -834,7 +886,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     page.MarginVertical(25);
                     page.DefaultTextStyle(x => x.FontSize(9));
 
-                    // ── HEADER ──
+                    // HEADER
                     page.Header().Column(col =>
                     {
                         col.Item().Background(oscuro).Padding(12).Row(row =>
@@ -862,10 +914,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         col.Item().PaddingBottom(5);
                     });
 
-                    // ── CONTENT ──
+                    // CONTENT
                     page.Content().Column(col =>
                     {
-                        // ── PLANILLAS ──
+                        // PLANILLAS
                         if (planillas.Any())
                         {
                             SeccionTitulo(col, "Planillas", naranja);
@@ -897,7 +949,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                             col.Item().PaddingBottom(3).AlignRight().Text($"Total Neto Histórico: ₡{planillas.Sum(p => p.NetoAPagar):N0}").Bold().FontSize(8);
                         }
 
-                        // ── HORAS EXTRAS ──
+                        // HORAS EXTRAS
                         if (horasExtras.Any())
                         {
                             SeccionTitulo(col, "Horas Extras", naranja);
@@ -925,7 +977,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                             col.Item().PaddingBottom(3).AlignRight().Text($"Total: ₡{horasExtras.Sum(h => h.MontoTotal):N0}").Bold().FontSize(8);
                         }
 
-                        // ── VACACIONES ──
+                        // VACACIONES
                         if (vacaciones.Any())
                         {
                             SeccionTitulo(col, "Vacaciones", naranja);
@@ -953,7 +1005,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                             col.Item().PaddingBottom(3).AlignRight().Text($"Total días: {vacaciones.Where(v => v.Estado == EstadoVacacion.Aprobada).Sum(v => v.DiasHabiles):N1}").Bold().FontSize(8);
                         }
 
-                        // ── INCAPACIDADES ──
+                        // INCAPACIDADES
                         if (incapacidades.Any())
                         {
                             SeccionTitulo(col, "Incapacidades", naranja);
@@ -980,7 +1032,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                             });
                         }
 
-                        // ── AGUINALDOS ──
+                        // AGUINALDOS
                         if (aguinaldos.Any())
                         {
                             SeccionTitulo(col, "Aguinaldos", naranja);
@@ -1006,7 +1058,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                             col.Item().PaddingBottom(3).AlignRight().Text($"Total: ₡{aguinaldos.Sum(a => a.MontoTotal):N0}").Bold().FontSize(8);
                         }
 
-                        // ── COMISIONES ──
+                        // COMISIONES
                         if (comisiones.Any())
                         {
                             SeccionTitulo(col, "Comisiones", naranja);
@@ -1032,7 +1084,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                             col.Item().PaddingBottom(3).AlignRight().Text($"Total: ₡{comisiones.Sum(c => c.Monto):N0}").Bold().FontSize(8);
                         }
 
-                        // ── PRÉSTAMOS ──
+                        // PRÉSTAMOS
                         if (prestamos.Any())
                         {
                             SeccionTitulo(col, "Préstamos", naranja);
@@ -1061,7 +1113,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                             });
                         }
 
-                        // ── CRÉDITOS FERRETERÍA ──
+                        // CRÉDITOS FERRETERÍA
                         if (creditos.Any())
                         {
                             SeccionTitulo(col, "Créditos Ferretería", naranja);
@@ -1088,7 +1140,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                             });
                         }
 
-                        // ── FERIADOS ──
+                        // FERIADOS
                         if (feriados.Any())
                         {
                             SeccionTitulo(col, "Feriados Pagados", naranja);
@@ -1125,7 +1177,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         }
                     });
 
-                    // ── FOOTER ──
+                    // FOOTER
                     page.Footer().AlignCenter().Text(t =>
                     {
                         t.Span("Página ").FontSize(7);

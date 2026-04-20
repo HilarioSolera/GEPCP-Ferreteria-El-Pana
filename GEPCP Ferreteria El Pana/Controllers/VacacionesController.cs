@@ -1,4 +1,4 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
@@ -13,7 +13,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<VacacionesController> _logger;
         private readonly AuditoriaService _auditoria;
-        private readonly ComprobantePlanillaService _servicioPDF; // ← agregá esta línea
+        private readonly ComprobantePlanillaService _servicioPDF;
 
         private const decimal DiasLey = 12m;
         private const decimal SemanasLey = 50m;
@@ -23,15 +23,15 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
     ApplicationDbContext context,
     ILogger<VacacionesController> logger,
     AuditoriaService auditoria,
-    ComprobantePlanillaService servicioPDF) // ← agregá este parámetro
+    ComprobantePlanillaService servicioPDF)
         {
             _context = context;
             _logger = logger;
             _auditoria = auditoria;
-            _servicioPDF = servicioPDF;             // ← y esta línea
+            _servicioPDF = servicioPDF;
         }
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
+        // INDEX
 
         public async Task<IActionResult> Index(string? busqueda, string? estado, bool verTodos = false)
         {
@@ -82,7 +82,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE ────────────────────────────────────────────────────────────
+        // CREATE
 
         public IActionResult Create()
         {
@@ -115,7 +115,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                // ── Validar traslape de fechas ────────────────────────────────
+                // Validar traslape de fechas
                 var traslape = await _context.Vacaciones
                     .Where(v => v.EmpleadoId == model.EmpleadoId &&
                                 v.Estado != EstadoVacacion.Rechazada &&
@@ -132,7 +132,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                // ── Art. 153 CT CR: mínimo 50 semanas laboradas ─────────────
+                // Art. 153 CT CR: mínimo 50 semanas laboradas
                 var diasLaborados = (DateTime.Today - empleado.FechaIngreso).TotalDays;
                 if (diasLaborados < 350) // 50 semanas × 7 días
                 {
@@ -143,11 +143,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                // ── Calcular días disponibles ─────────────────────────────────
+                // Calcular días disponibles
                 var (diasBase, diasTomados, disponibles) =
                     await CalcularDisponiblesInterno(model.EmpleadoId);
 
-                // ── Art. 159 CT CR: máximo 2 fracciones por período ───────────
+                // Art. 159 CT CR: máximo 2 fracciones por período
                 var ingreso = empleado.FechaIngreso;
                 var periodosCompletos = (int)((decimal)(DateTime.Today - ingreso).TotalDays / 350);
                 var inicioPeriodoActual = ingreso.AddDays(periodosCompletos * 350);
@@ -163,7 +163,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                // ── Validar días al aprobar ───────────────────────────────────
+                // Validar días al aprobar
                 if (model.Estado == EstadoVacacion.Aprobada &&
                     model.DiasHabiles > disponibles)
                 {
@@ -201,7 +201,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── EDIT ──────────────────────────────────────────────────────────────
+        // EDIT
 
         public async Task<IActionResult> Edit(int? id)
         {
@@ -258,7 +258,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (registro == null) return NotFound();
 
-                // ── Validar traslape (excluyendo el registro actual) ───────────
+                // Validar traslape (excluyendo el registro actual)
                 var traslape = await _context.Vacaciones
                     .Where(v => v.EmpleadoId == model.EmpleadoId &&
                                 v.Estado != EstadoVacacion.Rechazada &&
@@ -285,7 +285,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                // ── Validar días al aprobar ───────────────────────────────────
+                // Validar días al aprobar
                 if (model.Estado == EstadoVacacion.Aprobada)
                 {
                     var (_, _, disponibles) = await CalcularDisponiblesInterno(model.EmpleadoId, id);
@@ -307,7 +307,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     }
                 }
 
-                // ── Art. 159 CT CR: máximo 2 fracciones por período ───────────
+                // Art. 159 CT CR: máximo 2 fracciones por período
                 var empEdit = await _context.Empleados.FindAsync(model.EmpleadoId);
                 if (empEdit != null)
                 {
@@ -375,7 +375,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── DELETE ────────────────────────────────────────────────────────────
+        // DELETE
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -420,7 +420,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── API: Buscar empleados ─────────────────────────────────────────────
+        // API: Buscar empleados
 
         [HttpGet]
         public async Task<IActionResult> BuscarEmpleados(string? termino)
@@ -489,10 +489,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── API: Calcular días disponibles ────────────────────────────────────
+        // API: Calcular días disponibles
 
       [HttpGet]
-        // ── API: Calcular días entre fechas ───────────────────────────────────
+        // API: Calcular días entre fechas
 
         [HttpGet]
         public IActionResult CalcularDias(string fechaInicio, string fechaFin)
@@ -531,9 +531,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── HELPERS ───────────────────────────────────────────────────────────
+        // HELPERS
 
-        // ── HELPER: Calcular disponibles ──────────────────────────────────────
+        // HELPER: Calcular disponibles
         private async Task<(decimal diasBase, decimal diasTomados, decimal disponibles)>
             CalcularDisponiblesInterno(int empleadoId, int? excluirId = null)
         {
@@ -574,7 +574,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return (diasBase, diasTomados, disponibles);
         }
 
-        // ── API: Calcular días disponibles ────────────────────────────────────
+        // API: Calcular días disponibles
         [HttpGet]
         public async Task<IActionResult> CalcularDisponibles(int empleadoId)
         {
@@ -712,7 +712,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return dias;
         }
 
-        // ── BOLETA PDF ────────────────────────────────────────────────
+        // BOLETA PDF
         [HttpGet]
         public async Task<IActionResult> DescargarBoleta(int id)
         {
@@ -752,7 +752,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+        // ENVIAR PDF POR EMAIL
 
         [HttpPost]
         [ValidateAntiForgeryToken]

@@ -161,13 +161,13 @@
                     <thead class="table-dark">
                         <tr>
                             <th>Empleado</th>
+                            <th class="text-end fw-bold" style="background:#e8f4fd;">Salario Bruto Mensual</th>
                             <th>Departamento</th>
                             <th class="text-end">Sal. Ord.</th>
                             <th class="text-end">H. Extra</th>
                             <th class="text-end">Comisión</th>
                             <th class="text-end">Feriados</th>
                             <th class="text-end fw-bold">Total Dev.</th>
-                            <th class="text-end" style="background:#e8f4fd;">Bruto Mensual</th>
                             <th class="text-end">CCSS</th>
                             <th class="text-end">Renta (ISR)</th>   <!-- NUEVA COLUMNA -->
                             <th class="text-end">Préstamos</th>
@@ -193,14 +193,6 @@
                                         <span class="badge bg-secondary">Efectivo</span>
                                     }
                                 </td>
-                                <td><strong>@p.Empleado.Departamento</strong></td>
-
-                                <!-- Devengados -->
-                                <td class="text-end">@p.SalarioOrdinario.ToString("N0")</td>
-                                <td class="text-end">@(p.MontoHorasExtras > 0 ? p.MontoHorasExtras.ToString("N0") : "—")</td>
-                                <td class="text-end">@(p.AumentoAplicado > 0 ? p.AumentoAplicado.ToString("N0") : "—")</td>
-                                <td class="text-end">@(p.MontoFeriados > 0 ? p.MontoFeriados.ToString("N0") : "—")</td>
-                                <td class="text-end fw-bold">@p.TotalDevengado.ToString("N0")</td>
                                 @{
                                     var factorMes = periodo!.TipoPeriodo switch
                                     {
@@ -210,7 +202,15 @@
                                     };
                                     var brutoMensual = p.TotalDevengado * factorMes;
                                 }
-                                <td class="text-end" style="background:#e8f4fd;">₡@brutoMensual.ToString("N0")</td>
+                                <td class="text-end fw-bold" style="background:#e8f4fd; font-size:0.95rem;">₡@brutoMensual.ToString("N0")</td>
+                                <td><strong>@p.Empleado.Departamento</strong></td>
+
+                                <!-- Devengados -->
+                                <td class="text-end">@p.SalarioOrdinario.ToString("N0")</td>
+                                <td class="text-end">@(p.MontoHorasExtras > 0 ? p.MontoHorasExtras.ToString("N0") : "—")</td>
+                                <td class="text-end">@(p.AumentoAplicado > 0 ? p.AumentoAplicado.ToString("N0") : "—")</td>
+                                <td class="text-end">@(p.MontoFeriados > 0 ? p.MontoFeriados.ToString("N0") : "—")</td>
+                                <td class="text-end fw-bold">@p.TotalDevengado.ToString("N0")</td>
 
                                 <!-- Deducciones -->
                                 <td class="text-end">@p.DeduccionCCSS.ToString("N0")</td>

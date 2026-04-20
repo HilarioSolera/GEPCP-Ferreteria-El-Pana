@@ -90,14 +90,8 @@
                     <label asp-for="Departamento" class="form-label fw-bold">
                         <i class="bi bi-building"></i> Departamento <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Departamento" class="form-select">
+                    <select asp-for="Departamento" class="form-select" id="selectDepartamento">
                         <option value="">-- Seleccione departamento --</option>
-                        @foreach (var dept in GEPCP_Ferreteria_El_Pana.Models.Departamentos.Lista)
-                        {
-                            <option value="@dept" selected="@(Model.Departamento == dept ? "selected" : null)">
-                                @dept
-                            </option>
-                        }
                     </select>
                     <span asp-validation-for="Departamento" class="text-danger small"></span>
                 </div>
@@ -122,9 +116,8 @@
                     <label asp-for="Puesto" class="form-label fw-bold">
                         <i class="bi bi-briefcase"></i> Puesto <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Puesto" class="form-select"
-                            asp-items="ViewBag.Puestos" id="selectPuesto">
-                        <option value="">-- Seleccione un puesto --</option>
+                    <select asp-for="Puesto" class="form-select" id="selectPuesto">
+                        <option value="">-- Seleccione departamento primero --</option>
                     </select>
                     <span asp-validation-for="Puesto" class="text-danger small"></span>
                 </div>
@@ -209,7 +202,7 @@
 
                 <div class="col-md-4">
                     <label asp-for="DireccionProvincia" class="form-label fw-bold">Provincia</label>
-                    <select asp-for="DireccionProvincia" class="form-select">
+                    <select asp-for="DireccionProvincia" class="form-select" id="selectProvincia">
                         <option value="">-- Seleccione --</option>
                         <option value="San José">San José</option>
                         <option value="Alajuela">Alajuela</option>
@@ -224,23 +217,34 @@
 
                 <div class="col-md-4">
                     <label asp-for="DireccionCanton" class="form-label fw-bold">Cantón</label>
-                    <input asp-for="DireccionCanton" class="form-control"
-                           maxlength="100" placeholder="Ej: Pérez Zeledón" />
+                    <select asp-for="DireccionCanton" class="form-select" id="selectCanton">
+                        <option value="">-- Seleccione cantón --</option>
+                    </select>
                     <span asp-validation-for="DireccionCanton" class="text-danger small"></span>
                 </div>
 
                 <div class="col-md-4">
                     <label asp-for="DireccionDistrito" class="form-label fw-bold">Distrito</label>
-                    <input asp-for="DireccionDistrito" class="form-control"
-                           maxlength="100" placeholder="Ej: San Isidro" />
+                    <select asp-for="DireccionDistrito" class="form-select" id="selectDistrito">
+                        <option value="">-- Seleccione distrito --</option>
+                    </select>
                     <span asp-validation-for="DireccionDistrito" class="text-danger small"></span>
                 </div>
 
-                <div class="col-12">
+                <div class="col-md-6">
+                    <label asp-for="DireccionBarrio" class="form-label fw-bold">
+                        Barrio <span class="text-muted fw-normal small">(opcional)</span>
+                    </label>
+                    <input asp-for="DireccionBarrio" class="form-control"
+                           maxlength="100" placeholder="Ej: Barrio El Carmen" />
+                    <span asp-validation-for="DireccionBarrio" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
                     <label asp-for="DireccionExacta" class="form-label fw-bold">Dirección Exacta</label>
-                    <textarea asp-for="DireccionExacta" class="form-control" rows="2"
-                              maxlength="300"
-                              placeholder="Ej: De la iglesia 200m norte, casa azul con portón negro"></textarea>
+                    <input asp-for="DireccionExacta" class="form-control"
+                           maxlength="300"
+                           placeholder="Ej: De la iglesia 200m norte, casa azul con portón negro" />
                     <span asp-validation-for="DireccionExacta" class="text-danger small"></span>
                 </div>
 
@@ -334,7 +338,71 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script src="~/js/direccion-cr.js"></script>
     <script>
+        // ── Dirección cascada ─────────────────────────────────────────────────
+        initDireccionCR('selectProvincia', 'selectCanton', 'selectDistrito',
+            '@(Model.DireccionProvincia ?? "")',
+            '@(Model.DireccionCanton ?? "")',
+            '@(Model.DireccionDistrito ?? "")');
+
+        // ── Cargar departamentos y cascada Departamento → Puesto ──────────────
+        var _initDept = '@(Model.Departamento ?? "")';
+        var _initPuesto = '@(Model.Puesto ?? "")';
+        (async function() {
+            var selDept = document.getElementById('selectDepartamento');
+            var selPuesto = document.getElementById('selectPuesto');
+            try {
+                var res = await fetch('/Empleados/ObtenerDepartamentos');
+                var deptos = await res.json();
+                deptos.forEach(function(d) {
+                    var opt = document.createElement('option');
+                    opt.value = d; opt.textContent = d;
+                    if (d === _initDept) opt.selected = true;
+                    selDept.appendChild(opt);
+                });
+                if (_initDept) {
+                    await cargarPuestos(_initDept, _initPuesto);
+                }
+            } catch(e) { console.error(e); }
+
+            async function cargarPuestos(dept, selValue) {
+                selPuesto.innerHTML = '<option value="">-- Seleccione puesto --</option>';
+                if (!dept) return;
+                try {
+                    var res = await fetch('/Empleados/ObtenerPuestosPorDepartamento?departamento=' + encodeURIComponent(dept));
+                    var puestos = await res.json();
+                    puestos.forEach(function(p) {
+                        var opt = document.createElement('option');
+                        opt.value = p.nombre;
+                        opt.textContent = p.nombre + ' (' + p.codigo + ')';
+                        opt.dataset.salario = p.salarioBase;
+                        if (p.nombre === selValue) opt.selected = true;
+                        selPuesto.appendChild(opt);
+                    });
+                } catch(e) { console.error(e); }
+            }
+
+            selDept.addEventListener('change', async function() {
+                document.getElementById('salarioHint').textContent = '';
+                await cargarPuestos(this.value, '');
+            });
+
+            selPuesto.addEventListener('change', function() {
+                var opt = this.options[this.selectedIndex];
+                var hint = document.getElementById('salarioHint');
+                if (opt && opt.dataset.salario) {
+                    document.getElementById('inputSalario').value = opt.dataset.salario;
+                    hint.innerHTML = '<i class="bi bi-info-circle text-success"></i> Salario base del puesto: <strong>₡' +
+                        Number(opt.dataset.salario).toLocaleString('es-CR') + '</strong>. Podés modificarlo.';
+                    hint.className = 'form-text text-success';
+                    calcularValorHora();
+                } else {
+                    hint.textContent = '';
+                }
+            });
+        })();
+
         // ── TSE ───────────────────────────────────────────────────────────────
         async function consultarTSE() {
             var cedula = document.getElementById('Cedula').value.trim();
@@ -401,23 +469,6 @@
         }
         document.getElementById('selectFormaPago').addEventListener('change', toggleCuenta);
         toggleCuenta();
-
-        document.getElementById('selectPuesto').addEventListener('change', async function() {
-            var puesto = this.value;
-            var hint = document.getElementById('salarioHint');
-            if (!puesto) { hint.textContent = ''; return; }
-            try {
-                var res = await fetch('/Empleados/ObtenerSalarioPuesto?nombre=' + encodeURIComponent(puesto));
-                var data = await res.json();
-                if (data.salario !== null) {
-                    document.getElementById('inputSalario').value = data.salario;
-                    hint.innerHTML = '<i class="bi bi-info-circle text-success"></i> Salario base del puesto: <strong>₡' +
-                        Number(data.salario).toLocaleString('es-CR') + '</strong>. Podés modificarlo.';
-                    hint.className = 'form-text text-success';
-                    calcularValorHora();
-                }
-            } catch (e) { console.error(e); }
-        });
 
         document.getElementById('inputSalario').addEventListener('input', calcularValorHora);
         document.getElementById('selectJornada').addEventListener('change', calcularValorHora);

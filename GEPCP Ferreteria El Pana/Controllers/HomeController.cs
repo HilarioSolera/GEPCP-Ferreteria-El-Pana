@@ -1,4 +1,4 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -133,7 +133,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     .OrderBy(p => p.Monto)
                     .ToList();
 
-                // ── VACACIONES - CORREGIDO ─────────────────────────────────────
+                // VACACIONES - CORREGIDO
                 var empleadosActivos = await _context.Empleados
                     .AsNoTracking()
                     .Where(e => e.Activo)

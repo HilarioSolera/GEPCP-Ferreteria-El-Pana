@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Models;
@@ -29,7 +29,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _auditoria = auditoria;
         }
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
+        // INDEX
 
         public async Task<IActionResult> Index(int? anio)
         {
@@ -78,7 +78,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE GET ────────────────────────────────────────────────────────
+        // CREATE GET
 
         public IActionResult Create()
         {
@@ -121,7 +121,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE POST ───────────────────────────────────────────────────────
+        // CREATE POST
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -133,7 +133,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 var mesActual = hoy.Month;
                 var anioActual = hoy.Year;
 
-                // ── Restricción: solo ±1 mes del actual ───────────────────────
+                // Restricción: solo ±1 mes del actual
                 // Para períodos semanales se permite más holgura (±2 semanas)
                 // pero mantenemos la misma regla por simplicidad.
                 bool esMesPermitido =
@@ -153,7 +153,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                // ── Validaciones básicas ──────────────────────────────────────
+                // Validaciones básicas
                 if (model.Mes < 1 || model.Mes > 12)
                     ModelState.AddModelError("Mes", "El mes debe estar entre 1 y 12.");
 
@@ -197,7 +197,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (!ModelState.IsValid) return View(model);
 
-                // ── Validación: duplicado (mismo mes/quincena/año/tipo) ────────
+                // Validación: duplicado (mismo mes/quincena/año/tipo)
                 var existeDuplicado = await _context.PeriodosPago.AnyAsync(p =>
                     p.Anio == model.Anio &&
                     p.Mes == model.Mes &&
@@ -213,7 +213,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                // ── Validación: solapamiento de fechas del mismo tipo ─────────
+                // Validación: solapamiento de fechas del mismo tipo
                 var solapamiento = await _context.PeriodosPago.AnyAsync(p =>
                     p.TipoPeriodo == model.TipoPeriodo &&
                     p.FechaInicio <= model.FechaFin &&
@@ -237,7 +237,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                // ── Guardar ───────────────────────────────────────────────────
+                // Guardar
                 model.Estado = EstadoPeriodo.Abierto;
                 _context.Add(model);
                 await _context.SaveChangesAsync();
@@ -249,6 +249,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 TempData["Success"] =
                     $"Período {model.Descripcion} ({model.TipoPeriodo}) creado correctamente.";
+                TempData["Recomendacion"] =
+                    "Recordá calcular la planilla antes de cerrar este período.";
 
                 return RedirectToAction(nameof(Index), new { anio = model.Anio });
             }
@@ -266,7 +268,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CERRAR ────────────────────────────────────────────────────────────
+        // CERRAR
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -285,6 +287,15 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 {
                     TempData["Error"] = "Este período ya estaba cerrado.";
                     return RedirectToAction(nameof(Index), new { anio = periodo.Anio });
+                }
+
+                // Verificar si tiene planillas calculadas antes de cerrar
+                var tienePlanillas = await _context.PlanillasEmpleado
+                    .AnyAsync(pe => pe.PeriodoPagoId == id);
+
+                if (!tienePlanillas)
+                {
+                    TempData["Warning"] = "Este período no tiene planillas calculadas. Se cerrará vacío.";
                 }
 
                 periodo.Estado = EstadoPeriodo.Cerrado;
@@ -308,7 +319,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── REABRIR (solo Jefatura) ───────────────────────────────────────────
+        // REABRIR (solo Jefatura)
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -361,7 +372,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── ELIMINAR (solo Abiertos sin planilla) ─────────────────────────────
+        // ELIMINAR (solo Abiertos sin planilla)
 
         [HttpPost]
         [ValidateAntiForgeryToken]

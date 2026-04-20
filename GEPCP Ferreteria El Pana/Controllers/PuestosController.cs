@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Models;
@@ -19,7 +19,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _logger = logger;
         }
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
+        // INDEX
 
         public async Task<IActionResult> Index(string? busqueda)
         {
@@ -32,11 +32,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (!string.IsNullOrWhiteSpace(busqueda))
                 {
                     var termino = busqueda.Trim().ToLower();
-                    query = query.Where(p => p.Nombre.ToLower().Contains(termino));
+                    query = query.Where(p => p.Nombre.ToLower().Contains(termino) ||
+                                             p.Departamento.ToLower().Contains(termino) ||
+                                             p.Codigo.ToLower().Contains(termino));
                 }
 
                 var puestos = await query
-                    .OrderBy(p => p.Nombre)
+                    .OrderBy(p => p.Departamento).ThenBy(p => p.Nombre)
                     .ToListAsync();
 
                 ViewBag.TotalPuestos = puestos.Count;
@@ -61,7 +63,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE ────────────────────────────────────────────────────────────
+        // CREATE
 
         public IActionResult Create()
         {
@@ -79,7 +81,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (!ModelState.IsValid)
                     return View(model);
 
+                model.Departamento = SanitizarTexto(model.Departamento);
                 model.Nombre = SanitizarTexto(model.Nombre);
+                model.Codigo = SanitizarTexto(model.Codigo);
                 model.SalarioBase = Math.Round(model.SalarioBase, 2);
 
                 _context.Add(model);
@@ -87,6 +91,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 _logger.LogInformation("Puesto creado: {Nombre} Salario {S}", model.Nombre, model.SalarioBase);
                 TempData["Success"] = $"Puesto '{model.Nombre}' creado correctamente.";
+                TempData["Recomendacion"] = "Ahora podés asignar este puesto a empleados desde el módulo de Empleados.";
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateException ex)
@@ -103,7 +108,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── EDIT ──────────────────────────────────────────────────────────────
+        // EDIT
 
         public async Task<IActionResult> Edit(int? id)
         {
@@ -137,7 +142,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (!ModelState.IsValid)
                     return View(model);
 
+                model.Departamento = SanitizarTexto(model.Departamento);
                 model.Nombre = SanitizarTexto(model.Nombre);
+                model.Codigo = SanitizarTexto(model.Codigo);
                 model.SalarioBase = Math.Round(model.SalarioBase, 2);
 
                 _context.Update(model);
@@ -171,7 +178,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── ACTIVAR ───────────────────────────────────────────────────────────
+        // ACTIVAR
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -201,7 +208,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ── DESACTIVAR ────────────────────────────────────────────────────────
+        // DESACTIVAR
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -241,7 +248,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ── DELETE ────────────────────────────────────────────────────────────
+        // DELETE
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -286,7 +293,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ── HELPERS ───────────────────────────────────────────────────────────
+        // HELPERS
 
         private static string SanitizarTexto(string? input)
         {
@@ -296,6 +303,16 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
         private void AplicarValidaciones(Puesto model, int? idActual)
         {
+            // Departamento
+            if (string.IsNullOrWhiteSpace(model.Departamento))
+                ModelState.AddModelError("Departamento", "El departamento es obligatorio.");
+
+            // Código
+            if (string.IsNullOrWhiteSpace(model.Codigo))
+                ModelState.AddModelError("Codigo", "El código es obligatorio.");
+            else if (model.Codigo.Trim().Length > 20)
+                ModelState.AddModelError("Codigo", "El código no puede superar 20 caracteres.");
+
             // Nombre
             if (string.IsNullOrWhiteSpace(model.Nombre))
             {
@@ -325,6 +342,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ModelState.AddModelError("SalarioBase", "El salario no puede ser negativo.");
             else if (model.SalarioBase > 9_999_999.99m)
                 ModelState.AddModelError("SalarioBase", "El salario excede el límite máximo (₡9,999,999.99).");
+            else if (model.SalarioBase > 0 && model.SalarioBase < 200_000)
+                ModelState.AddModelError("SalarioBase", "El salario parece muy bajo. Verificá que sea el monto mensual correcto.");
         }
     }
 }

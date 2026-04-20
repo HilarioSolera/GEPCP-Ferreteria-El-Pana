@@ -1,6 +1,5 @@
-﻿using GEPCP_Ferreteria_El_Pana.Models;
+using GEPCP_Ferreteria_El_Pana.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace GEPCP_Ferreteria_El_Pana.Data
 {
@@ -9,7 +8,7 @@ namespace GEPCP_Ferreteria_El_Pana.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options) { }
 
-        // ── DbSets existentes ───────────────────────────────────────────────
+        // DbSets existentes
         public DbSet<HistorialSalario> HistorialSalarios { get; set; } = null!;
         public DbSet<Empleado> Empleados { get; set; } = null!;
         public DbSet<Puesto> Puestos { get; set; } = null!;
@@ -24,7 +23,7 @@ namespace GEPCP_Ferreteria_El_Pana.Data
         public DbSet<Vacacion> Vacaciones { get; set; }
 
 
-        // ── DbSets nuevos ───────────────────────────────────────────────────
+        // DbSets nuevos
         public DbSet<PeriodoPago> PeriodosPago { get; set; } = null!;
         public DbSet<PlanillaEmpleado> PlanillasEmpleado { get; set; } = null!;
         public DbSet<CreditoFerreteria> CreditosFerreteria { get; set; } = null!;
@@ -39,7 +38,17 @@ namespace GEPCP_Ferreteria_El_Pana.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // ── RELACIONES EXISTENTES ───────────────────────────────────────
+            // Seed: Puestos predeterminados de la empresa
+            modelBuilder.Entity<Puesto>().HasData(
+                new Puesto { PuestoId = 100, Departamento = "Administrativo", Nombre = "Asistente", Codigo = "TOCG", SalarioBase = 410855.00m, Activo = true },
+                new Puesto { PuestoId = 101, Departamento = "Administrativo", Nombre = "Proveeduría", Codigo = "TOCG", SalarioBase = 492556.00m, Activo = true },
+                new Puesto { PuestoId = 102, Departamento = "Caja", Nombre = "Cajero", Codigo = "TOCG", SalarioBase = 477778.00m, Activo = true },
+                new Puesto { PuestoId = 103, Departamento = "Ventas", Nombre = "Demostrador-vendedor", Codigo = "TOCG", SalarioBase = 447778.00m, Activo = true },
+                new Puesto { PuestoId = 104, Departamento = "Bodega", Nombre = "Bodeguero", Codigo = "TOCG", SalarioBase = 447778.00m, Activo = true },
+                new Puesto { PuestoId = 105, Departamento = "Conductores", Nombre = "Conductor", Codigo = "TOCG", SalarioBase = 436585.00m, Activo = true }
+            );
+
+            // Relaciones entre entidades
 
             modelBuilder.Entity<Comision>()
                 .HasOne(c => c.Empleado)
@@ -59,8 +68,6 @@ namespace GEPCP_Ferreteria_El_Pana.Data
                 .HasForeignKey(pr => pr.EmpleadoId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // ── RELACIONES NUEVAS ───────────────────────────────────────────
-
             modelBuilder.Entity<PlanillaEmpleado>()
                 .HasOne(pe => pe.Empleado)
                 .WithMany(e => e.PlanillasEmpleado)
@@ -73,7 +80,7 @@ namespace GEPCP_Ferreteria_El_Pana.Data
                 .HasForeignKey(pe => pe.PeriodoPagoId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Evitar doble planilla para el mismo empleado en el mismo periodo
+            // Indice unico: un empleado no puede tener dos planillas en el mismo periodo
             modelBuilder.Entity<PlanillaEmpleado>()
                 .HasIndex(pe => new { pe.EmpleadoId, pe.PeriodoPagoId })
                 .IsUnique();
@@ -154,7 +161,7 @@ namespace GEPCP_Ferreteria_El_Pana.Data
             modelBuilder.Entity<AbonoCreditoFerreteria>()
                 .Property(a => a.Monto).HasPrecision(18, 2);
 
-            // ── PRECISIÓN DECIMAL ───────────────────────────────────────────
+            // PRECISIÓN DECIMAL
 
             modelBuilder.Entity<Empleado>()
                 .Property(e => e.SalarioBase).HasPrecision(18, 2);
@@ -224,21 +231,21 @@ namespace GEPCP_Ferreteria_El_Pana.Data
             modelBuilder.Entity<PagoFeriado>()
                 .Property(pf => pf.MontoTotal).HasPrecision(18, 2);
 
-            // ── ÍNDICE ÚNICO CÉDULA ─────────────────────────────────────────
+            // ÍNDICE ÚNICO CÉDULA
             modelBuilder.Entity<Empleado>()
                 .HasIndex(e => e.Cedula)
                 .IsUnique();
 
-            // ── SEED: Puestos ───────────────────────────────────────────────
+            // SEED: Puestos
             modelBuilder.Entity<Puesto>().HasData(new Puesto { PuestoId = 1, Nombre = "Encargada de RR.H.H.", SalarioBase = 450000, Activo = true },
                                                   new Puesto { PuestoId = 2, Nombre = "Vendedor", SalarioBase = 380000, Activo = true });
-            // ── SEED: Roles ─────────────────────────────────────────────────
+            // SEED: Roles
             modelBuilder.Entity<Rol>().HasData(
                 new Rol { RolId = 1, Nombre = "RRHH" },
                 new Rol { RolId = 2, Nombre = "Jefatura" }
             );
 
-            // ── SEED: Feriados CR 2025-2026 ─────────────────────────────────
+            // SEED: Feriados CR 2025-2026
             modelBuilder.Entity<Feriado>().HasData(
                 new Feriado { FeriadoId = 1, Fecha = new DateTime(2026, 1, 1), Nombre = "Año Nuevo", Tipo = TipoFeriado.Obligatorio },
                 new Feriado { FeriadoId = 2, Fecha = new DateTime(2026, 4, 2), Nombre = "Jueves Santo", Tipo = TipoFeriado.Obligatorio },
@@ -252,7 +259,7 @@ namespace GEPCP_Ferreteria_El_Pana.Data
                 new Feriado { FeriadoId = 10, Fecha = new DateTime(2026, 12, 25), Nombre = "Navidad", Tipo = TipoFeriado.Obligatorio }
             );
 
-            // ── SEED: Usuarios ──────────────────────────────────────────────
+            // SEED: Usuarios
             modelBuilder.Entity<Usuario>().HasData(
     new Usuario
     {

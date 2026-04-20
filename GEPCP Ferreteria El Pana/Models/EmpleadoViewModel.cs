@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
@@ -76,7 +76,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [DataType(DataType.Date)]
         public DateTime? FechaNacimiento { get; set; }
 
-        // ── Contrato ────────────────────────────────────────────────────────
+        // Contrato
         [Required(ErrorMessage = "El tipo de contrato es obligatorio")]
         [Display(Name = "Tipo de Contrato")]
         public TipoContrato TipoContrato { get; set; } = TipoContrato.Indefinido;
@@ -85,7 +85,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Fecha de Vencimiento de Contrato")]
         public DateTime? FechaVencimientoContrato { get; set; }
 
-        // ── Dirección ───────────────────────────────────────────────────────
+        // Dirección
         [StringLength(100)]
         [Display(Name = "Provincia")]
         public string? DireccionProvincia { get; set; }
@@ -98,11 +98,15 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Distrito")]
         public string? DireccionDistrito { get; set; }
 
+        [StringLength(100)]
+        [Display(Name = "Barrio")]
+        public string? DireccionBarrio { get; set; }
+
         [StringLength(300)]
         [Display(Name = "Dirección Exacta")]
         public string? DireccionExacta { get; set; }
 
-        // ── Contacto de emergencia ──────────────────────────────────────────
+        // Contacto de emergencia
         [StringLength(100)]
         [Display(Name = "Nombre Contacto de Emergencia")]
         public string? ContactoEmergenciaNombre { get; set; }
@@ -115,7 +119,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Tipo de Pago")]
         public TipoPago TipoPago { get; set; } = TipoPago.Quincenal;
 
-        // ── ISR: Créditos fiscales ───────────────────────────────────────────
+        // ISR: Créditos fiscales
         [Display(Name = "Número de Hijos")]
         [Range(0, 20, ErrorMessage = "Debe ser entre 0 y 20")]
         public int NumHijos { get; set; } = 0;
@@ -123,7 +127,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "¿Tiene Cónyuge?")]
         public bool TieneConyuge { get; set; } = false;
 
-        // ── Calculados (no mapeados a BD) ───────────────────────────────────
+        // Calculados (no mapeados a BD)
         public int HorasMensuales => TipoJornada == TipoJornada.Completa ? 240 : 120;
         public int HorasQuincenales => TipoJornada == TipoJornada.Completa ? 120 : 60;
         public decimal ValorHora => HorasMensuales > 0
@@ -131,7 +135,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
                                        : 0;
         public decimal ValorHoraExtra => Math.Round(ValorHora * 1.5m, 2);
 
-        // ── Helper: días para vencimiento de contrato ───────────────────────
+        // Helper: días para vencimiento de contrato
         public int? DiasParaVencimiento => FechaVencimientoContrato.HasValue
             ? (int)(FechaVencimientoContrato.Value.Date - DateTime.Today).TotalDays
             : null;
@@ -143,7 +147,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         public bool ContratoVencido =>
             DiasParaVencimiento.HasValue && DiasParaVencimiento.Value < 0;
 
-        // ── Vacaciones ──────────────────────────────────────────────────────────────
+        // Vacaciones
 
         /// <summary>
         /// Días de vacaciones proporcionales disponibles según ley CR:

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
@@ -25,7 +25,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Tipo")]
         public TipoFeriado Tipo { get; set; } = TipoFeriado.Obligatorio;
 
-        // ── Navegación ─────────────────────────────────
+        // Navegación
         public ICollection<PagoFeriado> PagosFeriado { get; set; } = new List<PagoFeriado>();
     }
 }

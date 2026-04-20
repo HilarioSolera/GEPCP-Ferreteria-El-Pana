@@ -1,4 +1,4 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
@@ -28,7 +28,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _auditoria = auditoria;
         }
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
+        // INDEX
 
         public async Task<IActionResult> Index(int? anio, string? busqueda)
         {
@@ -95,7 +95,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CALCULAR AGUINALDO ────────────────────────────────────────────────
+        // CALCULAR AGUINALDO
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -178,7 +178,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE ────────────────────────────────────────────────────────────
+        // CREATE
 
         [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> Create()
@@ -262,7 +262,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── EDIT ──────────────────────────────────────────────────────────────
+        // EDIT
 
         [CustomAuthorize("RRHH", "Jefatura")]
         public async Task<IActionResult> Edit(int? id)
@@ -367,7 +367,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── DELETE ────────────────────────────────────────────────────────────
+        // DELETE
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -407,7 +407,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── DESCARGAR PDF ─────────────────────────────────────────────────────
+        // DESCARGAR PDF
 
         [HttpGet]
         public async Task<IActionResult> DescargarPDF(int id)
@@ -438,7 +438,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+        // ENVIAR PDF POR EMAIL
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -545,7 +545,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── HELPERS ───────────────────────────────────────────────────────────
+        // HELPERS
 
         private async Task CargarEmpleadosViewBag(int? selectedId = null)
         {
@@ -599,7 +599,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ModelState.AddModelError("FechaPago",
                     "Art. 87 CT: el aguinaldo debe pagarse en los primeros 20 días de diciembre.");
         }
-        // ── APIs PARA BUSCADOR ───────────────────────────────────────────────────
+        // APIs PARA BUSCADOR
 
         [HttpGet]
         public async Task<IActionResult> BuscarEmpleados(string? termino)

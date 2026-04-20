@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
@@ -34,7 +34,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
 
         public bool Activo { get; set; } = true;
 
-        // ── Navegación ─────────────────────────────────
+        // Navegación
         public Empleado Empleado { get; set; } = null!;
     }
 }

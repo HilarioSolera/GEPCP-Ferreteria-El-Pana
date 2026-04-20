@@ -5,8 +5,6 @@ namespace GEPCP_Ferreteria_El_Pana.Models
 {
     public class Usuario
     {
-
-        // Agregá estos campos al modelo existente:
         public string? CorreoElectronico { get; set; }
         public string? TokenRecuperacion { get; set; }
         public DateTime? TokenExpiracion { get; set; }

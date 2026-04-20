@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
@@ -33,7 +33,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Fecha")]
         public DateTime Fecha { get; set; } = DateTime.Today;
 
-        // ── Navegación ─────────────────────────────────
+        // Navegación
         public Empleado Empleado { get; set; } = null!;
         public PeriodoPago PeriodoPago { get; set; } = null!;
     }

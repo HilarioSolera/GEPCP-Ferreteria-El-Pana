@@ -1,4 +1,4 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
@@ -21,7 +21,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _logger = logger;
         }
 
-        // ── INDEX: historial de todos los empleados ───────────────────────────
+        // INDEX: historial de todos los empleados
 
         public async Task<IActionResult> Index(string? busqueda)
         {
@@ -54,7 +54,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── HISTORIAL POR EMPLEADO ────────────────────────────────────────────
+        // HISTORIAL POR EMPLEADO
 
         public async Task<IActionResult> Empleado(int? id)
         {
@@ -85,7 +85,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── ENVIAR HISTORIAL POR EMAIL ────────────────────────────────────────
+        // ENVIAR HISTORIAL POR EMAIL
 
         [HttpPost]
         [ValidateAntiForgeryToken]

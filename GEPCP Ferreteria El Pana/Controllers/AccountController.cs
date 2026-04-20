@@ -1,4 +1,4 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +29,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _auditoria = auditoria;
         }
 
-        // ── LOGIN GET ─────────────────────────────────────────────────────────
+        // LOGIN GET
 
         [HttpGet]
         public IActionResult Login()
@@ -47,7 +47,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── LOGIN POST ────────────────────────────────────────────────────────
+        // LOGIN POST
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -92,7 +92,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── LOGOUT ────────────────────────────────────────────────────────────
+        // LOGOUT
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -115,7 +115,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Login));
         }
 
-        // ── HELPERS ───────────────────────────────────────────────────────────
+        // HELPERS
 
         private void AplicarValidacionesLogin(LoginViewModel model)
         {
@@ -136,7 +136,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ModelState.AddModelError("Password", "La contraseña no puede superar 100 caracteres.");
         }
 
-        // ── OLVIDÉ MI CONTRASEÑA ──────────────────────────────────────────────
+        // OLVIDÉ MI CONTRASEÑA
 
         [HttpGet]
         public IActionResult OlvidePassword()
@@ -190,7 +190,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── VERIFICAR CÓDIGO ──────────────────────────────────────────────────
+        // VERIFICAR CÓDIGO
 
         [HttpGet]
         public IActionResult VerificarCodigo(string usuario)
@@ -248,7 +248,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── NUEVA CONTRASEÑA ──────────────────────────────────────────────────
+        // NUEVA CONTRASEÑA
 
         [HttpGet]
         public IActionResult NuevaPassword()

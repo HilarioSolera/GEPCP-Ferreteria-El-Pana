@@ -14,9 +14,10 @@ namespace GEPCP_Ferreteria_El_Pana.Filters
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
+            var usuario = context.HttpContext.Session.GetString("Usuario");
             var rol = context.HttpContext.Session.GetString("Rol");
 
-            if (string.IsNullOrEmpty(rol) || !_roles.Contains(rol))
+            if (string.IsNullOrEmpty(usuario) || string.IsNullOrEmpty(rol) || !_roles.Contains(rol))
             {
                 context.Result = new RedirectToActionResult("Login", "Account", null);
                 return;

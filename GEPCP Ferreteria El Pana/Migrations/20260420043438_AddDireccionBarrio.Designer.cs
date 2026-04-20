@@ -3,6 +3,7 @@ using System;
 using GEPCP_Ferreteria_El_Pana.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260420043438_AddDireccionBarrio")]
+    partial class AddDireccionBarrio
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.25");
@@ -835,16 +838,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Property<bool>("Activo")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Departamento")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -860,64 +853,8 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.HasData(
                         new
                         {
-                            PuestoId = 100,
-                            Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "Administrativo",
-                            Nombre = "Asistente",
-                            SalarioBase = 410855.00m
-                        },
-                        new
-                        {
-                            PuestoId = 101,
-                            Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "Administrativo",
-                            Nombre = "Proveeduría",
-                            SalarioBase = 492556.00m
-                        },
-                        new
-                        {
-                            PuestoId = 102,
-                            Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "Caja",
-                            Nombre = "Cajero",
-                            SalarioBase = 477778.00m
-                        },
-                        new
-                        {
-                            PuestoId = 103,
-                            Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "Ventas",
-                            Nombre = "Demostrador-vendedor",
-                            SalarioBase = 447778.00m
-                        },
-                        new
-                        {
-                            PuestoId = 104,
-                            Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "Bodega",
-                            Nombre = "Bodeguero",
-                            SalarioBase = 447778.00m
-                        },
-                        new
-                        {
-                            PuestoId = 105,
-                            Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "Conductores",
-                            Nombre = "Conductor",
-                            SalarioBase = 436585.00m
-                        },
-                        new
-                        {
                             PuestoId = 1,
                             Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "",
                             Nombre = "Encargada de RR.H.H.",
                             SalarioBase = 450000m
                         },
@@ -925,8 +862,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         {
                             PuestoId = 2,
                             Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "",
                             Nombre = "Vendedor",
                             SalarioBase = 380000m
                         });

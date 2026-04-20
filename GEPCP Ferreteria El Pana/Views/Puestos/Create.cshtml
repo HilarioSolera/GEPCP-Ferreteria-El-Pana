@@ -29,6 +29,31 @@
             }
 
             <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Departamento" class="form-label fw-bold">
+                        <i class="bi bi-building"></i> Departamento <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="Departamento" class="form-select" id="selectDepartamento">
+                        <option value="">-- Seleccione departamento --</option>
+                        <option value="Administrativo">Administrativo</option>
+                        <option value="Caja">Caja</option>
+                        <option value="Ventas">Ventas</option>
+                        <option value="Bodega">Bodega</option>
+                        <option value="Conductores">Conductores</option>
+                    </select>
+                    <div class="form-text text-muted">También podés escribir un departamento nuevo.</div>
+                    <span asp-validation-for="Departamento" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Codigo" class="form-label fw-bold">
+                        <i class="bi bi-tag"></i> Código <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="Codigo" class="form-control"
+                           maxlength="20" placeholder="Ej: TOCG" />
+                    <span asp-validation-for="Codigo" class="text-danger small"></span>
+                </div>
+
                 <div class="col-12">
                     <label asp-for="Nombre" class="form-label fw-bold">
                         <i class="bi bi-briefcase"></i> Nombre del Puesto <span class="text-danger">*</span>

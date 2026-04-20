@@ -1,4 +1,4 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
@@ -28,7 +28,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _servicioPDF = servicioPDF;
         }
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
+        // INDEX
 
         public async Task<IActionResult> Index(
             string? busqueda, int? periodoId, bool verTodos = false)
@@ -108,7 +108,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE ────────────────────────────────────────────────────────────
+        // CREATE
 
         public async Task<IActionResult> Create()
         {
@@ -161,6 +161,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 TempData["Success"] =
                     $"Comisión de ₡{model.Monto:N0} registrada correctamente.";
+
+                if (model.Monto > 500_000)
+                    TempData["Warning"] = "La comisión supera ₡500,000. Verificá que el monto sea correcto.";
+
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
@@ -172,7 +176,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── EDIT ──────────────────────────────────────────────────────────────
+        // EDIT
 
         public async Task<IActionResult> Edit(int? id)
         {
@@ -255,7 +259,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── DELETE ────────────────────────────────────────────────────────────
+        // DELETE
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -293,7 +297,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ── DESCARGAR PDF ─────────────────────────────────────────────────────
+        // DESCARGAR PDF
 
         [HttpGet]
         public async Task<IActionResult> DescargarPDF(int id)
@@ -329,7 +333,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+        // ENVIAR PDF POR EMAIL
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -483,7 +487,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
             return Json(empleados);
         }
-        // ── HELPERS ───────────────────────────────────────────────────────────
+        // HELPERS
 
         private async Task CargarPeriodosViewBag(int? selectedId = null)
         {

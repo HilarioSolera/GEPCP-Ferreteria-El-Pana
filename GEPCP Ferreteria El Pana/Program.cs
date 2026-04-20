@@ -6,11 +6,9 @@ using GEPCP_Ferreteria_El_Pana.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
-builder.Services.AddScoped<GEPCP_Ferreteria_El_Pana.Services.ComprobantePlanillaService>();
 
-// ── SERVICIOS ────────────────────────────────────────────────
+// Registro de servicios
 builder.Services.AddControllersWithViews();
-// Reglas de negocio configurables
 builder.Services.Configure<ReglasNegocioConfig>(
     builder.Configuration.GetSection("ReglasNegocio"));
 
@@ -32,10 +30,9 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<AuditoriaService>();
 builder.Services.AddHttpClient();
 
-// ── CONSTRUCCIÓN DE LA APLICACIÓN ────────────────────────────
 var app = builder.Build();
 
-// ── PIPELINE DE MIDDLEWARE ────────────────────────────────────
+// Configuracion del pipeline HTTP
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -46,7 +43,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.UseSession();        // ← DEBE ir aquí, antes de UseAuthorization
+app.UseSession();
 app.UseAuthorization();
 
 app.MapControllerRoute(

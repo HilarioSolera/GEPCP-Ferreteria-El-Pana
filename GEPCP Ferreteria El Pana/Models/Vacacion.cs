@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
@@ -63,7 +63,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Registrado por")]
         public string RegistradoPor { get; set; } = string.Empty;
 
-        // ── Navegación ─────────────────────────────────
+        // Navegación
         public Empleado Empleado { get; set; } = null!;
     }
 }

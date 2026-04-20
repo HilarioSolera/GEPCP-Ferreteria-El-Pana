@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
@@ -21,7 +21,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Monto Total (₡)")]
         public decimal MontoTotal { get; set; }
 
-        // ── Navegación ─────────────────────────────────
+        // Navegación
         public Empleado Empleado { get; set; } = null!;
         public Feriado Feriado { get; set; } = null!;
         public PeriodoPago PeriodoPago { get; set; } = null!;

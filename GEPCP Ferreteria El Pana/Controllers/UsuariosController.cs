@@ -1,4 +1,4 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
@@ -25,7 +25,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _auditoria = auditoria;
         }
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
+        // INDEX
 
         public async Task<IActionResult> Index(string? busqueda)
         {
@@ -67,7 +67,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CREATE — solo Jefatura ────────────────────────────────────────────
+        // CREATE — solo Jefatura
 
         [CustomAuthorize("Jefatura")]
         public IActionResult Create()
@@ -107,6 +107,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     usuario.NombreUsuario, usuario.Rol);
 
                 TempData["Success"] = $"Usuario '{usuario.NombreUsuario}' creado correctamente.";
+                TempData["Recomendacion"] = "Recordá compartir las credenciales de forma segura al nuevo usuario.";
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateException ex)
@@ -124,7 +125,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── EDIT — solo propio usuario ────────────────────────────────────────
+        // EDIT — solo propio usuario
 
         public async Task<IActionResult> Edit(int? id)
         {
@@ -182,6 +183,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     ModelState.AddModelError("NombreCompleto",
                         "El nombre completo debe tener al menos 5 caracteres.");
 
+                if (!string.IsNullOrWhiteSpace(model.CorreoElectronico) &&
+                    !Regex.IsMatch(model.CorreoElectronico.Trim(), @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                    ModelState.AddModelError("CorreoElectronico", "El formato del correo electrónico no es válido.");
+
                 if (!ModelState.IsValid) return View(model);
 
                 objetivo.NombreCompleto = model.NombreCompleto.Trim();
@@ -207,7 +212,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CAMBIAR PASSWORD — solo propio usuario ────────────────────────────
+        // CAMBIAR PASSWORD — solo propio usuario
 
         public async Task<IActionResult> CambiarPassword(int? id)
         {
@@ -281,6 +286,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 _logger.LogInformation("Contraseña actualizada: {U}", usuario.NombreUsuario);
                 TempData["Success"] = $"Contraseña de '{usuario.NombreUsuario}' actualizada correctamente.";
+                TempData["Recomendacion"] = "Se recomienda cambiar la contraseña periódicamente para mayor seguridad.";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
@@ -291,7 +297,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── DELETE — solo Jefatura ────────────────────────────────────────────
+        // DELETE — solo Jefatura
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -335,6 +341,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 _logger.LogInformation("Usuario eliminado: {U}", usuario.NombreUsuario);
                 TempData["Success"] = $"Usuario '{usuario.NombreUsuario}' eliminado correctamente.";
+
+                var totalJefatura = await _context.Usuarios.CountAsync(u => u.Rol == "Jefatura");
+                if (totalJefatura <= 1)
+                    TempData["Warning"] = "Solo queda un usuario con rol Jefatura. Considerá crear otro para evitar perder acceso administrativo.";
             }
             catch (Exception ex)
             {
@@ -345,7 +355,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // ── HELPERS ───────────────────────────────────────────────────────────
+        // HELPERS
 
         private void AplicarValidacionesCrear(UsuarioCreateViewModel model)
         {
@@ -372,6 +382,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             var rolesValidos = new[] { "RRHH", "Jefatura" };
             if (string.IsNullOrWhiteSpace(model.Rol) || !rolesValidos.Contains(model.Rol))
                 ModelState.AddModelError("Rol", "Seleccioná un rol válido.");
+
+            if (!string.IsNullOrWhiteSpace(model.CorreoElectronico) &&
+                !Regex.IsMatch(model.CorreoElectronico.Trim(), @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                ModelState.AddModelError("CorreoElectronico", "El formato del correo electrónico no es válido.");
         }
 
         private void AplicarValidacionesPassword(CambiarPasswordViewModel model)

@@ -1,14 +1,14 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Data;
 
 namespace GEPCP_Ferreteria_El_Pana.Services
 {
-    // ── INTERFAZ ──────────────────────────────────────────────────────────────
+    // INTERFAZ
     public interface IAuthService
     {
         bool ValidateUser(string usuario, string password, out string rol);
     }
 
-    // ── IMPLEMENTACIÓN ────────────────────────────────────────────────────────
+    // IMPLEMENTACIÓN
     public class AuthService : IAuthService
     {
         private readonly ApplicationDbContext _context;

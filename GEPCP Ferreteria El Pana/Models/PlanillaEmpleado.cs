@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
@@ -12,7 +12,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Required]
         public int EmpleadoId { get; set; }
 
-        // ── DEVENGADOS ──────────────────────────────────
+        // DEVENGADOS
         [Display(Name = "Horas Ordinarias")]
         public decimal HorasOrdinarias { get; set; }
 
@@ -43,7 +43,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Total Devengado (₡)")]
         public decimal TotalDevengado { get; set; }
 
-        // ── DEDUCCIONES ─────────────────────────────────
+        // DEDUCCIONES
         [Display(Name = "% CCSS")]
         public decimal PorcentajeCCSS { get; set; } = 10.67m;
 
@@ -73,7 +73,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Deducción Vacaciones Sin Pago (₡)")]
         public decimal DeduccionVacaciones { get; set; }
 
-        // ── Navegación ─────────────────────────────────
+        // Navegación
         public PeriodoPago PeriodoPago { get; set; } = null!;
         public Empleado Empleado { get; set; } = null!;
 

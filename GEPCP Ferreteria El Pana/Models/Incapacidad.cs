@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GEPCP_Ferreteria_El_Pana.Models
 {
@@ -78,7 +78,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Días a cargo del Patrono")]
         public int DiasPagadosPatrono { get; set; }
 
-        // ── Navegación ─────────────────────────────────
+        // Navegación
         public Empleado Empleado { get; set; } = null!;
 
     }

@@ -1,4 +1,4 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
@@ -83,6 +83,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 _logger.LogInformation("Feriado creado: {Nombre} {Fecha}", model.Nombre, model.Fecha);
                 TempData["Success"] = $"Feriado '{model.Nombre}' registrado correctamente.";
+
+                if (model.Tipo == TipoFeriado.Obligatorio)
+                    TempData["Recomendacion"] = "Los feriados obligatorios se pagan doble automáticamente al generar pagos de feriado en el período correspondiente.";
+
                 return RedirectToAction(nameof(Index), new { anio = model.Fecha.Year });
             }
             catch (DbUpdateException ex)
@@ -219,9 +223,17 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     f.Fecha.Date == model.Fecha.Date &&
                     (idActual == null || f.FeriadoId != idActual)))
                 ModelState.AddModelError("Fecha", "Ya existe un feriado registrado para esa fecha.");
+
+            // Advertencia si el feriado cae en fin de semana
+            if (model.Fecha != default &&
+                (model.Fecha.DayOfWeek == DayOfWeek.Saturday || model.Fecha.DayOfWeek == DayOfWeek.Sunday))
+            {
+                ModelState.AddModelError("Fecha",
+                    "La fecha seleccionada cae en fin de semana. Verificá si corresponde.");
+            }
         }
 
-        // ── PAGOS DE FERIADO POR PERÍODO ──────────────────────────────────────────
+        // PAGOS DE FERIADO POR PERÍODO
 
         public async Task<IActionResult> PagosPorPeriodo(int? periodoId)
         {
@@ -274,7 +286,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── GENERAR PAGOS AUTOMÁTICAMENTE ─────────────────────────────────────────
+        // GENERAR PAGOS AUTOMÁTICAMENTE
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -366,7 +378,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── MARCAR NO TRABAJADO ───────────────────────────────────────────────────
+        // MARCAR NO TRABAJADO
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -425,7 +437,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── ELIMINAR PAGO FERIADO ─────────────────────────────────────────────────
+        // ELIMINAR PAGO FERIADO
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -468,7 +480,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── DESCARGAR BOLETA PDF ───────────────────────────────────────────────
+        // DESCARGAR BOLETA PDF
 
         public async Task<IActionResult> DescargarBoletaFeriado(int id)
         {
@@ -498,7 +510,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── ENVIAR POR EMAIL ──────────────────────────────────────────────────
+        // ENVIAR POR EMAIL
 
         [HttpPost]
         [ValidateAntiForgeryToken]

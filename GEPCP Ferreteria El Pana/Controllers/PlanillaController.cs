@@ -1,4 +1,4 @@
-﻿using GEPCP_Ferreteria_El_Pana.Data;
+using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
@@ -27,14 +27,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             _auditoria = auditoria;
         }
 
-        // ====================== CÁLCULO ISR (valores configurables por período) ======================
-        // El ISR para asalariados en Costa Rica se calcula por tramos progresivos
-        // sobre el salario BRUTO mensual. Se convierte el devengado del período a
-        // mensual, se aplican los tramos, y se divide el impuesto entre el factor.
+        // Calculo del impuesto sobre la renta por tramos progresivos segun ley CR
         private decimal CalcularImpuestoRenta(decimal baseImponiblePeriodo, PeriodoPago periodo,
             int numHijos = 0, bool tieneConyuge = false)
         {
-            // Fallback: si el período tiene tramos ISR en 0, usar valores CR 2026
+            // Si el periodo tiene tramos en 0, se usan valores CR 2026 por defecto
             decimal t1Hasta = periodo.ISR_Tramo1_Hasta > 0 ? periodo.ISR_Tramo1_Hasta : 918000m;
             decimal t2Desde = periodo.ISR_Tramo2_Desde > 0 ? periodo.ISR_Tramo2_Desde : 918000m;
             decimal t2Hasta = periodo.ISR_Tramo2_Hasta > 0 ? periodo.ISR_Tramo2_Hasta : 1347000m;
@@ -48,7 +45,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             decimal t5Desde = periodo.ISR_Tramo5_Desde > 0 ? periodo.ISR_Tramo5_Desde : 4727000m;
             decimal t5Pct   = periodo.ISR_Tramo5_Porcentaje > 0 ? periodo.ISR_Tramo5_Porcentaje : 25m;
 
-            // Factor de conversión del período a mensual
+            // Conversion del devengado del periodo a base mensual
             decimal factorMensual = periodo.TipoPeriodo switch
             {
                 TipoPeriodo.Semanal => 52m / 12m,   // ≈ 4.333
@@ -59,7 +56,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             decimal baseImponibleMensual = baseImponiblePeriodo * factorMensual;
             decimal impuestoMensual = 0m;
 
-            // Tramo 1: Exento hasta el umbral
+            // Tramo 1: exento
             if (baseImponibleMensual <= t1Hasta)
                 return 0m;
 
@@ -91,18 +88,18 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 impuestoMensual += excedente * (t5Pct / 100m);
             }
 
-            // Créditos fiscales mensuales
+            // Se restan los creditos fiscales por hijos y conyuge
             decimal creditoHijos = numHijos * periodo.ISR_CreditoHijo;
             decimal creditoConyuge = tieneConyuge ? periodo.ISR_CreditoConyuge : 0m;
             impuestoMensual = Math.Max(0m, impuestoMensual - creditoHijos - creditoConyuge);
 
-            // Retención por período = Impuesto mensual / factor
+            // Se divide el impuesto mensual entre el factor del periodo
             return Math.Round(impuestoMensual / factorMensual, 2);
         }
 
 
 
-        // ── INDEX ─────────────────────────────────────────────────────────────
+        // INDEX
         public async Task<IActionResult> Index(int? periodoId)
         {
             try
@@ -171,7 +168,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             }
         }
 
-        // ── CALCULAR ──────────────────────────────────────────────────────────
+        // Calculo masivo de planilla para todos los empleados del periodo
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Calcular(int periodoId)
@@ -206,7 +203,7 @@ var empleados = todosEmpleados
 
 if (empleadosExcluidos.Any())
     TempData["Warning"] =
-        $"⚠️ Excluidos por antigüedad: " +
+        $"Excluidos por antigüedad: " +
         string.Join(", ", empleadosExcluidos
             .Select(e => $"{e.PrimerApellido} {e.Nombre}"));
 
@@ -257,7 +254,7 @@ foreach (var empleado in empleados)
     var deduccionCCSS = Math.Round(
         totalDevengado * (periodo.PorcentajeCCSS / 100m), 2);
 
-    // ISR: se calcula sobre el salario bruto mensual (tramos progresivos)
+    // Calculo de ISR sobre el devengado del periodo
     var deduccionRenta = CalcularImpuestoRenta(totalDevengado, periodo, empleado.NumHijos, empleado.TieneConyuge);
 
     decimal deduccionPrestamo = 0m;
@@ -382,7 +379,7 @@ foreach (var empleado in empleados)
             }
         }
 
-        // ── EDITAR GET ───────────────────────────────────────────────────────
+        // Formulario de edicion de planilla individual
         public async Task<IActionResult> Editar(int? id)
         {
             try
@@ -412,7 +409,7 @@ foreach (var empleado in empleados)
             }
         }
 
-        // ── EDITAR POST ───────────────────────────────────────────────────────
+        // Guardar cambios de edicion de planilla individual
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(int id, PlanillaEmpleado model)
@@ -444,7 +441,7 @@ foreach (var empleado in empleados)
                 registro.DeduccionCCSS = Math.Round(
                     registro.TotalDevengado * (registro.PorcentajeCCSS / 100m), 2);
 
-                // ISR: se calcula sobre el salario bruto mensual (tramos progresivos)
+                // Calculo de ISR sobre el devengado del periodo
                 registro.DeduccionRenta = CalcularImpuestoRenta(registro.TotalDevengado,
                     registro.PeriodoPago, registro.Empleado.NumHijos, registro.Empleado.TieneConyuge);
 
@@ -473,7 +470,7 @@ foreach (var empleado in empleados)
             }
         }
 
-        // ── CERRAR PERÍODO ────────────────────────────────────────────────────
+        // Cierre de periodo: aplica abonos a prestamos y creditos
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CerrarPeriodo(int periodoId)
@@ -600,7 +597,7 @@ foreach (var empleado in empleados)
             }
         }
 
-        // ── REABRIR PERÍODO ───────────────────────────────────────────────────
+        // REABRIR PERÍODO
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ReabrirPeriodo(int periodoId)
@@ -667,7 +664,7 @@ foreach (var empleado in empleados)
             }
         }
 
-        // ── DESCARGAR PDF INDIVIDUAL ──────────────────────────────────────────
+        // DESCARGAR PDF INDIVIDUAL
         [HttpGet]
         public async Task<IActionResult> DescargarPDF(int id)
         {
@@ -698,7 +695,7 @@ foreach (var empleado in empleados)
             }
         }
 
-        // ── EXPORTAR EXCEL ────────────────────────────────────────────────────
+        // EXPORTAR EXCEL
 
         [HttpGet]
         public async Task<IActionResult> ExportarExcel(int periodoId)
@@ -925,7 +922,7 @@ foreach (var empleado in empleados)
             }
         }
 
-        // ── EXPORTAR PDF GENERAL ──────────────────────────────────────────────
+        // EXPORTAR PDF GENERAL
 
         [HttpGet]
         public async Task<IActionResult> ExportarPDF(int periodoId)
@@ -970,7 +967,7 @@ foreach (var empleado in empleados)
             }
         }
 
-        // ── ENVIAR PDF POR EMAIL ──────────────────────────────────────────────
+        // ENVIAR PDF POR EMAIL
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -1083,7 +1080,7 @@ foreach (var empleado in empleados)
             }
         }
 
-        // ── ENVIAR PDF A TODOS POR EMAIL ──────────────────────────────────────
+        // ENVIAR PDF A TODOS POR EMAIL
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EnviarTodosPorEmail(int periodoId)
@@ -1198,11 +1195,11 @@ foreach (var empleado in empleados)
                     "Enviar comprobantes masivo por email", "Planilla",
                     $"PeriodoId: {periodoId} — Enviados: {enviados}, Sin correo: {sinCorreo}, Errores: {errores}");
 
-                var msg = $"✅ {enviados} comprobante(s) enviado(s) correctamente.";
+                var msg = $"{enviados} comprobante(s) enviado(s) correctamente.";
                 if (sinCorreo > 0)
-                    msg += $"\n⚠️ {sinCorreo} empleado(s) sin correo registrado.";
+                    msg += $"\n{sinCorreo} empleado(s) sin correo registrado.";
                 if (errores > 0)
-                    msg += $"\n❌ {errores} error(es): {string.Join(", ", detalleErrores)}";
+                    msg += $"\n{errores} error(es): {string.Join(", ", detalleErrores)}";
 
                 TempData[errores == 0 ? "Success" : "Warning"] = msg;
                 return RedirectToAction(nameof(Index), new { periodoId });

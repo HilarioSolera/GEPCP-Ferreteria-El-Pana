@@ -3,6 +3,7 @@ using System;
 using GEPCP_Ferreteria_El_Pana.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260420050638_AgregarDepartamentoCodigoAPuesto")]
+    partial class AgregarDepartamentoCodigoAPuesto
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.25");
@@ -858,60 +861,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.ToTable("Puestos");
 
                     b.HasData(
-                        new
-                        {
-                            PuestoId = 100,
-                            Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "Administrativo",
-                            Nombre = "Asistente",
-                            SalarioBase = 410855.00m
-                        },
-                        new
-                        {
-                            PuestoId = 101,
-                            Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "Administrativo",
-                            Nombre = "Proveeduría",
-                            SalarioBase = 492556.00m
-                        },
-                        new
-                        {
-                            PuestoId = 102,
-                            Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "Caja",
-                            Nombre = "Cajero",
-                            SalarioBase = 477778.00m
-                        },
-                        new
-                        {
-                            PuestoId = 103,
-                            Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "Ventas",
-                            Nombre = "Demostrador-vendedor",
-                            SalarioBase = 447778.00m
-                        },
-                        new
-                        {
-                            PuestoId = 104,
-                            Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "Bodega",
-                            Nombre = "Bodeguero",
-                            SalarioBase = 447778.00m
-                        },
-                        new
-                        {
-                            PuestoId = 105,
-                            Activo = true,
-                            Codigo = "TOCG",
-                            Departamento = "Conductores",
-                            Nombre = "Conductor",
-                            SalarioBase = 436585.00m
-                        },
                         new
                         {
                             PuestoId = 1,
