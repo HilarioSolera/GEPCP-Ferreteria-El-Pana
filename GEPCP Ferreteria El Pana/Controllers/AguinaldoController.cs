@@ -609,23 +609,25 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
             var t = termino.Trim().ToLower();
 
-            var empleados = await _context.Empleados
-                .AsNoTracking()
+            var empleados = await (from e in _context.Empleados
                 .Where(e => e.Activo && (
                     e.Nombre.ToLower().Contains(t) ||
                     e.PrimerApellido.ToLower().Contains(t) ||
                     (e.SegundoApellido != null && e.SegundoApellido.ToLower().Contains(t)) ||
                     e.Cedula.Contains(t)))
-                .OrderBy(e => e.PrimerApellido)
-                .Take(12)
-                .Select(e => new
+                join p in _context.Puestos on e.Puesto equals p.Nombre into puestoGroup
+                from p in puestoGroup.DefaultIfEmpty()
+                orderby e.PrimerApellido
+                select new
                 {
                     id = e.EmpleadoId,
-                    nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
+                    nombre = (e.PrimerApellido + " " + e.SegundoApellido + " " + e.Nombre).Trim(),
                     cedula = e.Cedula,
-                    puesto = e.Puesto,
+                    puesto = p != null ? p.Codigo + " - " + e.Puesto : e.Puesto,
                     departamento = e.Departamento
                 })
+                .AsNoTracking()
+                .Take(12)
                 .ToListAsync();
 
             return Json(empleados);
@@ -634,18 +636,20 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         [HttpGet]
         public async Task<IActionResult> TodosLosEmpleados()
         {
-            var empleados = await _context.Empleados
-                .AsNoTracking()
+            var empleados = await (from e in _context.Empleados
                 .Where(e => e.Activo)
-                .OrderBy(e => e.PrimerApellido)
-                .Select(e => new
+                join p in _context.Puestos on e.Puesto equals p.Nombre into puestoGroup
+                from p in puestoGroup.DefaultIfEmpty()
+                orderby e.PrimerApellido
+                select new
                 {
                     id = e.EmpleadoId,
-                    nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
+                    nombre = (e.PrimerApellido + " " + e.SegundoApellido + " " + e.Nombre).Trim(),
                     cedula = e.Cedula,
-                    puesto = e.Puesto,
+                    puesto = p != null ? p.Codigo + " - " + e.Puesto : e.Puesto,
                     departamento = e.Departamento
                 })
+                .AsNoTracking()
                 .ToListAsync();
 
             return Json(empleados);

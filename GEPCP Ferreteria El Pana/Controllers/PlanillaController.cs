@@ -100,7 +100,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
 
         // INDEX
-        public async Task<IActionResult> Index(int? periodoId)
+        public async Task<IActionResult> Index(int? periodoId, string orden)
         {
             try
             {
@@ -123,6 +123,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 ViewBag.Periodos = periodos;
                 ViewBag.PeriodoId = periodoId;
+                ViewBag.Orden = orden ?? "departamento"; // Valor por defecto
 
                 if (periodoId == null)
                 {
@@ -149,9 +150,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     .Include(pe => pe.PeriodoPago)
                     .AsNoTracking()
                     .Where(pe => pe.PeriodoPagoId == periodoId)
-                    .OrderBy(pe => pe.Empleado.Departamento)
-                    .ThenBy(pe => pe.Empleado.PrimerApellido)
-                    .ToListAsync();
+                    .ToListAsync(); // Removemos el orden aquí, se hará en la vista
 
                 ViewBag.TotalEmpleados = planillas.Count;
                 ViewBag.TotalDevengado = planillas.Sum(p => p.TotalDevengado);
@@ -188,30 +187,29 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 }
 
                 var tipoPagoFiltro = (TipoPago)(int)periodo.TipoPeriodo;
-var todosEmpleados = await _context.Empleados
-    .Where(e => e.Activo &&
-        (e.TipoPago == tipoPagoFiltro ||
-         (periodo.TipoPeriodo == TipoPeriodo.Quincenal && (int)e.TipoPago == 0)))
-    .ToListAsync();
+                var todosEmpleados = await _context.Empleados
+                    .Where(e => e.Activo &&
+                        (e.TipoPago == tipoPagoFiltro ||
+                         (periodo.TipoPeriodo == TipoPeriodo.Quincenal && (int)e.TipoPago == 0)))
+                    .ToListAsync();
 
-// Filtro antigüedad mínima 15 días
-var fechaMinIngreso = periodo.FechaFin.AddDays(-14);
-var empleadosExcluidos = todosEmpleados
-    .Where(e => e.FechaIngreso > fechaMinIngreso).ToList();
-var empleados = todosEmpleados
-    .Where(e => e.FechaIngreso <= fechaMinIngreso).ToList();
+                // Validación: Solo incluir empleados cuya fecha de ingreso sea anterior o igual al inicio del período
+                var empleadosExcluidos = todosEmpleados
+                    .Where(e => e.FechaIngreso > periodo.FechaInicio).ToList();
+                var empleados = todosEmpleados
+                    .Where(e => e.FechaIngreso <= periodo.FechaInicio).ToList();
 
-if (empleadosExcluidos.Any())
-    TempData["Warning"] =
-        $"Excluidos por antigüedad: " +
-        string.Join(", ", empleadosExcluidos
-            .Select(e => $"{e.PrimerApellido} {e.Nombre}"));
+                if (empleadosExcluidos.Any())
+                    TempData["Warning"] =
+                        $"Excluidos por fecha de ingreso posterior al período: " +
+                        string.Join(", ", empleadosExcluidos
+                            .Select(e => $"{e.PrimerApellido} {e.Nombre} (ingresó: {e.FechaIngreso:dd/MM/yyyy})"));
 
-if (!empleados.Any())
-{
-    TempData["Error"] = "No hay empleados con suficiente antigüedad para calcular.";
-    return RedirectToAction(nameof(Index), new { periodoId });
-}
+                if (!empleados.Any())
+                {
+                    TempData["Error"] = "No hay empleados elegibles para calcular en este período.";
+                    return RedirectToAction(nameof(Index), new { periodoId });
+                }
 
 var abonosPeriodoExistentes = await _context.AbonosPrestamo
     .Where(a => a.Observaciones != null &&
@@ -269,6 +267,10 @@ foreach (var empleado in empleados)
                 prestamo.CuotaMensual / empleado.FactorCuotaPrestamo, 2);
             deduccionPrestamo = Math.Round(
                 Math.Min(cuotaPeriodo, prestamo.Monto), 2);
+
+            // Validación Art. 172 CT: deducción no puede exceder 50% del salario
+            var maxDeduccion = Math.Round(salarioOrdinario * 0.50m, 2);
+            deduccionPrestamo = Math.Min(deduccionPrestamo, maxDeduccion);
         }
     }
 
@@ -306,6 +308,12 @@ foreach (var empleado in empleados)
 
     var netoAPagar = Math.Max(0,
         Math.Round(totalDevengado - totalDeducciones, 2));
+
+    // Alerta si las deducciones exceden el salario
+    if (netoAPagar == 0 && totalDeducciones > 0)
+    {
+        TempData["Warning"] = $"ADVERTENCIA: El empleado {empleado.Nombre} tiene deducciones que igualan o exceden su salario (Neto = ₡0). Revise las deducciones.";
+    }
 
     var planillaExistente = await _context.PlanillasEmpleado
         .FirstOrDefaultAsync(p =>
@@ -724,13 +732,13 @@ foreach (var empleado in empleados)
                 var ws = workbook.Worksheets.Add("Planilla");
 
                 ws.Cell(1, 1).Value = "FERRETERÍA EL PANA SRL";
-                ws.Range(1, 1, 1, 17).Merge().Style
+                ws.Range(1, 1, 1, 18).Merge().Style
                     .Font.SetBold(true).Font.SetFontSize(14)
                     .Alignment.SetHorizontal(
                         ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
 
                 ws.Cell(2, 1).Value = "DEPARTAMENTO DE RECURSOS HUMANOS";
-                ws.Range(2, 1, 2, 17).Merge().Style
+                ws.Range(2, 1, 2, 18).Merge().Style
                     .Font.SetBold(true).Font.SetFontSize(12)
                     .Alignment.SetHorizontal(
                         ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
@@ -743,7 +751,7 @@ foreach (var empleado in empleados)
                 };
                 ws.Cell(3, 1).Value =
                     $"PLANILLA {tipoTextoExcel} — {periodo.Descripcion}";
-                ws.Range(3, 1, 3, 17).Merge().Style
+                ws.Range(3, 1, 3, 18).Merge().Style
                     .Font.SetBold(true).Font.SetFontSize(11)
                     .Alignment.SetHorizontal(
                         ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
@@ -751,7 +759,7 @@ foreach (var empleado in empleados)
                 ws.Cell(4, 1).Value =
                     $"PERÍODO: {periodo.FechaInicio:dd/MM/yyyy} " +
                     $"AL {periodo.FechaFin:dd/MM/yyyy}";
-                ws.Range(4, 1, 4, 17).Merge().Style
+                ws.Range(4, 1, 4, 18).Merge().Style
                     .Font.SetItalic(true)
                     .Alignment.SetHorizontal(
                         ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
@@ -760,7 +768,7 @@ foreach (var empleado in empleados)
                 {
                     "Nombre y Apellidos", "Cédula", "Departamento", "Puesto",
                     "Sal. Ordinario", "Hrs. Extras", "Comisión", "Feriados",
-                    "Total Devengado", $"CCSS {periodo.PorcentajeCCSS}%", "Préstamo",
+                    "Total Devengado", $"CCSS {periodo.PorcentajeCCSS}%", "Renta (ISR)", "Préstamo",
                     "Cré. Ferretería", "Incapacidad", "Vac. Sin Pago",
                     "Hrs. No Lab.", "Total Deducciones", "Neto a Pagar"
                 };
@@ -786,7 +794,7 @@ foreach (var empleado in empleados)
                 foreach (var grupo in grupos)
                 {
                     ws.Cell(fila, 1).Value = grupo.Key.ToUpper();
-                    ws.Range(fila, 1, fila, 17).Merge().Style
+                    ws.Range(fila, 1, fila, 18).Merge().Style
                         .Font.SetBold(true)
                         .Font.SetFontColor(ClosedXML.Excel.XLColor.White)
                         .Fill.SetBackgroundColor(
@@ -809,24 +817,25 @@ foreach (var empleado in empleados)
                         ws.Cell(fila, 8).Value = p.MontoFeriados;
                         ws.Cell(fila, 9).Value = p.TotalDevengado;
                         ws.Cell(fila, 10).Value = p.DeduccionCCSS;
-                        ws.Cell(fila, 11).Value = p.DeduccionPrestamos;
-                        ws.Cell(fila, 12).Value = p.DeduccionCreditoFerreteria;
-                        ws.Cell(fila, 13).Value = p.DeduccionIncapacidad;
-                        ws.Cell(fila, 14).Value = p.DeduccionVacaciones;
-                        ws.Cell(fila, 15).Value = p.DeduccionHorasNoLaboradas;
-                        ws.Cell(fila, 16).Value = p.TotalDeducciones;
-                        ws.Cell(fila, 17).Value = p.NetoAPagar;
+                        ws.Cell(fila, 11).Value = p.DeduccionRenta;
+                        ws.Cell(fila, 12).Value = p.DeduccionPrestamos;
+                        ws.Cell(fila, 13).Value = p.DeduccionCreditoFerreteria;
+                        ws.Cell(fila, 14).Value = p.DeduccionIncapacidad;
+                        ws.Cell(fila, 15).Value = p.DeduccionVacaciones;
+                        ws.Cell(fila, 16).Value = p.DeduccionHorasNoLaboradas;
+                        ws.Cell(fila, 17).Value = p.TotalDeducciones;
+                        ws.Cell(fila, 18).Value = p.NetoAPagar;
 
-                        for (int col = 5; col <= 17; col++)
+                        for (int col = 5; col <= 18; col++)
                             ws.Cell(fila, col).Style
                                 .NumberFormat.Format = "₡#,##0.00";
 
                         if (fila % 2 == 0)
-                            ws.Range(fila, 1, fila, 17).Style
+                            ws.Range(fila, 1, fila, 18).Style
                                 .Fill.SetBackgroundColor(
                                     ClosedXML.Excel.XLColor.FromHtml("#FFF3E0"));
 
-                        ws.Range(fila, 1, fila, 17).Style
+                        ws.Range(fila, 1, fila, 18).Style
                             .Border.SetOutsideBorder(
                                 ClosedXML.Excel.XLBorderStyleValues.Thin)
                             .Border.SetInsideBorder(
@@ -842,22 +851,23 @@ foreach (var empleado in empleados)
                     ws.Cell(fila, 8).Value = grupo.Sum(p => p.MontoFeriados);
                     ws.Cell(fila, 9).Value = grupo.Sum(p => p.TotalDevengado);
                     ws.Cell(fila, 10).Value = grupo.Sum(p => p.DeduccionCCSS);
-                    ws.Cell(fila, 11).Value = grupo.Sum(p => p.DeduccionPrestamos);
-                    ws.Cell(fila, 12).Value = grupo.Sum(p => p.DeduccionCreditoFerreteria);
-                    ws.Cell(fila, 13).Value = grupo.Sum(p => p.DeduccionIncapacidad);
-                    ws.Cell(fila, 14).Value = grupo.Sum(p => p.DeduccionVacaciones);
-                    ws.Cell(fila, 15).Value = grupo.Sum(p => p.DeduccionHorasNoLaboradas);
-                    ws.Cell(fila, 16).Value = grupo.Sum(p => p.TotalDeducciones);
-                    ws.Cell(fila, 17).Value = grupo.Sum(p => p.NetoAPagar);
+                    ws.Cell(fila, 11).Value = grupo.Sum(p => p.DeduccionRenta);
+                    ws.Cell(fila, 12).Value = grupo.Sum(p => p.DeduccionPrestamos);
+                    ws.Cell(fila, 13).Value = grupo.Sum(p => p.DeduccionCreditoFerreteria);
+                    ws.Cell(fila, 14).Value = grupo.Sum(p => p.DeduccionIncapacidad);
+                    ws.Cell(fila, 15).Value = grupo.Sum(p => p.DeduccionVacaciones);
+                    ws.Cell(fila, 16).Value = grupo.Sum(p => p.DeduccionHorasNoLaboradas);
+                    ws.Cell(fila, 17).Value = grupo.Sum(p => p.TotalDeducciones);
+                    ws.Cell(fila, 18).Value = grupo.Sum(p => p.NetoAPagar);
 
-                    ws.Range(fila, 1, fila, 17).Style
+                    ws.Range(fila, 1, fila, 18).Style
                         .Font.SetBold(true)
                         .Fill.SetBackgroundColor(
                             ClosedXML.Excel.XLColor.FromHtml("#FFE0B2"))
                         .Border.SetOutsideBorder(
                             ClosedXML.Excel.XLBorderStyleValues.Medium);
 
-                    for (int col = 5; col <= 17; col++)
+                    for (int col = 5; col <= 18; col++)
                         ws.Cell(fila, col).Style.NumberFormat.Format = "₡#,##0.00";
 
                     fila++;
@@ -871,15 +881,16 @@ foreach (var empleado in empleados)
                 ws.Cell(fila, 8).Value = planillas.Sum(p => p.MontoFeriados);
                 ws.Cell(fila, 9).Value = planillas.Sum(p => p.TotalDevengado);
                 ws.Cell(fila, 10).Value = planillas.Sum(p => p.DeduccionCCSS);
-                ws.Cell(fila, 11).Value = planillas.Sum(p => p.DeduccionPrestamos);
-                ws.Cell(fila, 12).Value = planillas.Sum(p => p.DeduccionCreditoFerreteria);
-                ws.Cell(fila, 13).Value = planillas.Sum(p => p.DeduccionIncapacidad);
-                ws.Cell(fila, 14).Value = planillas.Sum(p => p.DeduccionVacaciones);
-                ws.Cell(fila, 15).Value = planillas.Sum(p => p.DeduccionHorasNoLaboradas);
-                ws.Cell(fila, 16).Value = planillas.Sum(p => p.TotalDeducciones);
-                ws.Cell(fila, 17).Value = planillas.Sum(p => p.NetoAPagar);
+                ws.Cell(fila, 11).Value = planillas.Sum(p => p.DeduccionRenta);
+                ws.Cell(fila, 12).Value = planillas.Sum(p => p.DeduccionPrestamos);
+                ws.Cell(fila, 13).Value = planillas.Sum(p => p.DeduccionCreditoFerreteria);
+                ws.Cell(fila, 14).Value = planillas.Sum(p => p.DeduccionIncapacidad);
+                ws.Cell(fila, 15).Value = planillas.Sum(p => p.DeduccionVacaciones);
+                ws.Cell(fila, 16).Value = planillas.Sum(p => p.DeduccionHorasNoLaboradas);
+                ws.Cell(fila, 17).Value = planillas.Sum(p => p.TotalDeducciones);
+                ws.Cell(fila, 18).Value = planillas.Sum(p => p.NetoAPagar);
 
-                ws.Range(fila, 1, fila, 17).Style
+                ws.Range(fila, 1, fila, 18).Style
                     .Font.SetBold(true).Font.SetFontSize(11)
                     .Font.SetFontColor(ClosedXML.Excel.XLColor.White)
                     .Fill.SetBackgroundColor(
@@ -887,14 +898,14 @@ foreach (var empleado in empleados)
                     .Border.SetOutsideBorder(
                         ClosedXML.Excel.XLBorderStyleValues.Medium);
 
-                for (int col = 5; col <= 17; col++)
+                for (int col = 5; col <= 18; col++)
                     ws.Cell(fila, col).Style.NumberFormat.Format = "₡#,##0.00";
 
                 ws.Column(1).Width = 30;
                 ws.Column(2).Width = 14;
                 ws.Column(3).Width = 14;
                 ws.Column(4).Width = 20;
-                for (int col = 5; col <= 17; col++) ws.Column(col).Width = 16;
+                for (int col = 5; col <= 18; col++) ws.Column(col).Width = 16;
                 ws.SheetView.FreezeRows(6);
 
                 await _auditoria.RegistrarAsync(

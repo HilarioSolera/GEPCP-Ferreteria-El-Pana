@@ -4,18 +4,18 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">
         <i class="bi bi-plus-circle"></i> Nuevo Período de Pago
-    </h2>
-    <a asp-action="Index" class="btn btn-outline-secondary">
+    </h4>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
 @if (!ViewData.ModelState.IsValid)
 {
-    <div class="alert alert-danger mb-3">
+    <div class="alert alert-danger mb-2" style="font-size: 0.85rem;">
         <i class="bi bi-exclamation-triangle-fill"></i>
         <strong>No se pudo crear el período:</strong>
         <ul class="mb-0 mt-1">
@@ -28,59 +28,59 @@
 }
 
 <div class="card shadow-sm border-0">
-    <div class="card-body p-4">
+    <div class="card-body p-3">
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
 
-            <div class="row g-3">
+            <div class="row g-2">
 
                 @* ── Tipo de período ── *@
                 <div class="col-md-3">
-                    <label asp-for="TipoPeriodo" class="form-label fw-bold">
+                    <label asp-for="TipoPeriodo" class="form-label fw-bold small">
                         <i class="bi bi-people"></i> Tipo de Período
                         <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="TipoPeriodo" class="form-select"
+                    <select asp-for="TipoPeriodo" class="form-select form-select-sm"
                             id="selectTipoPeriodo">
                         <option value="1">Quincenal</option>
                         <option value="2">Semanal</option>
                         <option value="3">Mensual</option>
                     </select>
-                    <div class="form-text text-muted" id="tipoPeriodoHint">
+                    <div class="form-text text-muted" id="tipoPeriodoHint" style="font-size: 0.7rem;">
                         Quincenal: empleados con pago cada 15 días.
                     </div>
-                    <span asp-validation-for="TipoPeriodo" class="text-danger small"></span>
+                    <span asp-validation-for="TipoPeriodo" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
                 <div class="col-md-2">
-                    <label asp-for="PorcentajeCCSS" class="form-label fw-bold">
+                    <label asp-for="PorcentajeCCSS" class="form-label fw-bold small">
                         <i class="bi bi-percent"></i> % CCSS
                         <span class="text-danger">*</span>
                     </label>
                     <input asp-for="PorcentajeCCSS" type="number" step="0.01"
                            min="1" max="30"
-                           class="form-control" />
-                    <div class="form-text text-muted">Actualmente 10.83%</div>
-                    <span asp-validation-for="PorcentajeCCSS" class="text-danger small"></span>
+                           class="form-control form-control-sm" />
+                    <div class="form-text text-muted" style="font-size: 0.7rem;">Actualmente 10.83%</div>
+                    <span asp-validation-for="PorcentajeCCSS" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 @* ── Año ── *@
                 <div class="col-md-2">
-                    <label asp-for="Anio" class="form-label fw-bold">
+                    <label asp-for="Anio" class="form-label fw-bold small">
                         <i class="bi bi-calendar"></i> Año
                         <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Anio" type="number" min="2020" max="2099"
-                           class="form-control" id="inputAnio" />
-                    <span asp-validation-for="Anio" class="text-danger small"></span>
+                           class="form-control form-control-sm" id="inputAnio" />
+                    <span asp-validation-for="Anio" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 @* ── Mes ── *@
                 <div class="col-md-3">
-                    <label asp-for="Mes" class="form-label fw-bold">
+                    <label asp-for="Mes" class="form-label fw-bold small">
                         <i class="bi bi-calendar2"></i> Mes
                         <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Mes" class="form-select"
+                    <select asp-for="Mes" class="form-select form-select-sm"
                             id="selectMes">
                         <option value="1">Enero</option>
                         <option value="2">Febrero</option>
@@ -95,30 +95,30 @@
                         <option value="11">Noviembre</option>
                         <option value="12">Diciembre</option>
                     </select>
-                    <span asp-validation-for="Mes" class="text-danger small"></span>
+                    <span asp-validation-for="Mes" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 @* ── Quincena (se oculta para semanal/mensual) ── *@
                 <div class="col-md-2" id="divQuincena">
-                    <label asp-for="Quincena" class="form-label fw-bold">
+                    <label asp-for="Quincena" class="form-label fw-bold small">
                         <i class="bi bi-calendar2-week"></i> Quincena
                         <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Quincena" class="form-select"
+                    <select asp-for="Quincena" class="form-select form-select-sm"
                             id="selectQuincena">
                         <option value="1">Primera (1–15)</option>
                         <option value="2">Segunda (16–fin)</option>
                     </select>
-                    <span asp-validation-for="Quincena" class="text-danger small"></span>
+                    <span asp-validation-for="Quincena" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 @* ── Semana del mes (solo visible para semanal) ── *@
                 <div class="col-md-2" id="divSemana" style="display:none;">
-                    <label class="form-label fw-bold">
+                    <label class="form-label fw-bold small">
                         <i class="bi bi-calendar2-week"></i> Semana
                         <span class="text-danger">*</span>
                     </label>
-                    <select id="selectSemana" class="form-select">
+                    <select id="selectSemana" class="form-select form-select-sm">
                         <option value="1">Semana 1 (días 1–7)</option>
                         <option value="2">Semana 2 (días 8–14)</option>
                         <option value="3">Semana 3 (días 15–21)</option>
@@ -129,26 +129,26 @@
 
                 @* ── Fecha inicio ── *@
                 <div class="col-md-2">
-                    <label asp-for="FechaInicio" class="form-label fw-bold">
+                    <label asp-for="FechaInicio" class="form-label fw-bold small">
                         <i class="bi bi-calendar-check"></i> Fecha Inicio
                         <span class="text-danger">*</span>
                     </label>
                     <input asp-for="FechaInicio" type="date"
-                           class="form-control"
+                           class="form-control form-control-sm"
                            id="inputFechaInicio" />
-                    <span asp-validation-for="FechaInicio" class="text-danger small"></span>
+                    <span asp-validation-for="FechaInicio" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 @* ── Fecha fin ── *@
                 <div class="col-md-2">
-                    <label asp-for="FechaFin" class="form-label fw-bold">
+                    <label asp-for="FechaFin" class="form-label fw-bold small">
                         <i class="bi bi-calendar-x"></i> Fecha Fin
                         <span class="text-danger">*</span>
                     </label>
                     <input asp-for="FechaFin" type="date"
-                           class="form-control"
+                           class="form-control form-control-sm"
                            id="inputFechaFin" />
-                    <span asp-validation-for="FechaFin" class="text-danger small"></span>
+                    <span asp-validation-for="FechaFin" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 @* ── Preview ── *@

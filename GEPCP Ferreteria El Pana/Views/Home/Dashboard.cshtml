@@ -40,7 +40,7 @@
     @if (totalVacAlerta > 0)
     {
         <div class="d-flex align-items-start gap-3 mb-4 p-3 rounded"
-             style="background:#2d2d2d;border-left:3px solid #fff;">
+             style="background:#2d2d2d;border-left:3px solid #2d2d2d;">
             <i class="bi bi-umbrella-fill flex-shrink-0 mt-1"
                style="color:#fff;font-size:1.15rem;"></i>
             <div class="w-100">
@@ -51,7 +51,7 @@
                     @foreach (var v in vacAlerta.Take(6))
                     {
                         var dv = (dynamic)v;
-                        <span style="background:#fff;color:#2d2d2d;border:1px solid #fff;
+                        <span style="background:#3d3d3d;color:#fff;border:1px solid #555;
                             border-radius:5px;padding:2px 8px;font-size:0.72rem;font-weight:600;">
                             @dv.Nombre — @dv.Disponibles días disp. (vence en @dv.DiasParaFinPeriodo d)
                         </span>
@@ -289,7 +289,7 @@
                                         ~@cuotasRestantes cuota(s) restante(s)
                                     </div>
                                 </div>
-                                <span class="badge bg-warning text-dark"
+                                <span class="badge bg-dark text-white"
                                       style="font-size:0.72rem;">
                                     ₡@p.Monto.ToString("N0")
                                 </span>
@@ -301,7 +301,7 @@
                 {
                     <div class="px-3 pb-2 text-muted small text-center py-4">
                         <i class="bi bi-check-circle d-block fs-3 mb-2"
-                           style="color:#1a4a1a;"></i>
+                           style="color:#555;"></i>
                         No hay préstamos próximos a vencer.
                     </div>
                 }
@@ -348,7 +348,7 @@
                                     ? (int)Math.Min(100, (tomados / base_) * 100)
                                     : 0;
 
-                                <tr class="@(disp >= 12 ? "table-warning" : "")">
+                                <tr class="@(disp >= 12 ? "table-secondary" : "")">
                                     <td class="px-3 fw-bold">@nombre</td>
                                     <td class="px-3 text-muted" style="font-size:0.75rem;">
                                         @puesto
@@ -357,13 +357,13 @@
                                     <td class="text-center px-3">@base_</td>
                                     <td class="text-center px-3">@tomados</td>
                                     <td class="text-center px-3 fw-bold"
-                                        style="color:@(disp >= 12 ? "#c55000" : disp > 0 ? "#1a4a1a" : "#888");">
+                                        style="color:@(disp >= 12 ? "#333" : disp > 0 ? "#555" : "#888");">
                                         @disp
                                         @if (base_ > 0)
                                         {
                                             <div class="progress mt-1" style="height:3px;">
-                                                <div class="progress-bar"
-                                                     style="width:@pct%;background:#FF7A00;">
+                                                <div class="progress-bar bg-dark"
+                                                     style="width:@pct%;">
                                                 </div>
                                             </div>
                                         }
@@ -371,8 +371,8 @@
                                     <td class="text-center px-3">
                                         @if (disp >= 12)
                                         {
-                                            <span style="background:#fff3e0;color:#c55000;
-                                                border:1px solid #FFB74D;border-radius:5px;
+                                            <span style="background:#3d3d3d;color:#fff;
+                                                border:1px solid #555;border-radius:5px;
                                                 padding:2px 7px;font-size:0.68rem;font-weight:600;">
                                                 <i class="bi bi-exclamation-triangle"></i> Pendientes
                                             </span>
@@ -387,8 +387,8 @@
                                         }
                                         else
                                         {
-                                            <span style="background:#e8f5e9;color:#1a4a1a;
-                                                border:1px solid #a5d6a7;border-radius:5px;
+                                            <span style="background:#2d2d2d;color:#fff;
+                                                border:1px solid #555;border-radius:5px;
                                                 padding:2px 7px;font-size:0.68rem;font-weight:600;">
                                                 <i class="bi bi-check-circle"></i> Sin saldo
                                             </span>

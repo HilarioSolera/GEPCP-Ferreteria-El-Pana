@@ -4,21 +4,21 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="bi bi-hospital"></i> Registrar Incapacidad</h2>
-    <a asp-action="Index" class="btn btn-outline-secondary">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-hospital"></i> Registrar Incapacidad</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
 <div class="card shadow-sm border-0">
-    <div class="card-body p-4">
+    <div class="card-body p-2">
 
         <!-- MENSAJE DE ERRORES GLOBAL -->
         @if (!ViewData.ModelState.IsValid)
         {
-            <div class="alert alert-danger mb-4">
-                <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
+            <div class="alert alert-danger mb-2" style="font-size: 0.75rem;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 <strong>No se pudo registrar la incapacidad:</strong>
                 <ul class="mb-0 mt-2">
                     @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
@@ -32,26 +32,26 @@
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
 
-            <div class="row g-3">
+            <div class="row g-1">
 
                 <!-- Buscador de Empleado -->
                 <div class="col-12">
-                    <label class="form-label fw-bold">
+                    <label class="form-label fw-bold small">
                         <i class="bi bi-person-search"></i> Empleado <span class="text-danger">*</span>
                     </label>
                     <input type="hidden" asp-for="EmpleadoId" id="EmpleadoId" />
-                    <div class="input-group mb-1">
+                    <div class="input-group input-group-sm mb-1">
                         <span class="input-group-text bg-white">
                             <i class="bi bi-search text-muted"></i>
                         </span>
                         <input type="text" id="buscarEmpleado"
-                               class="form-control border-start-0"
+                               class="form-control form-control-sm border-start-0"
                                placeholder="Buscar por nombre, apellido o cédula..." autocomplete="off" />
-                        <button type="button" class="btn btn-outline-secondary" id="btnTodos">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnTodos">
                             <i class="bi bi-list-ul"></i> Todos
                         </button>
                     </div>
-                    <div id="empleadoSeleccionado" class="d-none alert alert-success py-2 d-flex justify-content-between align-items-center">
+                    <div id="empleadoSeleccionado" class="d-none alert alert-success py-1 d-flex justify-content-between align-items-center" style="font-size: 0.85rem;">
                         <div>
                             <i class="bi bi-person-check-fill"></i>
                             <strong id="empNombre"></strong>
@@ -62,25 +62,25 @@
                         </button>
                     </div>
                     <div id="resultados" class="border rounded shadow-sm"
-                         style="display:none; max-height:260px; overflow-y:auto; background:#fff; z-index:100; position:relative;">
+                         style="display:none; max-height:200px; overflow-y:auto; background:#fff; z-index:100; position:relative;font-size:0.85rem;">
                     </div>
-                    <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
+                    <span asp-validation-for="EmpleadoId" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <!-- Entidad -->
                 <div class="col-md-4">
-                    <label asp-for="Entidad" class="form-label fw-bold">Entidad <span class="text-danger">*</span></label>
-                    <select asp-for="Entidad" class="form-select" id="selectEntidad">
+                    <label asp-for="Entidad" class="form-label fw-bold small">Entidad <span class="text-danger">*</span></label>
+                    <select asp-for="Entidad" class="form-select form-select-sm" id="selectEntidad">
                         <option value="1">CCSS</option>
                         <option value="2">INS</option>
                     </select>
-                    <span asp-validation-for="Entidad" class="text-danger small"></span>
+                    <span asp-validation-for="Entidad" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <!-- Tipo de Incapacidad -->
                 <div class="col-md-8">
-                    <label asp-for="TipoIncapacidad" class="form-label fw-bold">Tipo de Incapacidad <span class="text-danger">*</span></label>
-                    <select asp-for="TipoIncapacidad" class="form-select">
+                    <label asp-for="TipoIncapacidad" class="form-label fw-bold small">Tipo de Incapacidad <span class="text-danger">*</span></label>
+                    <select asp-for="TipoIncapacidad" class="form-select form-select-sm">
                         <option value="Enfermedad común">Enfermedad común</option>
                         <option value="Accidente de tránsito">Accidente de tránsito</option>
                         <option value="Accidente laboral">Accidente laboral</option>
@@ -89,49 +89,49 @@
                         <option value="Recuperación">Recuperación</option>
                         <option value="Otro">Otro</option>
                     </select>
-                    <span asp-validation-for="TipoIncapacidad" class="text-danger small"></span>
+                    <span asp-validation-for="TipoIncapacidad" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <!-- Fechas -->
                 <div class="col-md-5">
-                    <label asp-for="FechaInicio" class="form-label fw-bold">Fecha Inicio <span class="text-danger">*</span></label>
-                    <input asp-for="FechaInicio" type="date" id="inputFechaInicio" class="form-control" />
-                    <span asp-validation-for="FechaInicio" class="text-danger small"></span>
+                    <label asp-for="FechaInicio" class="form-label fw-bold small">Fecha Inicio <span class="text-danger">*</span></label>
+                    <input asp-for="FechaInicio" type="date" id="inputFechaInicio" class="form-control form-control-sm" />
+                    <span asp-validation-for="FechaInicio" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <div class="col-md-5">
-                    <label asp-for="FechaFin" class="form-label fw-bold">Fecha Fin <span class="text-danger">*</span></label>
-                    <input asp-for="FechaFin" type="date" id="inputFechaFin" class="form-control" />
-                    <span asp-validation-for="FechaFin" class="text-danger small"></span>
+                    <label asp-for="FechaFin" class="form-label fw-bold small">Fecha Fin <span class="text-danger">*</span></label>
+                    <input asp-for="FechaFin" type="date" id="inputFechaFin" class="form-control form-control-sm" />
+                    <span asp-validation-for="FechaFin" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <div class="col-md-2">
-                    <label class="form-label fw-bold text-muted">Días</label>
-                    <div class="form-control bg-light text-center fw-bold text-primary" id="totalDiasRef">—</div>
+                    <label class="form-label fw-bold small text-muted">Días</label>
+                    <div class="form-control form-control-sm bg-light text-center fw-bold text-primary" id="totalDiasRef">—</div>
                 </div>
 
                 <!-- Tiquete CCSS -->
                 <div class="col-md-6" id="divTiquete">
-                    <label asp-for="TiqueteCCSS" class="form-label fw-bold">Tiquete CCSS <span class="text-danger">*</span></label>
-                    <input asp-for="TiqueteCCSS" class="form-control" maxlength="50" placeholder="Ej: A00270125022436" />
-                    <span asp-validation-for="TiqueteCCSS" class="text-danger small"></span>
+                    <label asp-for="TiqueteCCSS" class="form-label fw-bold small">Tiquete CCSS <span class="text-danger">*</span></label>
+                    <input asp-for="TiqueteCCSS" class="form-control form-control-sm" maxlength="50" placeholder="Ej: A00270125022436" />
+                    <span asp-validation-for="TiqueteCCSS" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <!-- Porcentaje de Pago -->
                 <div class="col-md-3">
-                    <label asp-for="PorcentajePago" class="form-label fw-bold">% Pago <span class="text-danger">*</span></label>
-                    <select asp-for="PorcentajePago" class="form-select" id="selectPorcentaje">
+                    <label asp-for="PorcentajePago" class="form-label fw-bold small">% Pago <span class="text-danger">*</span></label>
+                    <select asp-for="PorcentajePago" class="form-select form-select-sm" id="selectPorcentaje">
                         <option value="50">50%</option>
                         <option value="60">60%</option>
                         <option value="100">100%</option>
                     </select>
-                    <span asp-validation-for="PorcentajePago" class="text-danger small"></span>
+                    <span asp-validation-for="PorcentajePago" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <!-- Responsable del Pago -->
                 <div class="col-md-3">
-                    <label asp-for="ResponsablePago" class="form-label fw-bold">Responsable</label>
-                    <select asp-for="ResponsablePago" class="form-select">
+                    <label asp-for="ResponsablePago" class="form-label fw-bold small">Responsable</label>
+                    <select asp-for="ResponsablePago" class="form-select form-select-sm">
                         <option value="1">Patrono</option>
                         <option value="2">CCSS</option>
                         <option value="3">INS</option>
@@ -140,18 +140,18 @@
 
                 <!-- Observaciones -->
                 <div class="col-12">
-                    <label asp-for="Observaciones" class="form-label fw-bold">Observaciones</label>
-                    <input asp-for="Observaciones" class="form-control" maxlength="200" />
-                    <span asp-validation-for="Observaciones" class="text-danger small"></span>
+                    <label asp-for="Observaciones" class="form-label fw-bold small">Observaciones</label>
+                    <input asp-for="Observaciones" class="form-control form-control-sm" maxlength="200" />
+                    <span asp-validation-for="Observaciones" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn px-5" id="btnGuardar" disabled>
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-sm px-4" id="btnGuardar" disabled>
                     <i class="bi bi-check-circle"></i> Registrar Incapacidad
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn-sm px-4">Cancelar</a>
             </div>
         </form>
     </div>

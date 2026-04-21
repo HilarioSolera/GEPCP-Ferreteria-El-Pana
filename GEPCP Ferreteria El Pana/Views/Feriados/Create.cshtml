@@ -4,21 +4,21 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="bi bi-plus-circle"></i> Nuevo Feriado</h2>
-    <a asp-action="Index" class="btn btn-outline-secondary">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Nuevo Feriado</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
 <div class="card shadow-sm border-0">
-    <div class="card-body p-4">
+    <div class="card-body p-2">
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
 
             @if (!ViewData.ModelState.IsValid)
             {
-                <div class="alert alert-danger mb-3">
+                <div class="alert alert-danger mb-2" style="font-size: 0.75rem;">
                     <ul class="mb-0">
                         @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
                         {
@@ -28,46 +28,45 @@
                 </div>
             }
 
-            <div class="row g-3">
+            <div class="row g-1">
                 <div class="col-md-4">
-                    <label asp-for="Fecha" class="form-label fw-bold">
+                    <label asp-for="Fecha" class="form-label fw-bold small">
                         <i class="bi bi-calendar-event"></i> Fecha <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Fecha" type="date" class="form-control" />
-                    <span asp-validation-for="Fecha" class="text-danger small"></span>
+                    <input asp-for="Fecha" type="date" class="form-control form-control-sm" />
+                    <span asp-validation-for="Fecha" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <div class="col-md-8">
-                    <label asp-for="Nombre" class="form-label fw-bold">
-                        <i class="bi bi-tag"></i> Nombre del Feriado <span class="text-danger">*</span>
+                    <label asp-for="Nombre" class="form-label fw-bold small">
+                        <i class="bi bi-tag"></i> Nombre Feriado <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Nombre" class="form-control"
+                    <input asp-for="Nombre" class="form-control form-control-sm"
                            maxlength="100" placeholder="Ej: Día del Trabajador" />
-                    <span asp-validation-for="Nombre" class="text-danger small"></span>
+                    <span asp-validation-for="Nombre" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <div class="col-12">
-                    <label asp-for="Tipo" class="form-label fw-bold">
+                    <label asp-for="Tipo" class="form-label fw-bold small">
                         <i class="bi bi-flag"></i> Tipo de Feriado <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Tipo" class="form-select">
-                        <option value="1">Obligatorio (pago doble si se trabaja)</option>
-                        <option value="2">No Obligatorio (pago normal si se trabaja)</option>
+                    <select asp-for="Tipo" class="form-select form-select-sm">
+                        <option value="1">Obligatorio (pago doble si trabaja)</option>
+                        <option value="2">No Obligatorio (pago normal)</option>
                     </select>
-                    <div class="form-text text-muted mt-2">
+                    <div class="form-text mt-1" style="font-size: 0.7rem;">
                         <i class="bi bi-info-circle"></i>
-                        <strong>Obligatorio:</strong> El empleado recibe pago doble si labora ese día.<br>
-                        <strong>No Obligatorio:</strong> Solo recibe el pago normal.
+                        <strong>Obligatorio:</strong> Pago doble si labora. <strong>No Obligatorio:</strong> Pago normal.
                     </div>
-                    <span asp-validation-for="Tipo" class="text-danger small"></span>
+                    <span asp-validation-for="Tipo" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
             </div>
 
-            <div class="mt-4 d-flex gap-3">
-                <button type="submit" class="btn btn-success btn px-5">
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-sm px-4">
                     <i class="bi bi-check-circle"></i> Guardar Feriado
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn-sm px-4">Cancelar</a>
             </div>
         </form>
     </div>

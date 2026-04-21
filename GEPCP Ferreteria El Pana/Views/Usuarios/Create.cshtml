@@ -4,94 +4,94 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="bi bi-person-plus"></i> Nuevo Usuario</h2>
-    <a asp-action="Index" class="btn btn-outline-secondary">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-person-plus"></i> Nuevo Usuario</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
 <div class="card shadow-sm border-0" style="max-width: 650px;">
-    <div class="card-body p-4">
+    <div class="card-body p-3">
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
-            <div class="row g-3">
+            <div class="row g-2">
 
                 <div class="col-md-6">
-                    <label asp-for="NombreUsuario" class="form-label fw-bold">
-                        <i class="bi bi-person"></i> Nombre de Usuario <span class="text-danger">*</span>
+                    <label asp-for="NombreUsuario" class="form-label fw-bold small">
+                        <i class="bi bi-person"></i> Nombre Usuario <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="NombreUsuario" class="form-control"
+                    <input asp-for="NombreUsuario" class="form-control form-control-sm"
                            maxlength="50" placeholder="Ej: maria.lopez"
                            autocomplete="off" />
-                    <div class="form-text text-muted">
-                        Solo letras, números, puntos y guiones.
+                    <div class="form-text" style="font-size: 0.7rem;">
+                        Letras, números, puntos y guiones.
                     </div>
-                    <span asp-validation-for="NombreUsuario" class="text-danger small"></span>
+                    <span asp-validation-for="NombreUsuario" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <div class="col-md-6">
-                    <label asp-for="NombreCompleto" class="form-label fw-bold">
+                    <label asp-for="NombreCompleto" class="form-label fw-bold small">
                         <i class="bi bi-person-badge"></i> Nombre Completo <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="NombreCompleto" class="form-control"
+                    <input asp-for="NombreCompleto" class="form-control form-control-sm"
                            maxlength="100" placeholder="Ej: María López Jiménez" />
-                    <span asp-validation-for="NombreCompleto" class="text-danger small"></span>
+                    <span asp-validation-for="NombreCompleto" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <div class="col-12">
-                    <label asp-for="CorreoElectronico" class="form-label fw-bold">
+                    <label asp-for="CorreoElectronico" class="form-label fw-bold small">
                         <i class="bi bi-envelope"></i> Correo Electrónico
-                        <span class="text-muted fw-normal small">(requerido para recuperar contraseña)</span>
+                        <span class="text-muted fw-normal" style="font-size: 0.7rem;">(para recuperar contraseña)</span>
                     </label>
                     <input asp-for="CorreoElectronico" type="email"
-                           class="form-control"
+                           class="form-control form-control-sm"
                            maxlength="150" placeholder="Ej: maria@ferreteria.com" />
-                    <span asp-validation-for="CorreoElectronico" class="text-danger small"></span>
+                    <span asp-validation-for="CorreoElectronico" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <div class="col-md-6">
-                    <label asp-for="Password" class="form-label fw-bold">
+                    <label asp-for="Password" class="form-label fw-bold small">
                         <i class="bi bi-lock"></i> Contraseña <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Password" type="password"
-                           class="form-control"
+                           class="form-control form-control-sm"
                            placeholder="Mínimo 8 caracteres"
                            autocomplete="new-password"
                            id="inputPassword" />
-                    <div class="form-text text-muted" id="passwordHint"></div>
-                    <span asp-validation-for="Password" class="text-danger small"></span>
+                    <div class="form-text" id="passwordHint" style="font-size: 0.7rem;"></div>
+                    <span asp-validation-for="Password" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <div class="col-md-6">
-                    <label asp-for="ConfirmarPassword" class="form-label fw-bold">
-                        <i class="bi bi-lock-fill"></i> Confirmar Contraseña <span class="text-danger">*</span>
+                    <label asp-for="ConfirmarPassword" class="form-label fw-bold small">
+                        <i class="bi bi-lock-fill"></i> Confirmar <span class="text-danger">*</span>
                     </label>
                     <input asp-for="ConfirmarPassword" type="password"
-                           class="form-control"
+                           class="form-control form-control-sm"
                            placeholder="Repetí la contraseña"
                            autocomplete="new-password" />
-                    <span asp-validation-for="ConfirmarPassword" class="text-danger small"></span>
+                    <span asp-validation-for="ConfirmarPassword" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <div class="col-md-6">
-                    <label asp-for="Rol" class="form-label fw-bold">
+                    <label asp-for="Rol" class="form-label fw-bold small">
                         <i class="bi bi-shield"></i> Rol <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Rol" class="form-select">
+                    <select asp-for="Rol" class="form-select form-select-sm">
                         <option value="RRHH">RRHH</option>
                         <option value="Jefatura">Jefatura</option>
                     </select>
-                    <span asp-validation-for="Rol" class="text-danger small"></span>
+                    <span asp-validation-for="Rol" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn px-5">
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-sm px-4">
                     <i class="bi bi-check-circle"></i> Crear Usuario
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn-sm px-4">Cancelar</a>
             </div>
         </form>
     </div>
@@ -120,9 +120,10 @@
 
             var idx = Math.max(0, score - 1);
             hint.className = 'form-text ' + colors[idx];
-            hint.innerHTML = '<i class="bi bi-shield"></i> Fortaleza: <strong>'
+            hint.style.fontSize = '0.7rem';
+            hint.innerHTML = '<i class="bi bi-shield"></i> <strong>'
                            + labels[idx]
-                           + '</strong> — Debe tener: mayúscula, minúscula, número y carácter especial.';
+                           + '</strong> — Debe tener mayúscula, minúscula, número y especial.';
         });
     </script>
 }

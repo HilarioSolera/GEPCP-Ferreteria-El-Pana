@@ -8,16 +8,16 @@
     var periodoDescripcion = ViewBag.PeriodoDescripcion as string ?? "";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="bi bi-pencil"></i> Editar Horas Extras</h2>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-pencil"></i> Editar Horas Extras</h4>
     <a asp-action="Index" asp-route-periodoId="@Model.PeriodoPagoId"
-           class="btn btn-outline-secondary">
+           class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
 <div class="card shadow-sm border-0">
-    <div class="card-body p-4">
+    <div class="card-body p-2">
         <form asp-action="Edit" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="HorasExtrasId" />
@@ -27,7 +27,7 @@
             @* Errores del servidor *@
             @if (!ViewData.ModelState.IsValid)
             {
-                <div class="alert alert-danger mb-3">
+                <div class="alert alert-danger mb-2" style="font-size: 0.75rem;">
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <strong>No se pudo guardar:</strong>
                     <ul class="mb-0 mt-1">
@@ -39,19 +39,19 @@
                 </div>
             }
 
-            <div class="row g-3">
+            <div class="row g-1">
 
                 @* ── Período (solo lectura) ── *@
                 <div class="col-md-6">
-                    <label class="form-label fw-bold">
+                    <label class="form-label fw-bold small">
                         <i class="bi bi-calendar2-week"></i> Período
                     </label>
-                    <div class="form-control bg-light">
+                    <div class="form-control form-control-sm bg-light">
                         @periodoDescripcion
                     </div>
                     @if (!string.IsNullOrEmpty(periodoFechaInicio) && !string.IsNullOrEmpty(periodoFechaFin))
                     {
-                        <div class="form-text text-success">
+                        <div class="form-text text-success" style="font-size: 0.7rem;">
                             <i class="bi bi-calendar-check"></i>
                             Rango: <strong>
                             @DateTime.Parse(periodoFechaInicio).ToString("dd/MM/yyyy")
@@ -63,26 +63,26 @@
 
             @* ── Fecha ── *@
             <div class="col-md-6">
-                <label asp-for="Fecha" class="form-label fw-bold">
+                <label asp-for="Fecha" class="form-label fw-bold small">
                     <i class="bi bi-calendar-date"></i> Fecha <span class="text-danger">*</span>
                 </label>
                 <input asp-for="Fecha" type="date"
-                       class="form-control"
+                       class="form-control form-control-sm"
                        id="inputFecha"
                        min="@periodoFechaInicio"
                        max="@periodoFechaFin" />
-                <div class="form-text text-muted">
+                <div class="form-text text-muted" style="font-size: 0.7rem;">
                     Solo fechas dentro del período seleccionado.
                 </div>
-                <span asp-validation-for="Fecha" class="text-danger small"></span>
+                <span asp-validation-for="Fecha" class="text-danger" style="font-size: 0.7rem;"></span>
             </div>
 
             @* ── Empleado (solo lectura) ── *@
             <div class="col-12">
-                <label class="form-label fw-bold">
+                <label class="form-label fw-bold small">
                     <i class="bi bi-person"></i> Empleado
                 </label>
-                <div class="alert alert-info py-2 mb-0 d-flex justify-content-between align-items-center">
+                <div class="alert alert-info py-1 mb-0 d-flex justify-content-between align-items-center" style="font-size: 0.85rem;">
                     <div>
                         <i class="bi bi-person-check-fill"></i>
                         <strong>@ViewBag.EmpleadoNombre</strong>
@@ -96,54 +96,54 @@
 
             @* ── Tipo de hora extra ── *@
             <div class="col-md-4">
-                <label asp-for="Porcentaje" class="form-label fw-bold">
+                <label asp-for="Porcentaje" class="form-label fw-bold small">
                     <i class="bi bi-percent"></i> Tipo de Hora Extra <span class="text-danger">*</span>
                 </label>
-                <select asp-for="Porcentaje" class="form-select"
+                <select asp-for="Porcentaje" class="form-select form-select-sm"
                         id="selectPorcentaje">
                     <option value="1.5">150% — Hora Extra Normal</option>
                     <option value="2.0">200% — Hora Extra Doble</option>
                 </select>
-                <span asp-validation-for="Porcentaje" class="text-danger small"></span>
+                <span asp-validation-for="Porcentaje" class="text-danger" style="font-size: 0.7rem;"></span>
             </div>
 
             @* ── Total Horas ── *@
             <div class="col-md-4">
-                <label asp-for="TotalHoras" class="form-label fw-bold">
+                <label asp-for="TotalHoras" class="form-label fw-bold small">
                     <i class="bi bi-hourglass-split"></i> Total Horas <span class="text-danger">*</span>
                 </label>
                 <input asp-for="TotalHoras" type="number" step="0.5"
                        min="0.5" max="999.99"
-                       class="form-control" id="inputHoras" />
-                <div id="advertenciaHoras" class="form-text text-warning d-none">
+                       class="form-control form-control-sm" id="inputHoras" />
+                <div id="advertenciaHoras" class="form-text text-warning d-none" style="font-size: 0.7rem;">
                     <i class="bi bi-exclamation-triangle"></i>
                     Supera el límite recomendado de 48 hrs quincenales.
                 </div>
-                <span asp-validation-for="TotalHoras" class="text-danger small"></span>
+                <span asp-validation-for="TotalHoras" class="text-danger" style="font-size: 0.7rem;"></span>
             </div>
 
             @* ── Monto estimado ── *@
             <div class="col-md-4">
-                <label class="form-label fw-bold text-muted">
+                <label class="form-label fw-bold small text-muted">
                     <i class="bi bi-calculator"></i> Monto Estimado
                 </label>
-                <div class="form-control bg-light text-center fw-bold text-success"
+                <div class="form-control form-control-sm bg-light text-center fw-bold text-success"
                      id="montoRef">
                     ₡@Model.MontoTotal.ToString("N0")
                 </div>
-                <div class="form-text text-muted" id="valorHoraRef">
+                <div class="form-text text-muted" id="valorHoraRef" style="font-size: 0.7rem;">
                     Valor hora: ₡@Model.ValorHora.ToString("N2")
                 </div>
             </div>
 
         </div>
 
-        <div class="mt-4 d-flex gap-2">
-            <button type="submit" class="btn btn-warning btn px-5">
+        <div class="mt-3 d-flex gap-2">
+            <button type="submit" class="btn btn-warning btn-sm px-4">
                 <i class="bi bi-check-circle"></i> Guardar Cambios
             </button>
             <a asp-action="Index" asp-route-periodoId="@Model.PeriodoPagoId"
-               class="btn btn-secondary btn px-5">Cancelar</a>
+               class="btn btn-secondary btn-sm px-4">Cancelar</a>
         </div>
     </form>
 </div>

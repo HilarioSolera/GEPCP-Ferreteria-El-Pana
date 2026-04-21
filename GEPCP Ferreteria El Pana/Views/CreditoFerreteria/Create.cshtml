@@ -4,21 +4,21 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="bi bi-cart-check"></i> Nuevo Crédito Ferretería</h2>
-    <a asp-action="Index" asp-route-verTodos="true" class="btn btn-outline-secondary">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-cart-check"></i> Nuevo Crédito Ferretería</h4>
+    <a asp-action="Index" asp-route-verTodos="true" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
 <div class="card shadow-sm border-0">
-    <div class="card-body p-4">
+    <div class="card-body p-2">
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
 
             @if (!ViewData.ModelState.IsValid)
             {
-                <div class="alert alert-danger mb-3">
+                <div class="alert alert-danger mb-2" style="font-size: 0.75rem;">
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <strong>No se pudo registrar:</strong>
                     <ul class="mb-0 mt-1">
@@ -30,36 +30,36 @@
                 </div>
             }
 
-            <div class="row g-3">
+            <div class="row g-1">
                 <!-- Empleado buscador -->
                 <div class="col-12">
-                    <label class="form-label fw-bold">
+                    <label class="form-label fw-bold small">
                         <i class="bi bi-person-search"></i> Empleado
                         <span class="text-danger">*</span>
                     </label>
                     <input type="hidden" asp-for="EmpleadoId" id="EmpleadoId" />
-                    <div class="input-group mb-1">
+                    <div class="input-group input-group-sm mb-1">
                         <span class="input-group-text bg-white">
                             <i class="bi bi-search text-muted"></i>
                         </span>
                         <input type="text" id="buscarEmpleado"
-                               class="form-control border-start-0"
+                               class="form-control form-control-sm border-start-0"
                                placeholder="Buscar por nombre, apellido o cédula..."
                                autocomplete="off" />
-                        <button type="button" class="btn btn-outline-secondary"
+                        <button type="button" class="btn btn-outline-secondary btn-sm"
                                 id="btnTodos">
                             <i class="bi bi-list-ul"></i> Todos
                         </button>
                     </div>
 
                     <div id="empleadoSeleccionado" class="d-none">
-                        <div class="alert py-2 d-flex justify-content-between align-items-center"
+                        <div class="alert py-1 d-flex justify-content-between align-items-center" style="font-size: 0.85rem;"
                              id="empAlerta">
                             <div>
                                 <i class="bi bi-person-check-fill"></i>
                                 <strong id="empNombre"></strong>
                                 <span class="text-muted ms-2 small" id="empCedula"></span>
-                                <span class="badge bg-secondary ms-1" id="empPuesto"></span>
+                                <span class="badge bg-secondary ms-1" style="font-size: 0.7rem;" id="empPuesto"></span>
                             </div>
                             <div class="text-end small me-3">
                                 <div>
@@ -75,74 +75,74 @@
                     </div>
 
                     <div id="resultados" class="border rounded shadow-sm"
-                         style="display:none;max-height:260px;overflow-y:auto;
-                        background:#fff;z-index:100;position:relative;">
+                         style="display:none;max-height:200px;overflow-y:auto;
+                        background:#fff;z-index:100;position:relative;font-size:0.85rem;">
                     </div>
-                    <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
+                    <span asp-validation-for="EmpleadoId" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <!-- Monto -->
                 <div class="col-md-4">
-                    <label asp-for="MontoTotal" class="form-label fw-bold">
+                    <label asp-for="MontoTotal" class="form-label fw-bold small">
                         <i class="bi bi-currency-dollar"></i> Monto Total (₡)
                         <span class="text-danger">*</span>
                     </label>
                     <input asp-for="MontoTotal" type="number" step="0.01"
                            min="1" max="9999999.99" id="inputMonto"
-                           class="form-control"
+                           class="form-control form-control-sm"
                            placeholder="Ej: 50000" />
-                    <span asp-validation-for="MontoTotal" class="text-danger small"></span>
+                    <span asp-validation-for="MontoTotal" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <!-- Cuota -->
                 <div class="col-md-4">
-                    <label asp-for="CuotaQuincenal" class="form-label fw-bold">
+                    <label asp-for="CuotaQuincenal" class="form-label fw-bold small">
                         <i class="bi bi-calendar2-week"></i> Cuota del Período (₡)
                         <span class="text-danger">*</span>
                     </label>
                     <input asp-for="CuotaQuincenal" type="number" step="0.01"
                            min="1" max="9999999.99" id="inputCuota"
-                           class="form-control"
+                           class="form-control form-control-sm"
                            placeholder="Se calcula automáticamente" />
-                    <div class="form-text" id="cuotaHint"></div>
-                    <span asp-validation-for="CuotaQuincenal" class="text-danger small"></span>
+                    <div class="form-text" id="cuotaHint" style="font-size: 0.7rem;"></div>
+                    <span asp-validation-for="CuotaQuincenal" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <!-- Quincenas estimadas -->
                 <div class="col-md-4">
-                    <label class="form-label fw-bold text-muted">
+                    <label class="form-label fw-bold small text-muted">
                         <i class="bi bi-calculator"></i> Cuotas estimadas
                     </label>
-                    <div class="form-control bg-light text-center fw-bold"
+                    <div class="form-control form-control-sm bg-light text-center fw-bold"
                          style="color:#FF7A00;" id="quincenasRef">
                         —
                     </div>
-                    <div class="form-text text-muted">Monto ÷ Cuota del período</div>
+                    <div class="form-text text-muted" style="font-size: 0.7rem;">Monto ÷ Cuota del período</div>
                 </div>
 
                 <!-- Fecha -->
                 <div class="col-md-4">
-                    <label asp-for="FechaCredito" class="form-label fw-bold">
+                    <label asp-for="FechaCredito" class="form-label fw-bold small">
                         <i class="bi bi-calendar"></i> Fecha del Crédito
                         <span class="text-danger">*</span>
                     </label>
                     <input asp-for="FechaCredito" type="date"
-                           class="form-control"
+                           class="form-control form-control-sm"
                            max="@DateTime.Today.ToString("yyyy-MM-dd")" />
-                    <span asp-validation-for="FechaCredito" class="text-danger small"></span>
+                    <span asp-validation-for="FechaCredito" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <!-- Descripción -->
                 <div class="col-md-8">
-                    <label asp-for="Descripcion" class="form-label fw-bold">
+                    <label asp-for="Descripcion" class="form-label fw-bold small">
                         <i class="bi bi-chat-text"></i> Descripción
                         <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Descripcion" class="form-control"
+                    <input asp-for="Descripcion" class="form-control form-control-sm"
                            maxlength="200"
                            placeholder="Ej: Compra materiales - Factura #1234" />
-                    <div class="form-text text-muted">Máximo 200 caracteres.</div>
-                    <span asp-validation-for="Descripcion" class="text-danger small"></span>
+                    <div class="form-text text-muted" style="font-size: 0.7rem;">Máximo 200 caracteres.</div>
+                    <span asp-validation-for="Descripcion" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <!-- Resumen -->
@@ -153,28 +153,28 @@
                             <div class="card-body py-2 px-3">
                                 <div class="row g-2 text-center">
                                     <div class="col-md-3">
-                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
+                                        <div style="font-size:0.6rem;color:#888;text-transform:uppercase;">
                                             Monto crédito
                                         </div>
-                                        <div class="fw-bold" style="color:#FF7A00;" id="resumenMonto">—</div>
+                                        <div class="fw-bold" style="color:#FF7A00;font-size:0.85rem;" id="resumenMonto">—</div>
                                     </div>
                                     <div class="col-md-3">
-                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
+                                        <div style="font-size:0.6rem;color:#888;text-transform:uppercase;">
                                             Cuota del período
                                         </div>
-                                        <div class="fw-bold" id="resumenCuota">—</div>
+                                        <div class="fw-bold" style="font-size:0.85rem;" id="resumenCuota">—</div>
                                     </div>
                                     <div class="col-md-3">
-                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
+                                        <div style="font-size:0.6rem;color:#888;text-transform:uppercase;">
                                             Cuotas
                                         </div>
-                                        <div class="fw-bold" id="resumenQuincenas">—</div>
+                                        <div class="fw-bold" style="font-size:0.85rem;" id="resumenQuincenas">—</div>
                                     </div>
                                     <div class="col-md-3">
-                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">
+                                        <div style="font-size:0.6rem;color:#888;text-transform:uppercase;">
                                             % del salario
                                         </div>
-                                        <div class="fw-bold" id="resumenPct">—</div>
+                                        <div class="fw-bold" style="font-size:0.85rem;" id="resumenPct">—</div>
                                     </div>
                                 </div>
                             </div>
@@ -183,13 +183,13 @@
                 </div>
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn px-5"
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-sm px-4"
                         id="btnGuardar" disabled>
                     <i class="bi bi-check-circle"></i> Registrar Crédito
                 </button>
                 <a asp-action="Index" asp-route-verTodos="true"
-                       class="btn btn-secondary btn px-5">
+                       class="btn btn-secondary btn-sm px-4">
                     Cancelar
                 </a>
             </div>

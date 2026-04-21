@@ -4,21 +4,21 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="bi bi-cash-coin"></i> Nuevo Préstamo</h2>
-    <a asp-action="Index" asp-route-verTodos="true" class="btn btn-outline-secondary">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-cash-coin"></i> Nuevo Préstamo</h4>
+    <a asp-action="Index" asp-route-verTodos="true" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
 <div class="card shadow-sm border-0">
-    <div class="card-body p-4">
+    <div class="card-body p-2">
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
 
             @if (!ViewData.ModelState.IsValid)
             {
-                <div class="alert alert-danger mb-3">
+                <div class="alert alert-danger mb-2" style="font-size: 0.75rem;">
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <strong>No se pudo registrar:</strong>
                     <ul class="mb-0 mt-1">
@@ -30,90 +30,90 @@
                 </div>
             }
 
-            <div class="row g-3">
+            <div class="row g-1">
                 <!-- Buscador de empleado -->
                 <div class="col-12">
-                    <label class="form-label fw-bold">
+                    <label class="form-label fw-bold small">
                         <i class="bi bi-person-search"></i> Empleado <span class="text-danger">*</span>
                     </label>
                     <input type="hidden" asp-for="EmpleadoId" id="EmpleadoId" />
-                    <div class="input-group mb-1">
+                    <div class="input-group input-group-sm mb-1">
                         <span class="input-group-text bg-white">
                             <i class="bi bi-search text-muted"></i>
                         </span>
                         <input type="text" id="buscarEmpleado"
-                               class="form-control border-start-0"
+                               class="form-control form-control-sm border-start-0"
                                placeholder="Buscar por nombre, apellido o cédula..."
                                autocomplete="off" />
-                        <button type="button" class="btn btn-outline-secondary" id="btnTodos">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnTodos">
                             <i class="bi bi-list-ul"></i> Todos
                         </button>
                     </div>
 
                     <div id="empleadoSeleccionado" class="d-none">
-                        <div class="alert py-2 d-flex justify-content-between align-items-center" id="empAlerta">
+                        <div class="alert py-1 d-flex justify-content-between align-items-center" id="empAlerta" style="font-size: 0.85rem;">
                             <div>
                                 <i class="bi bi-person-check-fill"></i>
                                 <strong id="empNombre"></strong>
-                                <span class="text-muted ms-2 small" id="empCedula"></span>
-                                <span class="badge bg-secondary ms-1" id="empPuesto"></span>
+                                <span class="text-muted ms-2" style="font-size: 0.75rem;" id="empCedula"></span>
+                                <span class="badge bg-secondary ms-1" style="font-size: 0.65rem;" id="empPuesto"></span>
                             </div>
-                            <div class="text-end small me-3">
+                            <div class="text-end me-2" style="font-size: 0.75rem;">
                                 <div>Salario base: <strong id="empSalarioBase"></strong></div>
                                 <div>
                                     <span id="labelSalarioPeriodo">Salario del período:</span>
                                     <strong id="empSalarioQuincenal"></strong>
                                 </div>
-                                <div id="empActivoWarn" class="text-danger d-none fw-bold">
+                                <div id="empActivoWarn" class="text-danger d-none fw-bold" style="font-size: 0.7rem;">
                                     <i class="bi bi-exclamation-triangle"></i> Ya tiene un préstamo activo
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnLimpiar">
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnLimpiar" style="font-size: 0.7rem;">
                                 <i class="bi bi-x"></i>
                             </button>
                         </div>
                     </div>
 
                     <div id="resultados" class="border rounded shadow-sm"
-                         style="display:none; max-height:260px; overflow-y:auto; background:#fff; z-index:100; position:relative;">
+                         style="display:none; max-height:200px; overflow-y:auto; background:#fff; z-index:100; position:relative; font-size: 0.85rem;">
                     </div>
-                    <span asp-validation-for="EmpleadoId" class="text-danger small"></span>
+                    <span asp-validation-for="EmpleadoId" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <!-- Monto -->
                 <div class="col-md-4">
-                    <label asp-for="MontoPrincipal" class="form-label fw-bold">
-                        <i class="bi bi-currency-dollar"></i> Monto del Préstamo (₡) <span class="text-danger">*</span>
+                    <label asp-for="MontoPrincipal" class="form-label fw-bold small">
+                        <i class="bi bi-currency-dollar"></i> Monto Préstamo (₡) <span class="text-danger">*</span>
                     </label>
                     <input asp-for="MontoPrincipal" type="number" step="0.01" min="1" id="inputMonto"
-                           class="form-control" placeholder="Ej: 500000" />
+                           class="form-control form-control-sm" placeholder="Ej: 500000" />
                 </div>
 
                 <!-- Número de Cuotas -->
                 <div class="col-md-4">
-                    <label asp-for="CuotasTotal" class="form-label fw-bold">
-                        <i class="bi bi-calendar-range"></i> Número de Cuotas <span class="text-danger">*</span>
+                    <label asp-for="CuotasTotal" class="form-label fw-bold small">
+                        <i class="bi bi-calendar-range"></i> Número Cuotas <span class="text-danger">*</span>
                     </label>
                     <input asp-for="CuotasTotal" type="number" min="1" max="120" id="inputCuotas"
-                           class="form-control" placeholder="Ej: 12" />
+                           class="form-control form-control-sm" placeholder="Ej: 12" />
                 </div>
 
                 <!-- Cuota -->
                 <div class="col-md-4">
-                    <label asp-for="CuotaMensual" class="form-label fw-bold">
-                        <i class="bi bi-cash"></i> Cuota del Período (₡) <span class="text-danger">*</span>
+                    <label asp-for="CuotaMensual" class="form-label fw-bold small">
+                        <i class="bi bi-cash"></i> Cuota Período (₡) <span class="text-danger">*</span>
                     </label>
                     <input asp-for="CuotaMensual" type="number" step="0.01" min="1" id="inputCuota"
-                           class="form-control" placeholder="Se calcula automáticamente" />
-                    <div class="form-text" id="cuotaHint"></div>
+                           class="form-control form-control-sm" placeholder="Auto-calculado" />
+                    <div class="form-text" id="cuotaHint" style="font-size: 0.7rem;"></div>
                 </div>
 
                 <!-- Fecha -->
                 <div class="col-md-4">
-                    <label asp-for="FechaPrestamo" class="form-label fw-bold">
-                        <i class="bi bi-calendar"></i> Fecha del Préstamo <span class="text-danger">*</span>
+                    <label asp-for="FechaPrestamo" class="form-label fw-bold small">
+                        <i class="bi bi-calendar"></i> Fecha Préstamo <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="FechaPrestamo" type="date" class="form-control"
+                    <input asp-for="FechaPrestamo" type="date" class="form-control form-control-sm"
                            max="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 </div>
 
@@ -121,22 +121,22 @@
                 <div class="col-12">
                     <div id="resumenPrestamo" class="d-none">
                         <div class="card border-0" style="background:#fff9f0; border-left:3px solid #FF7A00 !important;">
-                            <div class="card-body py-2 px-3">
-                                <div class="row g-2 text-center">
+                            <div class="card-body py-1 px-2">
+                                <div class="row g-1 text-center" style="font-size: 0.8rem;">
                                     <div class="col-md-3">
-                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">Monto préstamo</div>
+                                        <div style="font-size:0.6rem;color:#888;text-transform:uppercase;">Monto préstamo</div>
                                         <div class="fw-bold" style="color:#FF7A00;" id="resumenMonto">—</div>
                                     </div>
                                     <div class="col-md-3">
-                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">Cuota</div>
+                                        <div style="font-size:0.6rem;color:#888;text-transform:uppercase;">Cuota</div>
                                         <div class="fw-bold" id="resumenCuota">—</div>
                                     </div>
                                     <div class="col-md-3">
-                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">Cuotas</div>
+                                        <div style="font-size:0.6rem;color:#888;text-transform:uppercase;">Cuotas</div>
                                         <div class="fw-bold" id="resumenCuotas">—</div>
                                     </div>
                                     <div class="col-md-3">
-                                        <div style="font-size:0.62rem;color:#888;text-transform:uppercase;">% del salario</div>
+                                        <div style="font-size:0.6rem;color:#888;text-transform:uppercase;">% del salario</div>
                                         <div class="fw-bold" id="resumenPct">—</div>
                                     </div>
                                 </div>
@@ -146,11 +146,11 @@
                 </div>
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn px-5" id="btnGuardar" disabled>
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-sm px-4" id="btnGuardar" disabled>
                     <i class="bi bi-check-circle"></i> Registrar Préstamo
                 </button>
-                <a asp-action="Index" asp-route-verTodos="true" class="btn btn-secondary btn px-5">Cancelar</a>
+                <a asp-action="Index" asp-route-verTodos="true" class="btn btn-secondary btn-sm px-4">Cancelar</a>
             </div>
         </form>
     </div>
@@ -248,11 +248,13 @@
             var alerta = document.getElementById('empAlerta');
             var warn = document.getElementById('empActivoWarn');
             if (e.tieneActivo) {
-                alerta.className = 'alert alert-warning py-2 d-flex justify-content-between align-items-center';
+                alerta.className = 'alert alert-warning py-1 d-flex justify-content-between align-items-center';
+                alerta.style.fontSize = '0.85rem';
                 warn.classList.remove('d-none');
                 document.getElementById('btnGuardar').disabled = true;
             } else {
-                alerta.className = 'alert alert-success py-2 d-flex justify-content-between align-items-center';
+                alerta.className = 'alert alert-success py-1 d-flex justify-content-between align-items-center';
+                alerta.style.fontSize = '0.85rem';
                 warn.classList.add('d-none');
                 document.getElementById('btnGuardar').disabled = false;
             }

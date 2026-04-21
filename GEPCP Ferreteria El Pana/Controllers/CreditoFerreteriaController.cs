@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Models;
@@ -687,7 +687,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     id = e.EmpleadoId,
                     nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
                     cedula = e.Cedula,
-                    puesto = e.Puesto,
+                    puesto = (from p in _context.Puestos where p.Nombre == e.Puesto select p.Codigo + " - " + e.Puesto).FirstOrDefault() ?? e.Puesto,
                     salarioBase = e.SalarioBase,
                     salarioQuincenal = Math.Round(
                         e.SalarioBase / (e.TipoPago == TipoPago.Semanal ? 4m :
@@ -714,7 +714,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     id = e.EmpleadoId,
                     nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
                     cedula = e.Cedula,
-                    puesto = e.Puesto,
+                    puesto = (from p in _context.Puestos where p.Nombre == e.Puesto select p.Codigo + " - " + e.Puesto).FirstOrDefault() ?? e.Puesto,
                     salarioBase = e.SalarioBase,
                     salarioQuincenal = Math.Round(
                         e.SalarioBase / (e.TipoPago == TipoPago.Semanal ? 4m :

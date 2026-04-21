@@ -9,6 +9,7 @@
     var periodo = ViewBag.Periodo as GEPCP_Ferreteria_El_Pana.Models.PeriodoPago;
     var periodoCerrado = periodo?.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado;
     int? periodoId = ViewBag.PeriodoId;
+    string ordenActual = ViewBag.Orden as string ?? "departamento";
 
     var totalEmpleados = (int)(ViewBag.TotalEmpleados ?? 0);
     var totalDevengado = (decimal)(ViewBag.TotalDevengado ?? 0m);
@@ -47,6 +48,22 @@
                     }
                 </select>
             </div>
+            @if (periodoId.HasValue && Model.Any())
+            {
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-sort-down"></i> Ordenar Por
+                    </label>
+                    <select name="orden" class="form-select" onchange="this.form.submit()">
+                        <option value="departamento" selected="@(ordenActual == "departamento")">Departamento + Apellido</option>
+                        <option value="alfabetico" selected="@(ordenActual == "alfabetico")">Alfabético (Apellido)</option>
+                        <option value="salario" selected="@(ordenActual == "salario")">Salario Bruto (Mayor → Menor)</option>
+                        <option value="neto" selected="@(ordenActual == "neto")">Neto a Pagar (Mayor → Menor)</option>
+                        <option value="puesto" selected="@(ordenActual == "puesto")">Puesto + Apellido</option>
+                        <option value="antiguedad" selected="@(ordenActual == "antiguedad")">Antigüedad (Mayor → Menor)</option>
+                    </select>
+                </div>
+            }
         </form>
     </div>
 </div>
@@ -133,6 +150,35 @@
         </div>
     </div>
 
+    @* Indicador de ordenamiento actual *@
+    <div class="alert alert-info py-2 px-3 d-flex align-items-center mb-3" style="font-size: 0.85rem;">
+        <i class="bi bi-info-circle me-2"></i>
+        <span>
+            <strong>Ordenado por:</strong>
+            @switch (ordenActual)
+            {
+                case "alfabetico":
+                    <text>Alfabético (Apellido → Nombre)</text>
+                    break;
+                case "salario":
+                    <text>Salario Bruto Mensual (Mayor → Menor)</text>
+                    break;
+                case "neto":
+                    <text>Neto a Pagar (Mayor → Menor)</text>
+                    break;
+                case "puesto":
+                    <text>Puesto + Apellido</text>
+                    break;
+                case "antiguedad":
+                    <text>Antigüedad (Empleados más antiguos primero)</text>
+                    break;
+                default:
+                    <text>Departamento + Apellido</text>
+                    break;
+            }
+        </span>
+    </div>
+
     <div class="d-flex gap-2 mb-3">
         <a asp-action="ExportarExcel" asp-route-periodoId="@periodo!.PeriodoPagoId" class="btn btn-dark">
             <i class="bi bi-file-earmark-excel"></i> Excel
@@ -182,7 +228,23 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var p in Model.OrderBy(x => x.Empleado.Departamento).ThenBy(x => x.Empleado.PrimerApellido))
+                        @{
+                            IEnumerable<GEPCP_Ferreteria_El_Pana.Models.PlanillaEmpleado> planillasOrdenadas = ordenActual switch
+                            {
+                                "alfabetico" => Model.OrderBy(x => x.Empleado.PrimerApellido).ThenBy(x => x.Empleado.Nombre),
+                                "salario" => Model.OrderByDescending(x => x.TotalDevengado * (periodo!.TipoPeriodo switch
+                                {
+                                    GEPCP_Ferreteria_El_Pana.Models.TipoPeriodo.Semanal => 52m / 12m,
+                                    GEPCP_Ferreteria_El_Pana.Models.TipoPeriodo.Mensual => 1m,
+                                    _ => 2m
+                                })).ThenBy(x => x.Empleado.PrimerApellido),
+                                "neto" => Model.OrderByDescending(x => x.NetoAPagar).ThenBy(x => x.Empleado.PrimerApellido),
+                                "puesto" => Model.OrderBy(x => x.Empleado.Puesto).ThenBy(x => x.Empleado.PrimerApellido),
+                                "antiguedad" => Model.OrderBy(x => x.Empleado.FechaIngreso).ThenBy(x => x.Empleado.PrimerApellido),
+                                _ => Model.OrderBy(x => x.Empleado.Departamento).ThenBy(x => x.Empleado.PrimerApellido) // departamento por defecto
+                            };
+                        }
+                        @foreach (var p in planillasOrdenadas)
                         {
                             <tr>
                                 <td>

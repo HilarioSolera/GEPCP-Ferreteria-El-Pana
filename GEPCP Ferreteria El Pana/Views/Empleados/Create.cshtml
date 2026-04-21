@@ -4,208 +4,204 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="bi bi-person-plus"></i> Nuevo Empleado</h2>
-    <a asp-action="Index" class="btn btn-outline-secondary">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-person-plus"></i> Nuevo Empleado</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
 </div>
 
 <div class="card shadow-sm border-0">
-    <div class="card-body p-4">
+    <div class="card-body p-2">
         <form asp-action="Create" method="post" id="formEmpleado">
             @Html.AntiForgeryToken()
-            <div class="row g-3">
+            <div class="row g-1">
 
                 @* ── Identificación ── *@
                 <div class="col-12">
-                    <h6 class="text-muted fw-bold border-bottom pb-2">
+                    <h6 class="text-muted fw-bold border-bottom pb-1 mb-2" style="font-size: 0.85rem;">
                         <i class="bi bi-person-badge"></i> Identificación
                     </h6>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="Cedula" class="form-label fw-bold">
+                <div class="col-md-3">
+                    <label asp-for="Cedula" class="form-label fw-bold small">
                         <i class="bi bi-card-text"></i> Cédula <span class="text-danger">*</span>
                     </label>
-                    <div class="input-group">
-                        <input asp-for="Cedula" class="form-control"
+                    <div class="input-group input-group-sm">
+                        <input asp-for="Cedula" class="form-control form-control-sm"
                                maxlength="20" placeholder="Ej: 1-1234-5678"
                                autocomplete="off" id="Cedula" />
-                        <button type="button" class="btn btn-outline-secondary"
+                        <button type="button" class="btn btn-outline-secondary btn-sm"
                                 id="btnBuscarCedula" title="Consultar padrón TSE">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
-                    <div id="alertaTSE" class="mt-1 small" style="display:none;"></div>
-                    <div class="form-text text-muted">Al ingresar la cédula se consultará el padrón del TSE.</div>
-                    <span asp-validation-for="Cedula" class="text-danger small"></span>
+                    <div id="alertaTSE" class="mt-1" style="display:none; font-size: 0.7rem;"></div>
+                    <div class="form-text" style="font-size: 0.7rem;">Consulta padrón TSE.</div>
+                    <span asp-validation-for="Cedula" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-8">
-                    <label asp-for="Nombre" class="form-label fw-bold">
+                <div class="col-md-3">
+                    <label asp-for="Nombre" class="form-label fw-bold small">
                         <i class="bi bi-person"></i> Nombre <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="Nombre" class="form-control"
+                    <input asp-for="Nombre" class="form-control form-control-sm"
                            maxlength="100" placeholder="Ej: Juan" id="Nombre" />
-                    <span asp-validation-for="Nombre" class="text-danger small"></span>
+                    <span asp-validation-for="Nombre" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="PrimerApellido" class="form-label fw-bold">
+                <div class="col-md-3">
+                    <label asp-for="PrimerApellido" class="form-label fw-bold small">
                         <i class="bi bi-person"></i> Primer Apellido <span class="text-danger">*</span>
                     </label>
-                    <input asp-for="PrimerApellido" class="form-control"
+                    <input asp-for="PrimerApellido" class="form-control form-control-sm"
                            maxlength="50" placeholder="Ej: Pérez" id="PrimerApellido" />
-                    <span asp-validation-for="PrimerApellido" class="text-danger small"></span>
+                    <span asp-validation-for="PrimerApellido" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="SegundoApellido" class="form-label fw-bold">
+                <div class="col-md-3">
+                    <label asp-for="SegundoApellido" class="form-label fw-bold small">
                         <i class="bi bi-person"></i> Segundo Apellido
-                        <span class="text-muted fw-normal small">(opcional)</span>
+                        <span class="text-muted fw-normal" style="font-size: 0.7rem;">(opcional)</span>
                     </label>
-                    <input asp-for="SegundoApellido" class="form-control"
+                    <input asp-for="SegundoApellido" class="form-control form-control-sm"
                            maxlength="50" placeholder="Ej: González" id="SegundoApellido" />
-                    <span asp-validation-for="SegundoApellido" class="text-danger small"></span>
+                    <span asp-validation-for="SegundoApellido" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="FechaNacimiento" class="form-label fw-bold">
+                <div class="col-md-3">
+                    <label asp-for="FechaNacimiento" class="form-label fw-bold small">
                         <i class="bi bi-calendar-heart"></i> Fecha de Nacimiento
-                        <span class="text-muted fw-normal small">(opcional)</span>
+                        <span class="text-muted fw-normal" style="font-size: 0.7rem;">(opcional)</span>
                     </label>
                     <input asp-for="FechaNacimiento" type="date"
-                           class="form-control" id="FechaNacimiento" />
-                    <span asp-validation-for="FechaNacimiento" class="text-danger small"></span>
+                           class="form-control form-control-sm" id="FechaNacimiento" />
+                    <span asp-validation-for="FechaNacimiento" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 @* ── Información Laboral ── *@
                 <div class="col-12 mt-2">
-                    <h6 class="text-muted fw-bold border-bottom pb-2">
+                    <h6 class="text-muted fw-bold border-bottom pb-1 mb-2" style="font-size: 0.85rem;">
                         <i class="bi bi-briefcase"></i> Información Laboral
                     </h6>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="Departamento" class="form-label fw-bold">
+                <div class="col-md-3">
+                    <label asp-for="Departamento" class="form-label fw-bold small">
                         <i class="bi bi-building"></i> Departamento <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Departamento" class="form-select" id="selectDepartamento">
-                        <option value="">-- Seleccione departamento --</option>
+                    <select asp-for="Departamento" class="form-select form-select-sm" id="selectDepartamento">
+                        <option value="">-- Seleccione --</option>
                     </select>
-                    <span asp-validation-for="Departamento" class="text-danger small"></span>
+                    <span asp-validation-for="Departamento" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
-                <div class="col-md-4">
-                    <label asp-for="TipoPago" class="form-label fw-bold">
-                        <i class="bi bi-calendar2-week"></i> Tipo de Pago
-                        <span class="text-danger">*</span>
+
+                <div class="col-md-3">
+                    <label asp-for="Puesto" class="form-label fw-bold small">
+                        <i class="bi bi-briefcase"></i> Puesto <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="TipoPago" class="form-select"
-                            id="selectTipoPago">
+                    <select asp-for="Puesto" class="form-select form-select-sm" id="selectPuesto">
+                        <option value="">-- Seleccione --</option>
+                    </select>
+                    <span asp-validation-for="Puesto" class="text-danger" style="font-size: 0.7rem;"></span>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="TipoPago" class="form-label fw-bold small">
+                        <i class="bi bi-calendar2-week"></i> Tipo de Pago <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="TipoPago" class="form-select form-select-sm" id="selectTipoPago">
                         <option value="1">Quincenal</option>
                         <option value="2">Semanal</option>
                         <option value="3">Mensual</option>
                     </select>
-                    <div class="form-text text-muted" id="tipoPagoHint">
-                        Los camioneros y choferes generalmente tienen pago semanal.
-                    </div>
-                    <span asp-validation-for="TipoPago" class="text-danger small"></span>
+                    <span asp-validation-for="TipoPago" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="Puesto" class="form-label fw-bold">
-                        <i class="bi bi-briefcase"></i> Puesto <span class="text-danger">*</span>
+                <div class="col-md-3">
+                    <label asp-for="TipoJornada" class="form-label fw-bold small">
+                        <i class="bi bi-clock"></i> Jornada <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Puesto" class="form-select" id="selectPuesto">
-                        <option value="">-- Seleccione departamento primero --</option>
+                    <select asp-for="TipoJornada" class="form-select form-select-sm" id="selectJornada">
+                        <option value="1">Completa (240h)</option>
+                        <option value="2">Media (120h)</option>
                     </select>
-                    <span asp-validation-for="Puesto" class="text-danger small"></span>
+                    <span asp-validation-for="TipoJornada" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="TipoJornada" class="form-label fw-bold">
-                        <i class="bi bi-clock"></i> Tipo de Jornada <span class="text-danger">*</span>
-                    </label>
-                    <select asp-for="TipoJornada" class="form-select" id="selectJornada">
-                        <option value="1">Completa (240 hrs/mes)</option>
-                        <option value="2">Media Jornada (120 hrs/mes)</option>
-                    </select>
-                    <span asp-validation-for="TipoJornada" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-4">
-                    <label asp-for="FechaIngreso" class="form-label fw-bold">
-                        <i class="bi bi-calendar-check"></i> Fecha de Ingreso <span class="text-danger">*</span>
+                <div class="col-md-3">
+                    <label asp-for="FechaIngreso" class="form-label fw-bold small">
+                        <i class="bi bi-calendar-check"></i> Fecha Ingreso <span class="text-danger">*</span>
                     </label>
                     <input asp-for="FechaIngreso" type="date"
-                           class="form-control"
+                           class="form-control form-control-sm"
                            max="@DateTime.Today.ToString("yyyy-MM-dd")" />
-                    <span asp-validation-for="FechaIngreso" class="text-danger small"></span>
+                    <span asp-validation-for="FechaIngreso" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="SalarioBase" class="form-label fw-bold">
+                <div class="col-md-3">
+                    <label asp-for="SalarioBase" class="form-label fw-bold small">
                         <i class="bi bi-currency-dollar"></i> Salario Base (₡) <span class="text-danger">*</span>
                     </label>
                     <input asp-for="SalarioBase" type="number" step="0.01" min="0" max="9999999.99"
-                           class="form-control" id="inputSalario"
-                           placeholder="Se llena al elegir puesto" />
-                    <div class="form-text" id="salarioHint"></div>
-                    <span asp-validation-for="SalarioBase" class="text-danger small"></span>
+                           class="form-control form-control-sm" id="inputSalario"
+                           placeholder="Auto-llenado" />
+                    <div class="form-text" id="salarioHint" style="font-size: 0.7rem;"></div>
+                    <span asp-validation-for="SalarioBase" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label fw-bold text-muted">
-                        <i class="bi bi-calculator"></i> Valor Hora (referencia)
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-muted small">
+                        <i class="bi bi-calculator"></i> Valor Hora
                     </label>
-                    <div class="form-control bg-light text-center fw-bold"
-                         id="valorHoraRef" style="color:#0D6EFD;">
+                    <div class="form-control form-control-sm bg-light text-center fw-bold"
+                         id="valorHoraRef" style="color:#0D6EFD; font-size: 0.8rem;">
                         —
                     </div>
-                    <div class="form-text text-muted">Calculado: salario ÷ horas jornada</div>
+                    <div class="form-text" style="font-size: 0.7rem;">Calculado automático</div>
                 </div>
 
                 @* ── Contrato ── *@
                 <div class="col-12 mt-2">
-                    <h6 class="text-muted fw-bold border-bottom pb-2">
+                    <h6 class="text-muted fw-bold border-bottom pb-1 mb-2" style="font-size: 0.85rem;">
                         <i class="bi bi-file-text"></i> Contrato
                     </h6>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="TipoContrato" class="form-label fw-bold">
-                        <i class="bi bi-file-earmark-text"></i> Tipo de Contrato <span class="text-danger">*</span>
+                <div class="col-md-3">
+                    <label asp-for="TipoContrato" class="form-label fw-bold small">
+                        <i class="bi bi-file-earmark-text"></i> Tipo Contrato <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="TipoContrato" class="form-select" id="selectTipoContrato">
+                    <select asp-for="TipoContrato" class="form-select form-select-sm" id="selectTipoContrato">
                         <option value="1">Indefinido</option>
                         <option value="2">Plazo Fijo</option>
                         <option value="3">Por Obra</option>
                     </select>
-                    <span asp-validation-for="TipoContrato" class="text-danger small"></span>
+                    <span asp-validation-for="TipoContrato" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-4" id="divFechaVencimiento" style="display:none;">
-                    <label asp-for="FechaVencimientoContrato" class="form-label fw-bold">
-                        <i class="bi bi-calendar-x"></i> Fecha de Vencimiento
+                <div class="col-md-3" id="divFechaVencimiento" style="display:none;">
+                    <label asp-for="FechaVencimientoContrato" class="form-label fw-bold small">
+                        <i class="bi bi-calendar-x"></i> Fecha Vencimiento
                         <span class="text-danger">*</span>
                     </label>
                     <input asp-for="FechaVencimientoContrato" type="date"
-                           class="form-control" id="FechaVencimientoContrato" />
-                    <span asp-validation-for="FechaVencimientoContrato" class="text-danger small"></span>
+                           class="form-control form-control-sm" id="FechaVencimientoContrato" />
+                    <span asp-validation-for="FechaVencimientoContrato" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 @* ── Dirección ── *@
                 <div class="col-12 mt-2">
-                    <h6 class="text-muted fw-bold border-bottom pb-2">
+                    <h6 class="text-muted fw-bold border-bottom pb-1 mb-2" style="font-size: 0.85rem;">
                         <i class="bi bi-geo-alt"></i> Dirección
-                        <span class="text-muted fw-normal small">(opcional)</span>
+                        <span class="text-muted fw-normal" style="font-size: 0.7rem;">(opcional)</span>
                     </h6>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="DireccionProvincia" class="form-label fw-bold">Provincia</label>
-                    <select asp-for="DireccionProvincia" class="form-select" id="selectProvincia">
+                <div class="col-md-3">
+                    <label asp-for="DireccionProvincia" class="form-label fw-bold small">Provincia</label>
+                    <select asp-for="DireccionProvincia" class="form-select form-select-sm" id="selectProvincia">
                         <option value="">-- Seleccione --</option>
                         <option value="San José">San José</option>
                         <option value="Alajuela">Alajuela</option>
@@ -215,125 +211,122 @@
                         <option value="Puntarenas">Puntarenas</option>
                         <option value="Limón">Limón</option>
                     </select>
-                    <span asp-validation-for="DireccionProvincia" class="text-danger small"></span>
+                    <span asp-validation-for="DireccionProvincia" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="DireccionCanton" class="form-label fw-bold">Cantón</label>
-                    <select asp-for="DireccionCanton" class="form-select" id="selectCanton">
-                        <option value="">-- Seleccione cantón --</option>
+                <div class="col-md-3">
+                    <label asp-for="DireccionCanton" class="form-label fw-bold small">Cantón</label>
+                    <select asp-for="DireccionCanton" class="form-select form-select-sm" id="selectCanton">
+                        <option value="">-- Seleccione --</option>
                     </select>
-                    <span asp-validation-for="DireccionCanton" class="text-danger small"></span>
+                    <span asp-validation-for="DireccionCanton" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="DireccionDistrito" class="form-label fw-bold">Distrito</label>
-                    <select asp-for="DireccionDistrito" class="form-select" id="selectDistrito">
-                        <option value="">-- Seleccione distrito --</option>
+                <div class="col-md-3">
+                    <label asp-for="DireccionDistrito" class="form-label fw-bold small">Distrito</label>
+                    <select asp-for="DireccionDistrito" class="form-select form-select-sm" id="selectDistrito">
+                        <option value="">-- Seleccione --</option>
                     </select>
-                    <span asp-validation-for="DireccionDistrito" class="text-danger small"></span>
+                    <span asp-validation-for="DireccionDistrito" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="DireccionBarrio" class="form-label fw-bold">
-                        Barrio <span class="text-muted fw-normal small">(opcional)</span>
-                    </label>
-                    <input asp-for="DireccionBarrio" class="form-control"
+                <div class="col-md-3">
+                    <label asp-for="DireccionBarrio" class="form-label fw-bold small">Barrio</label>
+                    <input asp-for="DireccionBarrio" class="form-control form-control-sm"
                            maxlength="100" placeholder="Ej: Barrio El Carmen" />
-                    <span asp-validation-for="DireccionBarrio" class="text-danger small"></span>
+                    <span asp-validation-for="DireccionBarrio" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 <div class="col-md-6">
-                    <label asp-for="DireccionExacta" class="form-label fw-bold">Dirección Exacta</label>
-                    <input asp-for="DireccionExacta" class="form-control"
+                    <label asp-for="DireccionExacta" class="form-label fw-bold small">Dirección Exacta</label>
+                    <input asp-for="DireccionExacta" class="form-control form-control-sm"
                            maxlength="300"
-                           placeholder="Ej: De la iglesia 200m norte, casa azul con portón negro" />
-                    <span asp-validation-for="DireccionExacta" class="text-danger small"></span>
+                           placeholder="Ej: De la iglesia 200m norte, casa azul" />
+                    <span asp-validation-for="DireccionExacta" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 @* ── Contacto de Emergencia ── *@
                 <div class="col-12 mt-2">
-                    <h6 class="text-muted fw-bold border-bottom pb-2">
+                    <h6 class="text-muted fw-bold border-bottom pb-1 mb-2" style="font-size: 0.85rem;">
                         <i class="bi bi-person-exclamation"></i> Contacto de Emergencia
-                        <span class="text-muted fw-normal small">(opcional)</span>
+                        <span class="text-muted fw-normal" style="font-size: 0.7rem;">(opcional)</span>
                     </h6>
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="ContactoEmergenciaNombre" class="form-label fw-bold">
+                <div class="col-md-4">
+                    <label asp-for="ContactoEmergenciaNombre" class="form-label fw-bold small">
                         Nombre del Contacto
                     </label>
-                    <input asp-for="ContactoEmergenciaNombre" class="form-control"
+                    <input asp-for="ContactoEmergenciaNombre" class="form-control form-control-sm"
                            maxlength="100" placeholder="Ej: María González (madre)" />
-                    <span asp-validation-for="ContactoEmergenciaNombre" class="text-danger small"></span>
+                    <span asp-validation-for="ContactoEmergenciaNombre" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="ContactoEmergenciaTelefono" class="form-label fw-bold">
+                <div class="col-md-4">
+                    <label asp-for="ContactoEmergenciaTelefono" class="form-label fw-bold small">
                         Teléfono del Contacto
                     </label>
-                    <input asp-for="ContactoEmergenciaTelefono" class="form-control"
+                    <input asp-for="ContactoEmergenciaTelefono" class="form-control form-control-sm"
                            maxlength="20" placeholder="Ej: 8888-8888" />
-                    <span asp-validation-for="ContactoEmergenciaTelefono" class="text-danger small"></span>
+                    <span asp-validation-for="ContactoEmergenciaTelefono" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
                 @* ── Contacto y Pago ── *@
                 <div class="col-12 mt-2">
-                    <h6 class="text-muted fw-bold border-bottom pb-2">
+                    <h6 class="text-muted fw-bold border-bottom pb-1 mb-2" style="font-size: 0.85rem;">
                         <i class="bi bi-telephone"></i> Contacto y Forma de Pago
                     </h6>
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="Telefono" class="form-label fw-bold">
-                        <i class="bi bi-phone"></i> Teléfono / Celular
-                        <span class="text-muted fw-normal small">(opcional)</span>
+                <div class="col-md-3">
+                    <label asp-for="Telefono" class="form-label fw-bold small">
+                        <i class="bi bi-phone"></i> Teléfono
+                        <span class="text-muted fw-normal" style="font-size: 0.7rem;">(opcional)</span>
                     </label>
-                    <input asp-for="Telefono" class="form-control"
+                    <input asp-for="Telefono" class="form-control form-control-sm"
                            maxlength="20" placeholder="Ej: 8888-8888" />
-                    <span asp-validation-for="Telefono" class="text-danger small"></span>
+                    <span asp-validation-for="Telefono" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="CorreoElectronico" class="form-label fw-bold">
-                        <i class="bi bi-envelope"></i> Correo Electrónico
-                        <span class="text-muted fw-normal small">(opcional)</span>
+                <div class="col-md-3">
+                    <label asp-for="CorreoElectronico" class="form-label fw-bold small">
+                        <i class="bi bi-envelope"></i> Correo
+                        <span class="text-muted fw-normal" style="font-size: 0.7rem;">(opcional)</span>
                     </label>
                     <input asp-for="CorreoElectronico" type="email"
-                           class="form-control"
-                           maxlength="150" placeholder="Ej: empleado@correo.com" />
-                    <span asp-validation-for="CorreoElectronico" class="text-danger small"></span>
+                           class="form-control form-control-sm"
+                           maxlength="150" placeholder="empleado@correo.com" />
+                    <span asp-validation-for="CorreoElectronico" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-4">
-                    <label asp-for="FormaPago" class="form-label fw-bold">
-                        <i class="bi bi-credit-card"></i> Forma de Pago <span class="text-danger">*</span>
+                <div class="col-md-3">
+                    <label asp-for="FormaPago" class="form-label fw-bold small">
+                        <i class="bi bi-credit-card"></i> Forma Pago <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="FormaPago" class="form-select" id="selectFormaPago">
-                        <option value="1">Transferencia Bancaria</option>
+                    <select asp-for="FormaPago" class="form-select form-select-sm" id="selectFormaPago">
+                        <option value="1">Transferencia</option>
                         <option value="2">Efectivo</option>
                     </select>
-                    <span asp-validation-for="FormaPago" class="text-danger small"></span>
+                    <span asp-validation-for="FormaPago" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-8" id="divNumeroCuenta">
-                    <label asp-for="NumeroCuenta" class="form-label fw-bold">
-                        <i class="bi bi-bank"></i> Número de Cuenta BN
-                        <span class="text-muted fw-normal small">(opcional)</span>
+                <div class="col-md-3" id="divNumeroCuenta">
+                    <label asp-for="NumeroCuenta" class="form-label fw-bold small">
+                        <i class="bi bi-bank"></i> Número Cuenta BN
+                        <span class="text-muted fw-normal" style="font-size: 0.7rem;">(opcional)</span>
                     </label>
-                    <input asp-for="NumeroCuenta" class="form-control"
-                           maxlength="30" placeholder="Ej: 100-01-000-000000-0" />
-                    <div class="form-text text-muted">Número de cuenta Banco Nacional para depósito del salario.</div>
-                    <span asp-validation-for="NumeroCuenta" class="text-danger small"></span>
+                    <input asp-for="NumeroCuenta" class="form-control form-control-sm"
+                           maxlength="30" placeholder="100-01-000-000000-0" />
+                    <span asp-validation-for="NumeroCuenta" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button type="submit" class="btn btn-success btn px-5">
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-sm px-4">
                     <i class="bi bi-check-circle"></i> Guardar Empleado
                 </button>
-                <a asp-action="Index" class="btn btn-secondary btn px-5">Cancelar</a>
+                <a asp-action="Index" class="btn btn-secondary btn-sm px-4">Cancelar</a>
             </div>
         </form>
     </div>
@@ -388,8 +381,9 @@
                 if (opt && opt.dataset.salario) {
                     document.getElementById('inputSalario').value = opt.dataset.salario;
                     hint.innerHTML = '<i class="bi bi-info-circle text-success"></i> Salario base del puesto: <strong>₡' +
-                        Number(opt.dataset.salario).toLocaleString('es-CR') + '</strong>. Podés modificarlo.';
+                        Number(opt.dataset.salario).toLocaleString('es-CR') + '</strong>';
                     hint.className = 'form-text text-success';
+                    hint.style.fontSize = '0.7rem';
                     calcularValorHora();
                 } else {
                     hint.textContent = '';

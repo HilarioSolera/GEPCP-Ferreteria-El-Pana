@@ -1,7 +1,9 @@
-using QuestPDF.Fluent;
+﻿using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using GEPCP_Ferreteria_El_Pana.Models;
+using GEPCP_Ferreteria_El_Pana.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace GEPCP_Ferreteria_El_Pana.Services
 {
@@ -9,13 +11,16 @@ namespace GEPCP_Ferreteria_El_Pana.Services
     {
         private readonly ILogger<ComprobantePlanillaService> _logger;
         private readonly IWebHostEnvironment _env;
+        private readonly ApplicationDbContext _context;
 
         public ComprobantePlanillaService(
             ILogger<ComprobantePlanillaService> logger,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            ApplicationDbContext context)
         {
             _logger = logger;
             _env = env;
+            _context = context;
         }
 
         // PALETA GLOBAL
@@ -43,6 +48,24 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             {
                 _logger.LogWarning(ex, "No se pudo leer el logo desde {Path}", LogoPath);
                 return null;
+            }
+        }
+
+        // Helper para obtener puesto con código
+        private string ObtenerPuestoConCodigo(string puestoNombre)
+        {
+            try
+            {
+                var puesto = _context.Puestos
+                    .AsNoTracking()
+                    .FirstOrDefault(p => p.Nombre == puestoNombre);
+
+                return puesto != null ? $"{puesto.Codigo} - {puestoNombre}" : puestoNombre;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener código de puesto para: {PuestoNombre}", puestoNombre);
+                return puestoNombre; // Fallback seguro: retorna solo el nombre
             }
         }
 
@@ -210,7 +233,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
-                                    "PUESTO:", emp.Puesto);
+                                    "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                             });
 
                             // Devengados
@@ -364,7 +387,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
-                                    "PUESTO:", emp.Puesto);
+                                    "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "TOTAL HORAS:", $"{hx.TotalHoras:N2} hrs",
                                     "PORCENTAJE:", $"{hx.Porcentaje:N1}%");
                             });
@@ -453,7 +476,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
-                                    "PUESTO:", emp.Puesto);
+                                    "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "TOTAL HORAS:", $"{hx.TotalHoras:N2} hrs",
                                     "PORCENTAJE:", $"{hx.Porcentaje:N1}%");
                             });
@@ -536,7 +559,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     c.ConstantColumn(90); c.RelativeColumn(2);
                                 });
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
-        "PUESTO:", emp.Puesto);
+        "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "TIPO DE PAGO:", emp.DescripcionTipoPago,
                                     "PERÍODO:", comision.PeriodoPago?.Descripcion ?? "—");
                             });
@@ -605,7 +628,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "NOMBRE:",
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
-                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", emp.Puesto);
+                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "TOTAL DÍAS:", $"{inc.TotalDias} día(s)",
                                     "ENTIDAD:", inc.Entidad.ToString());
                                 if (!string.IsNullOrEmpty(inc.TiqueteCCSS))
@@ -710,7 +733,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "NOMBRE:",
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
-                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", emp.Puesto);
+                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "TOTAL DÍAS:", $"{inc.TotalDias} día(s)",
                                     "ENTIDAD:", inc.Entidad.ToString());
                                 if (!string.IsNullOrEmpty(inc.TiqueteCCSS))
@@ -805,7 +828,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "NOMBRE:",
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
-                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", emp.Puesto);
+                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "AÑO:", ag.Anio.ToString(),
                                     "FECHA PAGO:", ag.FechaPago.ToString("dd/MM/yyyy"));
                             });
@@ -898,7 +921,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "NOMBRE:",
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
-                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", emp.Puesto);
+                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "AÑO:", ag.Anio.ToString(),
                                     "FECHA PAGO:", ag.FechaPago.ToString("dd/MM/yyyy"));
                             });
@@ -1003,6 +1026,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                         grupo.Sum(p => p.AumentoAplicado),
                                         grupo.Sum(p => p.TotalDevengado),
                                         grupo.Sum(p => p.DeduccionCCSS),
+                                        grupo.Sum(p => p.DeduccionRenta),
                                         grupo.Sum(p => p.DeduccionPrestamos),
                                         grupo.Sum(p => p.DeduccionCreditoFerreteria),
                                         grupo.Sum(p => p.TotalDeducciones),
@@ -1026,6 +1050,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     planillas.Sum(p => p.AumentoAplicado),
                                     planillas.Sum(p => p.TotalDevengado),
                                     planillas.Sum(p => p.DeduccionCCSS),
+                                    planillas.Sum(p => p.DeduccionRenta),
                                     planillas.Sum(p => p.DeduccionPrestamos),
                                     planillas.Sum(p => p.DeduccionCreditoFerreteria),
                                     planillas.Sum(p => p.TotalDeducciones),
@@ -1048,7 +1073,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             {
                 c.RelativeColumn(3); c.RelativeColumn(2); c.RelativeColumn(2); c.RelativeColumn(2);
                 c.RelativeColumn(2); c.RelativeColumn(2); c.RelativeColumn(2); c.RelativeColumn(2);
-                c.RelativeColumn(2); c.RelativeColumn(2);
+                c.RelativeColumn(2); c.RelativeColumn(2); c.RelativeColumn(2);
             });
         }
 
@@ -1056,7 +1081,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         {
             foreach (var h in new[]
                 { "Empleado","Sal. Ord.","Hrs. Ext.","Comisión",
-                  "Total Dev.","CCSS","Préstamo","Cré. Ferre.","Total Ded.","Neto" })
+                  "Total Dev.","CCSS","Renta (ISR)","Préstamo","Cré. Ferre.","Total Ded.","Neto" })
                 t.Cell().Background(bg).Padding(3).AlignCenter()
                     .Text(h).Bold().FontSize(7).FontColor(Color.FromHex("FFFFFF"));
         }
@@ -1071,6 +1096,8 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                 .Text(p.AumentoAplicado > 0 ? $"₡{p.AumentoAplicado:N0}" : "—").FontSize(7);
             t.Cell().Padding(2).AlignRight().Text($"₡{p.TotalDevengado:N0}").Bold().FontSize(7);
             t.Cell().Padding(2).AlignRight().Text($"₡{p.DeduccionCCSS:N0}").FontSize(7);
+            t.Cell().Padding(2).AlignRight()
+                .Text(p.DeduccionRenta > 0 ? $"₡{p.DeduccionRenta:N0}" : "—").FontSize(7).FontColor(Color.FromHex("D32F2F"));
             t.Cell().Padding(2).AlignRight()
                 .Text(p.DeduccionPrestamos > 0 ? $"₡{p.DeduccionPrestamos:N0}" : "—").FontSize(7);
             t.Cell().Padding(2).AlignRight()
@@ -1109,7 +1136,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     c.ConstantColumn(90); c.RelativeColumn(2);
                                 });
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
-    "PUESTO:", emp.Puesto);
+    "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "TIPO DE PAGO:", emp.DescripcionTipoPago,
                                     "PERÍODO:", comision.PeriodoPago?.Descripcion ?? "—");
                             });
@@ -1191,7 +1218,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "NOMBRE:",
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
-                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", emp.Puesto);
+                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "FECHA INGRESO:",
                                     $"{emp.FechaIngreso:dd/MM/yyyy} ({antiguedad} año(s))",
                                     "SALARIO DIARIO:", $"₡{vacacion.SalarioDiario:N2}");
@@ -1313,7 +1340,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "NOMBRE:",
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
-                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", emp.Puesto);
+                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "FECHA INGRESO:",
                                     $"{emp.FechaIngreso:dd/MM/yyyy} ({antiguedad} año(s))",
                                     "SALARIO DIARIO:", $"₡{vacacion.SalarioDiario:N2}");
@@ -1442,7 +1469,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "NOMBRE:",
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
-                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", emp.Puesto);
+                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                             });
 
                             // Resumen del préstamo
@@ -1624,7 +1651,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "NOMBRE:",
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
-                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", emp.Puesto);
+                                FilaDatos(t, "DEPARTAMENTO:", emp.Departamento, "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                             });
 
                             // Resumen del préstamo
@@ -1799,7 +1826,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
-                                    "PUESTO:", emp.Puesto);
+                                    "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                             });
 
                             // Datos del crédito
@@ -2023,7 +2050,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
-                                    "PUESTO:", emp.Puesto);
+                                    "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                             });
 
                             // Datos del crédito
@@ -2223,7 +2250,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     $"{emp.Nombre}".Trim(),
                                     "CÉDULA:", emp.Cedula);
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
-                                    "PUESTO:", emp.Puesto);
+                                    "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "TIPO DE PAGO:", emp.DescripcionTipoPago,
                                     "PERÍODO:", planilla.PeriodoPago.Descripcion);
                             });

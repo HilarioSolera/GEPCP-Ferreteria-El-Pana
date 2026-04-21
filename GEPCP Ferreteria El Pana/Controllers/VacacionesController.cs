@@ -1,4 +1,4 @@
-using GEPCP_Ferreteria_El_Pana.Data;
+﻿using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
@@ -445,7 +445,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         id = e.EmpleadoId,
                         nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
                         cedula = e.Cedula,
-                        puesto = e.Puesto,
+                        puesto = (from p in _context.Puestos where p.Nombre == e.Puesto select p.Codigo + " - " + e.Puesto).FirstOrDefault() ?? e.Puesto,
                         salarioDiario = Math.Round(e.SalarioBase / 30, 2),
                         fechaIngreso = e.FechaIngreso.ToString("yyyy-MM-dd")
                     })
@@ -474,7 +474,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         id = e.EmpleadoId,
                         nombre = $"{e.PrimerApellido} {e.SegundoApellido} {e.Nombre}".Trim(),
                         cedula = e.Cedula,
-                        puesto = e.Puesto,
+                        puesto = (from p in _context.Puestos where p.Nombre == e.Puesto select p.Codigo + " - " + e.Puesto).FirstOrDefault() ?? e.Puesto,
                         salarioDiario = Math.Round(e.SalarioBase / 30, 2),
                         fechaIngreso = e.FechaIngreso.ToString("yyyy-MM-dd")
                     })
