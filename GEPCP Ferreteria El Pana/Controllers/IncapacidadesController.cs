@@ -369,11 +369,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (registro == null) return NotFound();
 
-                var pdfBytes = _servicioPDF.GenerarPDFIncapacidad(registro);
+                var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
+                var pdfBytes = _servicioPDF.GenerarPDFIncapacidad(registro, usuario);
                 var nombre = $"Incapacidad_{registro.Empleado.PrimerApellido}_{registro.FechaInicio:ddMMyyyy}.pdf";
 
                 await _auditoria.RegistrarAsync(
-                    HttpContext.Session.GetString("Usuario") ?? "",
+                    usuario,
                     "Descargar PDF incapacidad", "Incapacidades",
                     $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre}");
 
@@ -414,7 +415,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                var pdfBytes = _servicioPDF.GenerarPDFIncapacidadSinFirmas(registro);
+                var pdfBytes = _servicioPDF.GenerarPDFIncapacidadSinFirmas(registro,
+                    HttpContext.Session.GetString("Usuario") ?? "Sistema");
                 var nombreArchivo =
                     $"Incapacidad_{registro.Empleado.PrimerApellido}_{registro.FechaInicio:ddMMyyyy}.pdf";
 

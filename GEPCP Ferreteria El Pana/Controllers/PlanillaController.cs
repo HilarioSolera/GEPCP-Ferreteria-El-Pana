@@ -193,17 +193,18 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                          (periodo.TipoPeriodo == TipoPeriodo.Quincenal && (int)e.TipoPago == 0)))
                     .ToListAsync();
 
-                // Validación: Solo incluir empleados cuya fecha de ingreso sea anterior o igual al inicio del período
+                // Solo incluir empleados cuya fecha de ingreso sea anterior o igual al FIN del período
                 var empleadosExcluidos = todosEmpleados
-                    .Where(e => e.FechaIngreso > periodo.FechaInicio).ToList();
+                    .Where(e => e.FechaIngreso > periodo.FechaFin).ToList();
                 var empleados = todosEmpleados
-                    .Where(e => e.FechaIngreso <= periodo.FechaInicio).ToList();
+                    .Where(e => e.FechaIngreso <= periodo.FechaFin).ToList();
 
+                var warningMessages = new List<string>();
                 if (empleadosExcluidos.Any())
-                    TempData["Warning"] =
-                        $"Excluidos por fecha de ingreso posterior al período: " +
+                    warningMessages.Add(
+                        "Excluidos por fecha de ingreso posterior al período: " +
                         string.Join(", ", empleadosExcluidos
-                            .Select(e => $"{e.PrimerApellido} {e.Nombre} (ingresó: {e.FechaIngreso:dd/MM/yyyy})"));
+                            .Select(e => $"{e.PrimerApellido} {e.Nombre} (ingresó: {e.FechaIngreso:dd/MM/yyyy})")));
 
                 if (!empleados.Any())
                 {
@@ -223,18 +224,24 @@ foreach (var empleado in empleados)
     var salarioOrdinario = Math.Round(
         empleado.ValorHora * empleado.HorasPorPeriodo, 2);
 
-    var horasExtrasReg = await _context.HorasExtras
-        .FirstOrDefaultAsync(h =>
+    // DEVENGADOS — solo registros cuya fecha >= fecha de ingreso del empleado
+    var horasExtrasDelPeriodo = await _context.HorasExtras
+        .Where(h =>
             h.EmpleadoId == empleado.EmpleadoId &&
-            h.PeriodoPagoId == periodoId);
-    var montoHorasExtras = horasExtrasReg?.MontoTotal ?? 0m;
-    var totalHorasExtras = horasExtrasReg?.TotalHoras ?? 0m;
+            h.PeriodoPagoId == periodoId &&
+            h.Fecha >= periodo.FechaInicio &&
+            h.Fecha <= periodo.FechaFin &&
+            h.Fecha >= empleado.FechaIngreso)
+        .ToListAsync();
+    var montoHorasExtras = horasExtrasDelPeriodo.Sum(h => h.MontoTotal);
+    var totalHorasExtras  = horasExtrasDelPeriodo.Sum(h => h.TotalHoras);
 
     var montoComisiones = (await _context.Comisiones
         .Where(c =>
             c.EmpleadoId == empleado.EmpleadoId &&
             c.Fecha >= periodo.FechaInicio &&
-            c.Fecha <= periodo.FechaFin)
+            c.Fecha <= periodo.FechaFin &&
+            c.Fecha >= empleado.FechaIngreso)
         .Select(c => c.Monto)
         .ToListAsync()).Sum();
 
@@ -249,44 +256,55 @@ foreach (var empleado in empleados)
         salarioOrdinario + montoHorasExtras +
         montoComisiones + montoFeriados, 2);
 
+    // DEDUCCIONES
     var deduccionCCSS = Math.Round(
         totalDevengado * (periodo.PorcentajeCCSS / 100m), 2);
 
-    // Calculo de ISR sobre el devengado del periodo
-    var deduccionRenta = CalcularImpuestoRenta(totalDevengado, periodo, empleado.NumHijos, empleado.TieneConyuge);
+    var deduccionRenta = CalcularImpuestoRenta(
+        totalDevengado, periodo, empleado.NumHijos, empleado.TieneConyuge);
 
+    // Préstamo — cuota completa sin dividir, validando fecha ingreso
     decimal deduccionPrestamo = 0m;
     if (!abonosPeriodoExistentes.Contains(empleado.EmpleadoId))
     {
         var prestamo = await _context.Prestamos
             .FirstOrDefaultAsync(p =>
-                p.EmpleadoId == empleado.EmpleadoId && p.Activo);
+                p.EmpleadoId == empleado.EmpleadoId &&
+                p.Activo &&
+                p.FechaPrestamo >= empleado.FechaIngreso &&
+                p.FechaPrestamo <= periodo.FechaFin);
         if (prestamo != null && prestamo.Monto > 0)
         {
-            var cuotaPeriodo = Math.Round(
-                prestamo.CuotaMensual / empleado.FactorCuotaPrestamo, 2);
+            // Se aplica la cuota tal cual está configurada (sin dividir por período)
             deduccionPrestamo = Math.Round(
-                Math.Min(cuotaPeriodo, prestamo.Monto), 2);
+                Math.Min(prestamo.CuotaMensual, prestamo.Monto), 2);
 
-            // Validación Art. 172 CT: deducción no puede exceder 50% del salario
+            // Art. 172 CT: deducción no puede exceder el 50 % del salario ordinario
             var maxDeduccion = Math.Round(salarioOrdinario * 0.50m, 2);
             deduccionPrestamo = Math.Min(deduccionPrestamo, maxDeduccion);
         }
     }
 
+    // Créditos ferretería — validando fecha ingreso
     var creditosActivos = await _context.CreditosFerreteria
-        .Where(c => c.EmpleadoId == empleado.EmpleadoId && c.Activo)
+        .Where(c =>
+            c.EmpleadoId == empleado.EmpleadoId &&
+            c.Activo &&
+            c.FechaCredito >= empleado.FechaIngreso &&
+            c.FechaCredito <= periodo.FechaFin)
         .ToListAsync();
     var deduccionCredito = Math.Round(
         creditosActivos
             .Where(c => c.Saldo > 0)
             .Sum(c => Math.Min(c.CuotaQuincenal, c.Saldo)), 2);
 
+    // Incapacidades — validando fecha ingreso
     var diasIncapacidad = (await _context.Incapacidades
         .Where(i =>
             i.EmpleadoId == empleado.EmpleadoId &&
             i.FechaInicio <= periodo.FechaFin &&
-            i.FechaFin >= periodo.FechaInicio)
+            i.FechaFin   >= periodo.FechaInicio &&
+            i.FechaInicio >= empleado.FechaIngreso)
         .ToListAsync())
         .Sum(i =>
         {
@@ -296,9 +314,10 @@ foreach (var empleado in empleados)
                 ? periodo.FechaFin : i.FechaFin;
             return Math.Max(0, (fin - inicio).Days + 1);
         });
-    var salarioDiario = Math.Round(empleado.SalarioBase / 30m, 2);
+    var salarioDiario        = Math.Round(empleado.SalarioBase / 30m, 2);
     var deduccionIncapacidad = Math.Round(salarioDiario * diasIncapacidad, 2);
 
+    // Vacaciones sin pago eliminadas — siempre 0
     var deduccionVacaciones = 0m;
 
     var totalDeducciones = Math.Round(
@@ -309,11 +328,9 @@ foreach (var empleado in empleados)
     var netoAPagar = Math.Max(0,
         Math.Round(totalDevengado - totalDeducciones, 2));
 
-    // Alerta si las deducciones exceden el salario
+    // Alerta acumulada — BUG 4 corregido: no sobreescribir TempData en el loop
     if (netoAPagar == 0 && totalDeducciones > 0)
-    {
-        TempData["Warning"] = $"ADVERTENCIA: El empleado {empleado.Nombre} tiene deducciones que igualan o exceden su salario (Neto = ₡0). Revise las deducciones.";
-    }
+        warningMessages.Add($"ADVERTENCIA: {empleado.PrimerApellido} {empleado.Nombre} tiene deducciones que igualan o exceden su salario (Neto = ₡0).");
 
     var planillaExistente = await _context.PlanillasEmpleado
         .FirstOrDefaultAsync(p =>
@@ -322,26 +339,41 @@ foreach (var empleado in empleados)
 
     if (planillaExistente != null)
     {
-        planillaExistente.HorasOrdinarias = empleado.HorasPorPeriodo;
-        planillaExistente.HorasExtras = totalHorasExtras;
-        planillaExistente.HorasNoLaboradas = 0m;
-        planillaExistente.ValorHora = empleado.ValorHora;
-        planillaExistente.ValorHoraExtra = empleado.ValorHoraExtra;
-        planillaExistente.SalarioOrdinario = salarioOrdinario;
-        planillaExistente.AumentoAplicado = montoComisiones;
-        planillaExistente.MontoHorasExtras = montoHorasExtras;
-        planillaExistente.MontoFeriados = montoFeriados;
-        planillaExistente.TotalDevengado = totalDevengado;
-        planillaExistente.DeduccionCCSS = deduccionCCSS;
-        planillaExistente.DeduccionRenta = deduccionRenta;
-        planillaExistente.DeduccionPrestamos = deduccionPrestamo;
+        // BUG 2 corregido: preservar OtrasDeducciones y HorasNoLaboradas ajustadas manualmente
+        var otrasDeduccionesGuardadas  = planillaExistente.OtrasDeducciones;
+        var horasNoLaboradasGuardadas  = planillaExistente.HorasNoLaboradas;
+        var descOtrasGuardada          = planillaExistente.DescripcionOtrasDeducciones;
+
+        // BUG 1 corregido: recalcular DeduccionHorasNoLaboradas
+        var deduccionHorasNoLab = Math.Round(empleado.ValorHora * horasNoLaboradasGuardadas, 2);
+
+        var totalDeduccionesFinal = Math.Round(
+            deduccionCCSS + deduccionRenta +
+            deduccionPrestamo + deduccionCredito +
+            deduccionIncapacidad + deduccionVacaciones +
+            deduccionHorasNoLab + otrasDeduccionesGuardadas, 2);
+
+        planillaExistente.HorasOrdinarias            = empleado.HorasPorPeriodo;
+        planillaExistente.HorasExtras                = totalHorasExtras;
+        planillaExistente.HorasNoLaboradas           = horasNoLaboradasGuardadas;
+        planillaExistente.ValorHora                  = empleado.ValorHora;
+        planillaExistente.ValorHoraExtra             = empleado.ValorHoraExtra;
+        planillaExistente.SalarioOrdinario           = salarioOrdinario;
+        planillaExistente.AumentoAplicado            = montoComisiones;
+        planillaExistente.MontoHorasExtras           = montoHorasExtras;
+        planillaExistente.MontoFeriados              = montoFeriados;
+        planillaExistente.TotalDevengado             = totalDevengado;
+        planillaExistente.DeduccionCCSS              = deduccionCCSS;
+        planillaExistente.DeduccionRenta             = deduccionRenta;
+        planillaExistente.DeduccionPrestamos         = deduccionPrestamo;
         planillaExistente.DeduccionCreditoFerreteria = deduccionCredito;
-        planillaExistente.DeduccionIncapacidad = deduccionIncapacidad;
-        planillaExistente.DeduccionVacaciones = deduccionVacaciones;
-        planillaExistente.DeduccionHorasNoLaboradas = 0m;
-        planillaExistente.OtrasDeducciones = 0m;
-        planillaExistente.TotalDeducciones = totalDeducciones;
-        planillaExistente.NetoAPagar = netoAPagar;
+        planillaExistente.DeduccionIncapacidad       = deduccionIncapacidad;
+        planillaExistente.DeduccionVacaciones        = 0m;
+        planillaExistente.DeduccionHorasNoLaboradas  = deduccionHorasNoLab;
+        planillaExistente.OtrasDeducciones           = otrasDeduccionesGuardadas;
+        planillaExistente.DescripcionOtrasDeducciones = descOtrasGuardada;
+        planillaExistente.TotalDeducciones           = totalDeduccionesFinal;
+        planillaExistente.NetoAPagar                 = Math.Max(0, Math.Round(totalDevengado - totalDeduccionesFinal, 2));
     }
     else
     {
@@ -375,6 +407,9 @@ foreach (var empleado in empleados)
 }
 
                 await _context.SaveChangesAsync();
+
+                if (warningMessages.Any())
+                    TempData["Warning"] = string.Join(" | ", warningMessages);
 
                 TempData["Success"] = $"Planilla calculada correctamente para {empleados.Count} empleado(s).";
                 return RedirectToAction(nameof(Index), new { periodoId });
@@ -437,7 +472,7 @@ foreach (var empleado in empleados)
                     return RedirectToAction(nameof(Index), new { periodoId = registro.PeriodoPagoId });
                 }
 
-                registro.AumentoAplicado = Math.Round(model.AumentoAplicado, 2);
+                registro.AumentoAplicado  = Math.Round(model.AumentoAplicado, 2);
                 registro.HorasNoLaboradas = Math.Round(model.HorasNoLaboradas, 2);
                 registro.OtrasDeducciones = Math.Round(model.OtrasDeducciones, 2);
                 registro.DescripcionOtrasDeducciones = model.DescripcionOtrasDeducciones?.Trim();
@@ -449,9 +484,15 @@ foreach (var empleado in empleados)
                 registro.DeduccionCCSS = Math.Round(
                     registro.TotalDevengado * (registro.PorcentajeCCSS / 100m), 2);
 
-                // Calculo de ISR sobre el devengado del periodo
                 registro.DeduccionRenta = CalcularImpuestoRenta(registro.TotalDevengado,
                     registro.PeriodoPago, registro.Empleado.NumHijos, registro.Empleado.TieneConyuge);
+
+                // BUG 1 corregido: recalcular deducción de horas no laboradas con el valor hora actual
+                registro.DeduccionHorasNoLaboradas = Math.Round(
+                    registro.ValorHora * registro.HorasNoLaboradas, 2);
+
+                // BUG 5: limpiar vacaciones (siempre 0)
+                registro.DeduccionVacaciones = 0m;
 
                 registro.TotalDeducciones = Math.Round(
                     registro.DeduccionCCSS +
@@ -459,11 +500,10 @@ foreach (var empleado in empleados)
                     registro.DeduccionPrestamos +
                     registro.DeduccionCreditoFerreteria +
                     registro.DeduccionIncapacidad +
-                    registro.DeduccionVacaciones +
                     registro.DeduccionHorasNoLaboradas +
                     registro.OtrasDeducciones, 2);
 
-                registro.NetoAPagar = Math.Max(0, registro.TotalDevengado - registro.TotalDeducciones);
+                registro.NetoAPagar = Math.Max(0, Math.Round(registro.TotalDevengado - registro.TotalDeducciones, 2));
 
                 await _context.SaveChangesAsync();
 
@@ -685,11 +725,12 @@ foreach (var empleado in empleados)
 
                 if (planilla == null) return NotFound();
 
-                var pdfBytes = _servicioPDF.GenerarPDF(planilla);
+                var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
+                var pdfBytes = _servicioPDF.GenerarPDF(planilla, usuario);
                 var nombre = $"Comprobante_{planilla.Empleado.PrimerApellido}_{planilla.PeriodoPago.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";
 
                 await _auditoria.RegistrarAsync(
-                    HttpContext.Session.GetString("Usuario") ?? "",
+                    usuario,
                     "Descargar PDF planilla", "Planilla",
                     $"{planilla.Empleado.PrimerApellido} {planilla.Empleado.Nombre}");
 
@@ -732,13 +773,13 @@ foreach (var empleado in empleados)
                 var ws = workbook.Worksheets.Add("Planilla");
 
                 ws.Cell(1, 1).Value = "FERRETERÍA EL PANA SRL";
-                ws.Range(1, 1, 1, 18).Merge().Style
+                ws.Range(1, 1, 1, 17).Merge().Style
                     .Font.SetBold(true).Font.SetFontSize(14)
                     .Alignment.SetHorizontal(
                         ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
 
                 ws.Cell(2, 1).Value = "DEPARTAMENTO DE RECURSOS HUMANOS";
-                ws.Range(2, 1, 2, 18).Merge().Style
+                ws.Range(2, 1, 2, 17).Merge().Style
                     .Font.SetBold(true).Font.SetFontSize(12)
                     .Alignment.SetHorizontal(
                         ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
@@ -751,7 +792,7 @@ foreach (var empleado in empleados)
                 };
                 ws.Cell(3, 1).Value =
                     $"PLANILLA {tipoTextoExcel} — {periodo.Descripcion}";
-                ws.Range(3, 1, 3, 18).Merge().Style
+                ws.Range(3, 1, 3, 17).Merge().Style
                     .Font.SetBold(true).Font.SetFontSize(11)
                     .Alignment.SetHorizontal(
                         ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
@@ -759,7 +800,7 @@ foreach (var empleado in empleados)
                 ws.Cell(4, 1).Value =
                     $"PERÍODO: {periodo.FechaInicio:dd/MM/yyyy} " +
                     $"AL {periodo.FechaFin:dd/MM/yyyy}";
-                ws.Range(4, 1, 4, 18).Merge().Style
+                ws.Range(4, 1, 4, 17).Merge().Style
                     .Font.SetItalic(true)
                     .Alignment.SetHorizontal(
                         ClosedXML.Excel.XLAlignmentHorizontalValues.Center);
@@ -769,9 +810,10 @@ foreach (var empleado in empleados)
                     "Nombre y Apellidos", "Cédula", "Departamento", "Puesto",
                     "Sal. Ordinario", "Hrs. Extras", "Comisión", "Feriados",
                     "Total Devengado", $"CCSS {periodo.PorcentajeCCSS}%", "Renta (ISR)", "Préstamo",
-                    "Cré. Ferretería", "Incapacidad", "Vac. Sin Pago",
+                    "Cré. Ferretería", "Incapacidad",
                     "Hrs. No Lab.", "Total Deducciones", "Neto a Pagar"
                 };
+                const int NCOLS = 17;
 
                 int fila = 6;
                 for (int col = 1; col <= headers.Length; col++)
@@ -794,7 +836,7 @@ foreach (var empleado in empleados)
                 foreach (var grupo in grupos)
                 {
                     ws.Cell(fila, 1).Value = grupo.Key.ToUpper();
-                    ws.Range(fila, 1, fila, 18).Merge().Style
+                    ws.Range(fila, 1, fila, NCOLS).Merge().Style
                         .Font.SetBold(true)
                         .Font.SetFontColor(ClosedXML.Excel.XLColor.White)
                         .Fill.SetBackgroundColor(
@@ -821,21 +863,20 @@ foreach (var empleado in empleados)
                         ws.Cell(fila, 12).Value = p.DeduccionPrestamos;
                         ws.Cell(fila, 13).Value = p.DeduccionCreditoFerreteria;
                         ws.Cell(fila, 14).Value = p.DeduccionIncapacidad;
-                        ws.Cell(fila, 15).Value = p.DeduccionVacaciones;
-                        ws.Cell(fila, 16).Value = p.DeduccionHorasNoLaboradas;
-                        ws.Cell(fila, 17).Value = p.TotalDeducciones;
-                        ws.Cell(fila, 18).Value = p.NetoAPagar;
+                        ws.Cell(fila, 15).Value = p.DeduccionHorasNoLaboradas;
+                        ws.Cell(fila, 16).Value = p.TotalDeducciones;
+                        ws.Cell(fila, 17).Value = p.NetoAPagar;
 
-                        for (int col = 5; col <= 18; col++)
+                        for (int col = 5; col <= NCOLS; col++)
                             ws.Cell(fila, col).Style
                                 .NumberFormat.Format = "₡#,##0.00";
 
                         if (fila % 2 == 0)
-                            ws.Range(fila, 1, fila, 18).Style
+                            ws.Range(fila, 1, fila, NCOLS).Style
                                 .Fill.SetBackgroundColor(
                                     ClosedXML.Excel.XLColor.FromHtml("#FFF3E0"));
 
-                        ws.Range(fila, 1, fila, 18).Style
+                        ws.Range(fila, 1, fila, NCOLS).Style
                             .Border.SetOutsideBorder(
                                 ClosedXML.Excel.XLBorderStyleValues.Thin)
                             .Border.SetInsideBorder(
@@ -855,19 +896,18 @@ foreach (var empleado in empleados)
                     ws.Cell(fila, 12).Value = grupo.Sum(p => p.DeduccionPrestamos);
                     ws.Cell(fila, 13).Value = grupo.Sum(p => p.DeduccionCreditoFerreteria);
                     ws.Cell(fila, 14).Value = grupo.Sum(p => p.DeduccionIncapacidad);
-                    ws.Cell(fila, 15).Value = grupo.Sum(p => p.DeduccionVacaciones);
-                    ws.Cell(fila, 16).Value = grupo.Sum(p => p.DeduccionHorasNoLaboradas);
-                    ws.Cell(fila, 17).Value = grupo.Sum(p => p.TotalDeducciones);
-                    ws.Cell(fila, 18).Value = grupo.Sum(p => p.NetoAPagar);
+                    ws.Cell(fila, 15).Value = grupo.Sum(p => p.DeduccionHorasNoLaboradas);
+                    ws.Cell(fila, 16).Value = grupo.Sum(p => p.TotalDeducciones);
+                    ws.Cell(fila, 17).Value = grupo.Sum(p => p.NetoAPagar);
 
-                    ws.Range(fila, 1, fila, 18).Style
+                    ws.Range(fila, 1, fila, NCOLS).Style
                         .Font.SetBold(true)
                         .Fill.SetBackgroundColor(
                             ClosedXML.Excel.XLColor.FromHtml("#FFE0B2"))
                         .Border.SetOutsideBorder(
                             ClosedXML.Excel.XLBorderStyleValues.Medium);
 
-                    for (int col = 5; col <= 18; col++)
+                    for (int col = 5; col <= NCOLS; col++)
                         ws.Cell(fila, col).Style.NumberFormat.Format = "₡#,##0.00";
 
                     fila++;
@@ -885,12 +925,11 @@ foreach (var empleado in empleados)
                 ws.Cell(fila, 12).Value = planillas.Sum(p => p.DeduccionPrestamos);
                 ws.Cell(fila, 13).Value = planillas.Sum(p => p.DeduccionCreditoFerreteria);
                 ws.Cell(fila, 14).Value = planillas.Sum(p => p.DeduccionIncapacidad);
-                ws.Cell(fila, 15).Value = planillas.Sum(p => p.DeduccionVacaciones);
-                ws.Cell(fila, 16).Value = planillas.Sum(p => p.DeduccionHorasNoLaboradas);
-                ws.Cell(fila, 17).Value = planillas.Sum(p => p.TotalDeducciones);
-                ws.Cell(fila, 18).Value = planillas.Sum(p => p.NetoAPagar);
+                ws.Cell(fila, 15).Value = planillas.Sum(p => p.DeduccionHorasNoLaboradas);
+                ws.Cell(fila, 16).Value = planillas.Sum(p => p.TotalDeducciones);
+                ws.Cell(fila, 17).Value = planillas.Sum(p => p.NetoAPagar);
 
-                ws.Range(fila, 1, fila, 18).Style
+                ws.Range(fila, 1, fila, NCOLS).Style
                     .Font.SetBold(true).Font.SetFontSize(11)
                     .Font.SetFontColor(ClosedXML.Excel.XLColor.White)
                     .Fill.SetBackgroundColor(
@@ -898,14 +937,14 @@ foreach (var empleado in empleados)
                     .Border.SetOutsideBorder(
                         ClosedXML.Excel.XLBorderStyleValues.Medium);
 
-                for (int col = 5; col <= 18; col++)
+                for (int col = 5; col <= NCOLS; col++)
                     ws.Cell(fila, col).Style.NumberFormat.Format = "₡#,##0.00";
 
                 ws.Column(1).Width = 30;
                 ws.Column(2).Width = 14;
                 ws.Column(3).Width = 14;
                 ws.Column(4).Width = 20;
-                for (int col = 5; col <= 18; col++) ws.Column(col).Width = 16;
+                for (int col = 5; col <= NCOLS; col++) ws.Column(col).Width = 16;
                 ws.SheetView.FreezeRows(6);
 
                 await _auditoria.RegistrarAsync(
@@ -958,12 +997,13 @@ foreach (var empleado in empleados)
                     return RedirectToAction(nameof(Index), new { periodoId });
                 }
 
-                var pdfBytes = _servicioPDF.GenerarPDFPlanillaGeneral(planillas, periodo);
+                var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
+                var pdfBytes = _servicioPDF.GenerarPDFPlanillaGeneral(planillas, periodo, usuario);
                 var nombre =
                     $"Planilla_{periodo.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";
 
                 await _auditoria.RegistrarAsync(
-                    HttpContext.Session.GetString("Usuario") ?? "",
+                    usuario,
                     "Exportar PDF planilla general", "Planilla",
                     $"PeriodoId: {periodoId} — {periodo.Descripcion}");
 
@@ -1127,7 +1167,8 @@ foreach (var empleado in empleados)
 
                     try
                     {
-                        var pdfBytes = _servicioPDF.GenerarPDFSinFirmas(planilla);
+                        var pdfBytes = _servicioPDF.GenerarPDFSinFirmas(planilla,
+                            HttpContext.Session.GetString("Usuario") ?? "Sistema");
                         var nombreArchivo =
                             $"Comprobante_{planilla.Empleado.PrimerApellido}_" +
                             $"{planilla.PeriodoPago.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";

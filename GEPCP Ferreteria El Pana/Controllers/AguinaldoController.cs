@@ -420,11 +420,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (aguinaldo == null) return NotFound();
 
-                var pdfBytes = _servicioPDF.GenerarPDFAguinaldo(aguinaldo);
+                var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
+                var pdfBytes = _servicioPDF.GenerarPDFAguinaldo(aguinaldo, usuario);
                 var nombreArchivo = $"Aguinaldo_{aguinaldo.Empleado.PrimerApellido}_{aguinaldo.Anio}.pdf";
 
                 await _auditoria.RegistrarAsync(
-                    HttpContext.Session.GetString("Usuario") ?? "",
+                    usuario,
                     "Descargar PDF aguinaldo", "Aguinaldo",
                     $"{aguinaldo.Empleado.PrimerApellido} {aguinaldo.Empleado.Nombre} — Año: {aguinaldo.Anio}");
 

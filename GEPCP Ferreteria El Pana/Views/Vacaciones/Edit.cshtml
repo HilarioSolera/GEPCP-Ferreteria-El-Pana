@@ -88,17 +88,7 @@
                     <span asp-validation-for="DiasHabiles" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                @* Tipo *@
-                <div class="col-md-4">
-                    <label asp-for="Tipo" class="form-label fw-bold small">
-                        <i class="bi bi-toggle-on"></i> Tipo <span class="text-danger">*</span>
-                    </label>
-                    <select asp-for="Tipo" class="form-select form-select-sm" id="selectTipo">
-                        <option value="1">Con Pago</option>
-                        <option value="2">Sin Pago</option>
-                    </select>
-                    <span asp-validation-for="Tipo" class="text-danger" style="font-size: 0.7rem;"></span>
-                </div>
+                <input type="hidden" asp-for="Tipo" value="1" />
 
                 @* Estado *@
                 <div class="col-md-4">
@@ -113,22 +103,10 @@
                     <span asp-validation-for="Estado" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                @* Monto estimado *@
-                <div class="col-md-6">
-                    <label class="form-label fw-bold small text-muted">
-                        <i class="bi bi-calculator"></i> Deducción Estimada
-                    </label>
-                    <div class="form-control form-control-sm bg-light text-center fw-bold"
-                         id="montoRef">
-                        @(Model.MontoDeducido > 0 ? $"₡{Model.MontoDeducido:N0}" : "Sin deducción")
-                    </div>
-                    <div class="form-text text-muted" id="montoHint" style="font-size: 0.7rem;">
-                        Solo aplica si el tipo es Sin Pago.
-                    </div>
-                </div>
+
 
                 @* Observaciones *@
-                <div class="col-md-6">
+                <div class="col-12">
                     <label asp-for="Observaciones" class="form-label fw-bold small">
                         <i class="bi bi-chat-text"></i> Observaciones
                         <span class="text-muted fw-normal small">(opcional)</span>
@@ -154,29 +132,5 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-    <script>
-        var salarioDiario = @Model.SalarioDiario.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 
-        function calcularMonto() {
-            var dias = parseFloat(document.getElementById('inputDias').value) || 0;
-            var tipo = parseInt(document.getElementById('selectTipo').value);
-            var montoRef = document.getElementById('montoRef');
-            var hint = document.getElementById('montoHint');
-
-            if (tipo === 2 && dias > 0 && salarioDiario > 0) {
-                var monto = dias * salarioDiario;
-                montoRef.textContent = '₡' + monto.toLocaleString('es-CR', { minimumFractionDigits: 2 });
-                montoRef.className = 'form-control bg-light text-center fw-bold text-danger';
-                hint.textContent = `${dias} días × ₡${salarioDiario.toLocaleString('es-CR', { minimumFractionDigits: 2 })}/día`;
-            } else {
-                montoRef.textContent = tipo === 1 ? 'Sin deducción' : '—';
-                montoRef.className = 'form-control bg-light text-center fw-bold text-muted';
-                hint.textContent = 'Solo aplica si el tipo es Sin Pago.';
-            }
-        }
-
-        document.getElementById('inputDias').addEventListener('input', calcularMonto);
-        document.getElementById('selectTipo').addEventListener('change', calcularMonto);
-        calcularMonto();
-    </script>
 }

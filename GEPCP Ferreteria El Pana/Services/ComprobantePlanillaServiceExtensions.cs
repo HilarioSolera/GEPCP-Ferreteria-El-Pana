@@ -24,7 +24,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         private static readonly Color Blanco = Color.FromHex("FFFFFF");
 
         // HORAS EXTRAS SIN FIRMAS
-        public static byte[] GenerarPDFHorasExtrasSinFirmas(this ComprobantePlanillaService service, HorasExtras hx)
+        public static byte[] GenerarPDFHorasExtrasSinFirmas(this ComprobantePlanillaService service, HorasExtras hx, string usuario = "")
         {
             var logo = ObtenerLogoBytes(service);
             var emp = hx.Empleado;
@@ -94,7 +94,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .Bold().FontSize(18).FontColor(Naranja);
                             });
 
-                            PiePaginaDigital(inner);
+                            PiePaginaDigital(inner, usuario);
                         });
                     });
                 });
@@ -102,7 +102,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         }
 
         // INCAPACIDAD SIN FIRMAS
-        public static byte[] GenerarPDFIncapacidadSinFirmas(this ComprobantePlanillaService service, Incapacidad inc)
+        public static byte[] GenerarPDFIncapacidadSinFirmas(this ComprobantePlanillaService service, Incapacidad inc, string usuario = "")
         {
             var logo = ObtenerLogoBytes(service);
             var emp = inc.Empleado;
@@ -186,7 +186,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .Bold().FontSize(18).FontColor(Naranja);
                             });
 
-                            PiePaginaDigital(inner);
+                            PiePaginaDigital(inner, usuario);
                         });
                     });
                 });
@@ -194,7 +194,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         }
 
         // AGUINALDO SIN FIRMAS
-        public static byte[] GenerarPDFAguinaldoSinFirmas(this ComprobantePlanillaService service, Aguinaldo ag)
+        public static byte[] GenerarPDFAguinaldoSinFirmas(this ComprobantePlanillaService service, Aguinaldo ag, string usuario = "")
         {
             var logo = ObtenerLogoBytes(service);
             var emp = ag.Empleado;
@@ -267,7 +267,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .Bold().FontSize(18).FontColor(Naranja);
                             });
 
-                            PiePaginaDigital(inner);
+                            PiePaginaDigital(inner, usuario);
                         });
                     });
                 });
@@ -275,7 +275,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         }
 
         // COMISIÓN SIN FIRMAS
-        public static byte[] GenerarPDFComisionSinFirmas(this ComprobantePlanillaService service, Comision comision)
+        public static byte[] GenerarPDFComisionSinFirmas(this ComprobantePlanillaService service, Comision comision, string usuario = "")
         {
             var logo = ObtenerLogoBytes(service);
             var emp = comision.Empleado;
@@ -334,7 +334,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .Bold().FontSize(18).FontColor(Naranja);
                             });
 
-                            PiePaginaDigital(inner);
+                            PiePaginaDigital(inner, usuario);
                         });
                     });
                 });
@@ -343,7 +343,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
 
         // BOLETA VACACIONES SIN FIRMAS
         public static byte[] GenerarBoletaVacacionesSinFirmas(this ComprobantePlanillaService service,
-            Vacacion vacacion, decimal diasBase, decimal diasTomados, decimal disponibles)
+            Vacacion vacacion, decimal diasBase, decimal diasTomados, decimal disponibles, string emisor = "", string usuario = "")
         {
             var logo = ObtenerLogoBytes(service);
             var emp = vacacion.Empleado;
@@ -431,7 +431,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     ? "Sin observaciones." : vacacion.Observaciones)
                                 .FontSize(9).Italic().FontColor(Color.FromHex("444444"));
 
-                            PiePaginaDigital(inner, "Art. 153-161 Código de Trabajo CR");
+                            PiePaginaDigital(inner, usuario, "Art. 153-161 Código de Trabajo CR");
                         });
                     });
                 });
@@ -439,7 +439,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         }
 
         // PRÉSTAMO SIN FIRMAS
-        public static byte[] GenerarFiniquitoPrestamoSinFirmas(this ComprobantePlanillaService service, Prestamo prestamo)
+        public static byte[] GenerarFiniquitoPrestamoSinFirmas(this ComprobantePlanillaService service, Prestamo prestamo, string usuario = "")
         {
             var logo = ObtenerLogoBytes(service);
             var emp = prestamo.Empleado;
@@ -532,7 +532,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .Bold().FontSize(18).FontColor(Naranja);
                             });
 
-                            PiePaginaDigital(inner);
+                            PiePaginaDigital(inner, usuario);
                         });
                     });
                 });
@@ -601,14 +601,18 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             t.Cell().Padding(4).Text(v2).FontSize(9);
         }
 
-        private static void PiePaginaDigital(ColumnDescriptor col, string extra = "")
+        private static void PiePaginaDigital(ColumnDescriptor col, string usuario = "", string extra = "")
         {
             col.Item().PaddingTop(20).Height(1).Background(GrisClaro);
             col.Item().PaddingTop(6).Row(row =>
             {
+                var textoUsuario = string.IsNullOrEmpty(usuario)
+                    ? ""
+                    : $"Generado por: {usuario}  ·  ";
                 row.RelativeItem().Text(
                     $"Ferretería El Pana SRL  ·  Cédula Jurídica: 3-102-745359  ·  " +
-                    $"Sistema GEPCP  ·  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
+                    textoUsuario +
+                    $"{DateTime.Now:dd/MM/yyyy HH:mm}  ·  " +
                     $"Copia Digital - Válida sin firma" +
                     (string.IsNullOrEmpty(extra) ? "" : $"  ·  {extra}"))
                     .FontSize(7).FontColor(GrisTexto).Italic();

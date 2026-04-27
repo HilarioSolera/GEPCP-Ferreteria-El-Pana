@@ -299,7 +299,7 @@
                         <i class="bi bi-credit-card"></i> Forma Pago <span class="text-danger">*</span>
                     </label>
                     <select asp-for="FormaPago" class="form-select form-select-sm" id="selectFormaPago">
-                        <option value="1">Transferencia BN</option>
+                        <option value="1">Transferencia</option>
                         <option value="2">Efectivo</option>
                     </select>
                     <span asp-validation-for="FormaPago" class="text-danger" style="font-size: 0.7rem;"></span>
@@ -307,11 +307,11 @@
 
                 <div class="col-md-3" id="divNumeroCuenta">
                     <label asp-for="NumeroCuenta" class="form-label fw-bold small">
-                        <i class="bi bi-bank"></i> Número Cuenta BN
+                        <i class="bi bi-bank"></i> Número de Cuenta
                         <span class="text-muted fw-normal" style="font-size: 0.7rem;">(opcional)</span>
                     </label>
                     <input asp-for="NumeroCuenta" class="form-control form-control-sm"
-                           maxlength="30" placeholder="100-01-000-000000-0" />
+                           maxlength="30" placeholder="IBAN u otro formato" />
                     <span asp-validation-for="NumeroCuenta" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 

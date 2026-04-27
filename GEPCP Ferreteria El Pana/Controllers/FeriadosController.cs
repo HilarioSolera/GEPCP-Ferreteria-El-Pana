@@ -498,7 +498,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return RedirectToAction(nameof(PagosPorPeriodo));
                 }
 
-                var pdf = _servicioPDF.GenerarPDFFeriado(pago);
+                var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
+                var pdf = _servicioPDF.GenerarPDFFeriado(pago, usuario);
                 return File(pdf, "application/pdf",
                     $"Feriado_{pago.Empleado.PrimerApellido}_{pago.Feriado.Nombre}_{pago.Feriado.Fecha:yyyyMMdd}.pdf");
             }

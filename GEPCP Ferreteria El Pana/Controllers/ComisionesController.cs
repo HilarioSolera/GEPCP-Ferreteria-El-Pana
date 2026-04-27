@@ -311,13 +311,14 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (comision == null) return NotFound();
 
-                var pdfBytes = _servicioPDF.GenerarPDFComision(comision);
+                var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
+                var pdfBytes = _servicioPDF.GenerarPDFComision(comision, usuario);
                 var nombre =
                     $"Comision_{comision.Empleado.PrimerApellido}_" +
                     $"{comision.Fecha:yyyyMMdd}.pdf";
 
                 await _auditoria.RegistrarAsync(
-                    HttpContext.Session.GetString("Usuario") ?? "",
+                    usuario,
                     "Descargar PDF comisión", "Comisiones",
                     $"{comision.Empleado.PrimerApellido} {comision.Empleado.Nombre}");
 

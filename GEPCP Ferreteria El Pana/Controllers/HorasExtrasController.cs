@@ -184,16 +184,17 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
-                // Validar duplicado
+                // ✅ Validar duplicado: solo si es la misma fecha exacta (permite múltiples fechas en el mismo período)
                 var existe = await _context.HorasExtras.AnyAsync(h =>
                     h.EmpleadoId == model.EmpleadoId &&
-                    h.PeriodoPagoId == model.PeriodoPagoId);
+                    h.PeriodoPagoId == model.PeriodoPagoId &&
+                    h.Fecha.Date == model.Fecha.Date); // ✅ Validar solo por fecha específica
 
                 if (existe)
                 {
                     ModelState.AddModelError(string.Empty,
-                        "Ya existe un registro de horas extras para este empleado en el período seleccionado. " +
-                        "Editá el registro existente desde el listado.");
+                        $"Ya existe un registro de horas extras para este empleado en la fecha {model.Fecha:dd/MM/yyyy}. " +
+                        "Si necesitás agregar más horas, editá el registro existente.");
                     await CargarViewBagPeriodos(model.PeriodoPagoId);
                     return View(model);
                 }
@@ -590,12 +591,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (registro == null) return NotFound();
 
-                var pdfBytes = _servicioPDF.GenerarPDFHorasExtras(registro);
+                var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
+                var pdfBytes = _servicioPDF.GenerarPDFHorasExtras(registro, usuario);
                 var nombreArchivo = $"HrsExtras_{registro.Empleado.PrimerApellido}_" +
                     $"{registro.PeriodoPago.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";
 
                 await _auditoria.RegistrarAsync(
-                    HttpContext.Session.GetString("Usuario") ?? "",
+                    usuario,
                     "Descargar PDF horas extras", "Horas Extras",
                     $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre}");
 
@@ -637,7 +639,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                var pdfBytes = _servicioPDF.GenerarPDFHorasExtrasSinFirmas(hx);
+                var pdfBytes = _servicioPDF.GenerarPDFHorasExtrasSinFirmas(hx,
+                    HttpContext.Session.GetString("Usuario") ?? "Sistema");
                 var nombreArchivo =
                     $"HorasExtras_{hx.Empleado.PrimerApellido}_{hx.PeriodoPago.Descripcion.Replace(" ", "_")}.pdf";
 

@@ -52,15 +52,9 @@
         <i class="bi bi-people"></i> Todos
     </a>
 
-    <div class="ms-auto">
-        <a asp-action="Index" asp-route-mostrarTodos="true" asp-route-filtroEstado="@filtroEstado" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-list-ul"></i> Mostrar todos
-        </a>
-    </div>
-
     @if (!string.IsNullOrEmpty(busqueda))
     {
-        <small class="text-muted">
+        <small class="text-muted ms-auto">
             Resultados para: <strong>"@busqueda"</strong> —
             @Model.Count() empleado(s) encontrado(s)
         </small>

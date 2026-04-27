@@ -543,7 +543,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (prestamo == null) return NotFound();
 
                 // Funciona para activos (estado actual) y cerrados (finiquito)
-                var pdfBytes = _servicioPDF.GenerarFiniquitoPrestamo(prestamo);
+                var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
+                var pdfBytes = _servicioPDF.GenerarFiniquitoPrestamo(prestamo, usuario);
 
                 var tipo = prestamo.Activo ? "EstadoPrestamo" : "Finiquito";
                 var nombre =
@@ -551,7 +552,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     $"{prestamo.FechaPrestamo:yyyyMMdd}.pdf";
 
                 await _auditoria.RegistrarAsync(
-                    HttpContext.Session.GetString("Usuario") ?? "",
+                    usuario,
                     prestamo.Activo ? "Descargar estado préstamo" : "Descargar finiquito préstamo",
                     "Préstamos",
                     $"{prestamo.Empleado.PrimerApellido} {prestamo.Empleado.Nombre}");
@@ -594,7 +595,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return RedirectToAction(nameof(Index), new { verTodos = true });
                 }
 
-                var pdfBytes = _servicioPDF.GenerarFiniquitoPrestamoSinFirmas(prestamo);
+                var pdfBytes = _servicioPDF.GenerarFiniquitoPrestamoSinFirmas(prestamo,
+                    HttpContext.Session.GetString("Usuario") ?? "Sistema");
                 var tipo = prestamo.Activo ? "EstadoPrestamo" : "Finiquito";
                 var nombreArchivo =
                     $"{tipo}_{prestamo.Empleado.PrimerApellido}_{prestamo.FechaPrestamo:yyyyMMdd}.pdf";

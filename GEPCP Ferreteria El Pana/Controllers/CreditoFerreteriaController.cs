@@ -516,14 +516,15 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (credito == null) return NotFound();
 
-                var pdfBytes = _servicioPDF.GenerarPDFCredito(credito);
+                var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
+                var pdfBytes = _servicioPDF.GenerarPDFCredito(credito, usuario);
                 var tipo = credito.Activo ? "EstadoCredito" : "Finiquito";
                 var nombre =
                     $"{tipo}_{credito.Empleado.PrimerApellido}_" +
                     $"{credito.FechaCredito:yyyyMMdd}.pdf";
 
                 await _auditoria.RegistrarAsync(
-                    HttpContext.Session.GetString("Usuario") ?? "",
+                    usuario,
                     credito.Activo ? "Descargar estado crédito" : "Descargar finiquito crédito",
                     "Créditos",
                     $"{credito.Empleado.PrimerApellido} {credito.Empleado.Nombre}");

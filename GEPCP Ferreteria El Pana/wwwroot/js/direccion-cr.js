@@ -139,6 +139,7 @@ function initDireccionCR(provinciaId, cantonId, distritoId, provinciaVal, canton
 
     // Inicializar con valores existentes (para Edit)
     if (provinciaVal) {
+        selProv.value = provinciaVal;   // selecciona la provincia en el dropdown
         poblarCantones(provinciaVal, cantonVal);
         if (cantonVal) {
             poblarDistritos(provinciaVal, cantonVal, distritoVal);

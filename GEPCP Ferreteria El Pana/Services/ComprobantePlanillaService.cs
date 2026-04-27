@@ -134,14 +134,19 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         }
 
         // Pie de página reutilizable
-        private static void PiePagina(ColumnDescriptor col, string extra = "")
+        private static void PiePagina(ColumnDescriptor col, string usuarioGenerador = "", string extra = "")
         {
             col.Item().PaddingTop(20).Height(1).Background(GrisClaro);
             col.Item().PaddingTop(6).Row(row =>
             {
+                var textoUsuario = string.IsNullOrEmpty(usuarioGenerador) 
+                    ? "" 
+                    : $"Generado por: {usuarioGenerador}  ·  ";
+
                 row.RelativeItem().Text(
                     $"Ferretería El Pana SRL  ·  Cédula Jurídica: 3-102-745359  ·  " +
-                    $"Sistema GEPCP  ·  Generado: {DateTime.Now:dd/MM/yyyy HH:mm}" +
+                    textoUsuario +
+                    $"{DateTime.Now:dd/MM/yyyy HH:mm}" +
                     (string.IsNullOrEmpty(extra) ? "" : $"  ·  {extra}"))
                     .FontSize(7).FontColor(GrisTexto).Italic();
             });
@@ -200,7 +205,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         }
 
         // COMPROBANTE PLANILLA
-        public byte[] GenerarPDF(PlanillaEmpleado planilla)
+        public byte[] GenerarPDF(PlanillaEmpleado planilla, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = planilla.Empleado;
@@ -347,7 +352,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             FirmasCompactas(inner,
                                 $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                 emp.Cedula);
-                            PiePagina(inner);
+                            PiePagina(inner, usuario);
                         });
                     });
                 });
@@ -355,7 +360,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         }
 
         // HORAS EXTRAS
-        public byte[] GenerarPDFHorasExtras(HorasExtras hx)
+        public byte[] GenerarPDFHorasExtras(HorasExtras hx, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = hx.Empleado;
@@ -429,14 +434,14 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             Firmas(inner,
                                 $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                 emp.Cedula);
-                            PiePagina(inner);
+                            PiePagina(inner, usuario);
                         });
                     });
                 });
             }).GeneratePdf();
         }
 
-        public byte[] GenerarPDFHorasExtrasSinFirmas(HorasExtras hx)
+        public byte[] GenerarPDFHorasExtrasSinFirmas(HorasExtras hx, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = hx.Empleado;
@@ -512,17 +517,17 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .Bold().FontSize(14).FontColor(Blanco);
                                 row.ConstantItem(180).AlignRight()
                                     .Text($"₡{hx.MontoTotal:N2}")
-                                    .Bold().FontSize(18).FontColor(Naranja);
-                            });
+                                                                 .Bold().FontSize(18).FontColor(Naranja);
+                                                        });
 
-                            PiePagina(inner);
-                        });
-                    });
-                });
-            }).GeneratePdf();
-        }
+                                                        PiePagina(inner, usuario);
+                                                    });
+                                                });
+                                            });
+                                        }).GeneratePdf();
+                                    }
 
-        public byte[] GenerarPDFComisionSinFirmas(Comision comision)
+                                    public byte[] GenerarPDFComisionSinFirmas(Comision comision, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = comision.Empleado;
@@ -589,7 +594,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .Bold().FontSize(18).FontColor(Naranja);
                             });
 
-                            PiePagina(inner);
+                            PiePagina(inner, usuario);
                         });
                     });
                 });
@@ -597,7 +602,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         }
 
         // INCAPACIDAD
-        public byte[] GenerarPDFIncapacidad(Incapacidad inc)
+        public byte[] GenerarPDFIncapacidad(Incapacidad inc, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = inc.Empleado;
@@ -687,14 +692,14 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             Firmas(inner,
                                 $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                 emp.Cedula);
-                            PiePagina(inner);
+                            PiePagina(inner, usuario);
                         });
                     });
                 });
             }).GeneratePdf();
         }
 
-        public byte[] GenerarPDFIncapacidadSinFirmas(Incapacidad inc)
+        public byte[] GenerarPDFIncapacidadSinFirmas(Incapacidad inc, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = inc.Empleado;
@@ -786,18 +791,18 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .Bold().FontSize(14).FontColor(Blanco);
                                 row.ConstantItem(180).AlignRight()
                                     .Text($"₡{inc.MontoTotal:N2}")
-                                    .Bold().FontSize(18).FontColor(Naranja);
-                            });
+                                                                 .Bold().FontSize(18).FontColor(Naranja);
+                                                        });
 
-                            PiePagina(inner);
-                        });
-                    });
-                });
-            }).GeneratePdf();
-        }
+                                                        PiePagina(inner, usuario);
+                                                    });
+                                                });
+                                            });
+                                        }).GeneratePdf();
+                                    }
 
-        // AGUINALDO
-        public byte[] GenerarPDFAguinaldo(Aguinaldo ag)
+                                    // AGUINALDO
+                                    public byte[] GenerarPDFAguinaldo(Aguinaldo ag, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = ag.Empleado;
@@ -873,7 +878,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             Firmas(inner,
                                 $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                 emp.Cedula);
-                            PiePagina(inner);
+                            PiePagina(inner, usuario);
                         });
                     });
                 });
@@ -882,7 +887,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
 
         // AGUINALDO SIN FIRMAS (para envío por email)
 
-        public byte[] GenerarPDFAguinaldoSinFirmas(Aguinaldo ag)
+        public byte[] GenerarPDFAguinaldoSinFirmas(Aguinaldo ag, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = ag.Empleado;
@@ -963,7 +968,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     .Bold().FontSize(18).FontColor(Naranja);
                             });
 
-                            PiePagina(inner);
+                            PiePagina(inner, usuario);
                         });
                     });
                 });
@@ -972,7 +977,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
 
         // PLANILLA GENERAL
         public byte[] GenerarPDFPlanillaGeneral(
-            List<PlanillaEmpleado> planillas, PeriodoPago periodo)
+            List<PlanillaEmpleado> planillas, PeriodoPago periodo, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
 
@@ -1060,7 +1065,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                         .Text($"₡{v:N0}").Bold().FontSize(8).FontColor(Blanco);
                             });
 
-                            PiePagina(inner);
+                            PiePagina(inner, usuario);
                         });
                     });
                 });
@@ -1107,7 +1112,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                 .FontSize(7).FontColor(Verde);
         }
         // COMISIÓN
-        public byte[] GenerarPDFComision(Comision comision)
+        public byte[] GenerarPDFComision(Comision comision, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = comision.Empleado;
@@ -1169,7 +1174,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             Firmas(inner,
                                 $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                 emp.Cedula);
-                            PiePagina(inner);
+                            PiePagina(inner, usuario);
                         });
                     });
                 });
@@ -1179,7 +1184,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         // BOLETA VACACIONES
         public byte[] GenerarBoletaVacaciones(
             Vacacion vacacion, decimal diasBase, decimal diasTomados,
-            decimal disponibles, string emisor)
+            decimal disponibles, string emisor, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = vacacion.Empleado;
@@ -1284,7 +1289,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             Firmas(inner,
                                 $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                 emp.Cedula, $"Recursos Humanos — Emitido por: {emisor}");
-                            PiePagina(inner, "Art. 153-161 Código de Trabajo CR");
+                            PiePagina(inner, usuario, "Art. 153-161 Código de Trabajo CR");
                         });
                     });
                 });
@@ -1293,7 +1298,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
 
         public byte[] GenerarBoletaVacacionesSinFirmas(
             Vacacion vacacion, decimal diasBase, decimal diasTomados,
-            decimal disponibles, string emisor)
+            decimal disponibles, string emisor, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = vacacion.Empleado;
@@ -1403,7 +1408,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     ? "Sin observaciones." : vacacion.Observaciones)
                                 .FontSize(9).Italic().FontColor(Color.FromHex("444444"));
 
-                            PiePagina(inner, "Art. 153-161 Código de Trabajo CR");
+                            PiePagina(inner, usuario, "Art. 153-161 Código de Trabajo CR");
                         });
                     });
                 });
@@ -1411,7 +1416,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         }
 
         // PRÉSTAMO — activo o saldado
-        public byte[] GenerarFiniquitoPrestamo(Prestamo prestamo)
+        public byte[] GenerarFiniquitoPrestamo(Prestamo prestamo, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = prestamo.Empleado;
@@ -1578,14 +1583,14 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             Firmas(inner,
                                 $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                 emp.Cedula);
-                            PiePagina(inner);
+                            PiePagina(inner, usuario);
                         });
                     });
                 });
             }).GeneratePdf();
         }
 
-        public byte[] GenerarFiniquitoPrestamoSinFirmas(Prestamo prestamo)
+        public byte[] GenerarFiniquitoPrestamoSinFirmas(Prestamo prestamo, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = prestamo.Empleado;
@@ -1757,7 +1762,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 });
                             }
 
-                            PiePagina(inner);
+                            PiePagina(inner, usuario);
                         });
                     });
                 });
@@ -1766,7 +1771,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
 
         // GENERAR PDF CRÉDITO FERRETERÍA
 
-        public byte[] GenerarPDFCredito(CreditoFerreteria credito)
+        public byte[] GenerarPDFCredito(CreditoFerreteria credito, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = credito.Empleado;
@@ -1975,14 +1980,14 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             Firmas(inner,
                                 $"{emp.PrimerApellido} {emp.SegundoApellido} {emp.Nombre}".Trim(),
                                 emp.Cedula);
-                            PiePagina(inner);
+                            PiePagina(inner, usuario);
                         });
                     });
                 });
             }).GeneratePdf();
         }
 
-        public byte[] GenerarPDFCreditoSinFirmas(CreditoFerreteria credito)
+        public byte[] GenerarPDFCreditoSinFirmas(CreditoFerreteria credito, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = credito.Empleado;
@@ -2196,7 +2201,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 });
                             }
 
-                            PiePagina(inner);
+                            PiePagina(inner, usuario);
                         });
                     });
                 });
@@ -2205,7 +2210,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
 
         // VERSIÓN SIN FIRMAS (para envío por email)
 
-        public byte[] GenerarPDFSinFirmas(PlanillaEmpleado planilla)
+        public byte[] GenerarPDFSinFirmas(PlanillaEmpleado planilla, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = planilla.Empleado;
@@ -2374,7 +2379,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                         .Bold().FontSize(14).FontColor(Naranja);
                                 });
 
-                            PiePagina(inner, "Copia digital — válida sin firma");
+                            PiePagina(inner, usuario, "Copia digital — válida sin firma");
                         });
                     });
                 });
@@ -2382,17 +2387,17 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         }
 
         // BOLETA FERIADO
-        public byte[] GenerarPDFFeriado(PagoFeriado pago)
+        public byte[] GenerarPDFFeriado(PagoFeriado pago, string usuario = "")
         {
-            return GenerarPDFFeriadoInterno(pago, conFirmas: true);
+            return GenerarPDFFeriadoInterno(pago, conFirmas: true, usuario);
         }
 
-        public byte[] GenerarPDFFeriadoSinFirmas(PagoFeriado pago)
+        public byte[] GenerarPDFFeriadoSinFirmas(PagoFeriado pago, string usuario = "")
         {
-            return GenerarPDFFeriadoInterno(pago, conFirmas: false);
+            return GenerarPDFFeriadoInterno(pago, conFirmas: false, usuario);
         }
 
-        private byte[] GenerarPDFFeriadoInterno(PagoFeriado pago, bool conFirmas)
+        private byte[] GenerarPDFFeriadoInterno(PagoFeriado pago, bool conFirmas, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = pago.Empleado;
@@ -2464,9 +2469,12 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 });
 
                             if (conFirmas)
+                            {
                                 Firmas(inner, $"{emp.Nombre} {emp.PrimerApellido}", emp.Cedula);
+                                PiePagina(inner, usuario);
+                            }
                             else
-                                PiePagina(inner, "Copia digital — válida sin firma");
+                                PiePagina(inner, usuario, "Copia digital — válida sin firma");
                         });
                     });
                 });

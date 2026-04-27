@@ -728,10 +728,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 var (diasBase, diasTomados, disponibles) =
                     await CalcularDisponiblesInterno(vacacion.EmpleadoId);
 
-                var emisor = HttpContext.Session.GetString("Usuario") ?? "";
+                var emisor = HttpContext.Session.GetString("Usuario") ?? "Sistema";
 
                 var pdfBytes = _servicioPDF.GenerarBoletaVacaciones(
-                    vacacion, diasBase, diasTomados, disponibles, emisor);
+                    vacacion, diasBase, diasTomados, disponibles, emisor, emisor);
 
                 var nombreArchivo =
                     $"Boleta_Vacaciones_{vacacion.Empleado.PrimerApellido}_" +
@@ -782,10 +782,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 var (diasBase, diasTomados, disponibles) =
                     await CalcularDisponiblesInterno(vacacion.EmpleadoId);
 
-                var emisor = HttpContext.Session.GetString("Usuario") ?? "";
+                var emisor = HttpContext.Session.GetString("Usuario") ?? "Sistema";
 
                 var pdfBytes = _servicioPDF.GenerarBoletaVacacionesSinFirmas(
-                    vacacion, diasBase, diasTomados, disponibles, emisor);
+                    vacacion, diasBase, diasTomados, disponibles, emisor, emisor);
 
                 var nombreArchivo =
                     $"Boleta_Vacaciones_{vacacion.Empleado.PrimerApellido}_" +
