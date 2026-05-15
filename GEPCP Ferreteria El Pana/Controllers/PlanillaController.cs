@@ -219,38 +219,114 @@ var abonosPeriodoExistentes = await _context.AbonosPrestamo
     .Select(a => a.Prestamo.EmpleadoId)
     .ToListAsync();
 
+var empleadoIds = empleados.Select(e => e.EmpleadoId).ToList();
+
+// Pre-cargar todos los datos del período en memoria para evitar N+1 queries
+var todasHorasExtras = await _context.HorasExtras
+    .Where(h => h.PeriodoPagoId == periodoId &&
+                h.Fecha >= periodo.FechaInicio &&
+                h.Fecha <= periodo.FechaFin &&
+                empleadoIds.Contains(h.EmpleadoId))
+    .ToListAsync();
+
+var todasComisiones = await _context.Comisiones
+    .Where(c => c.Fecha >= periodo.FechaInicio &&
+                c.Fecha <= periodo.FechaFin &&
+                empleadoIds.Contains(c.EmpleadoId))
+    .Select(c => new { c.EmpleadoId, c.Monto, c.Fecha })
+    .ToListAsync();
+
+var todosFeriados = await _context.PagosFeriado
+    .Where(pf => pf.PeriodoPagoId == periodoId &&
+                 empleadoIds.Contains(pf.EmpleadoId))
+    .Select(pf => new { pf.EmpleadoId, pf.MontoTotal })
+    .ToListAsync();
+
+var todosPrestamos = await _context.Prestamos
+    .Where(p => p.Activo &&
+                p.FechaPrestamo <= periodo.FechaFin &&
+                empleadoIds.Contains(p.EmpleadoId))
+    .ToListAsync();
+
+var todosCreditosActivos = await _context.CreditosFerreteria
+    .Where(c => c.Activo &&
+                c.FechaCredito <= periodo.FechaFin &&
+                empleadoIds.Contains(c.EmpleadoId))
+    .ToListAsync();
+
+var todasIncapacidades = await _context.Incapacidades
+    .Where(i => i.FechaInicio <= periodo.FechaFin &&
+                i.FechaFin >= periodo.FechaInicio &&
+                empleadoIds.Contains(i.EmpleadoId))
+    .ToListAsync();
+
+var todasPlanillasExistentes = await _context.PlanillasEmpleado
+    .Where(p => p.PeriodoPagoId == periodoId &&
+                empleadoIds.Contains(p.EmpleadoId))
+    .ToListAsync();
+
 foreach (var empleado in empleados)
 {
-    var salarioOrdinario = Math.Round(
-        empleado.ValorHora * empleado.HorasPorPeriodo, 2);
+    // ── Días efectivamente trabajados en este período ──────────────────────
+    int diasDelPeriodo = (periodo.FechaFin - periodo.FechaInicio).Days + 1;
+    int diasTrabajados = diasDelPeriodo;   // por defecto período completo
+    bool esPeriodoParcial = false;
 
-    // DEVENGADOS — solo registros cuya fecha >= fecha de ingreso del empleado
-    var horasExtrasDelPeriodo = await _context.HorasExtras
-        .Where(h =>
-            h.EmpleadoId == empleado.EmpleadoId &&
-            h.PeriodoPagoId == periodoId &&
-            h.Fecha >= periodo.FechaInicio &&
-            h.Fecha <= periodo.FechaFin &&
-            h.Fecha >= empleado.FechaIngreso)
-        .ToListAsync();
+    if (empleado.FechaIngreso > periodo.FechaInicio)
+    {
+        // Empleado ingresó dentro del período: contar desde su FechaIngreso
+        diasTrabajados = Math.Clamp(
+            (periodo.FechaFin - empleado.FechaIngreso).Days + 1, 0, diasDelPeriodo);
+        esPeriodoParcial = diasTrabajados < diasDelPeriodo;
+    }
+
+    // ── Salario ordinario ──────────────────────────────────────────────────
+    // Período parcial → salario diario × días reales (Art. 164 CT)
+    // Período completo → valor hora × horas ordinarias del período
+    decimal salarioOrdinario;
+    decimal horasOrdinariasEfectivas;
+
+    if (esPeriodoParcial)
+    {
+        // Salario diario = SalarioBase / 30 (estándar CR)
+        decimal salarioDiarioProrrateo = Math.Round(empleado.SalarioBase / 30m, 6);
+        salarioOrdinario = Math.Round(salarioDiarioProrrateo * diasTrabajados, 2);
+
+        // Horas consistentes con el salario pagado: salario ÷ valor hora
+        horasOrdinariasEfectivas = empleado.ValorHora > 0
+            ? Math.Round(salarioOrdinario / empleado.ValorHora, 2)
+            : Math.Round(empleado.HorasPorPeriodo * (decimal)diasTrabajados / diasDelPeriodo, 2);
+    }
+    else
+    {
+        horasOrdinariasEfectivas = empleado.HorasPorPeriodo;
+        salarioOrdinario = Math.Round(empleado.ValorHora * horasOrdinariasEfectivas, 2);
+    }
+
+    // Alerta de período parcial para que RRHH lo revise
+    if (esPeriodoParcial)
+        warningMessages.Add(
+            $"Período parcial — {empleado.PrimerApellido} {empleado.Nombre}: " +
+            $"{diasTrabajados} día(s) de {diasDelPeriodo} en este período " +
+            $"(ingresó: {empleado.FechaIngreso:dd/MM/yyyy}). " +
+            $"Salario calculado: ₡{Math.Round(empleado.SalarioBase / 30m * diasTrabajados, 2):N2}.");
+
+    // DEVENGADOS — filtro en memoria, respetando fecha de ingreso
+    var horasExtrasDelPeriodo = todasHorasExtras
+        .Where(h => h.EmpleadoId == empleado.EmpleadoId &&
+                    h.Fecha >= empleado.FechaIngreso)
+        .ToList();
     var montoHorasExtras = horasExtrasDelPeriodo.Sum(h => h.MontoTotal);
     var totalHorasExtras  = horasExtrasDelPeriodo.Sum(h => h.TotalHoras);
 
-    var montoComisiones = (await _context.Comisiones
-        .Where(c =>
-            c.EmpleadoId == empleado.EmpleadoId &&
-            c.Fecha >= periodo.FechaInicio &&
-            c.Fecha <= periodo.FechaFin &&
-            c.Fecha >= empleado.FechaIngreso)
-        .Select(c => c.Monto)
-        .ToListAsync()).Sum();
+    var montoComisiones = todasComisiones
+        .Where(c => c.EmpleadoId == empleado.EmpleadoId &&
+                    c.Fecha >= empleado.FechaIngreso)
+        .Sum(c => c.Monto);
 
-    var montoFeriados = (await _context.PagosFeriado
-        .Where(pf =>
-            pf.EmpleadoId == empleado.EmpleadoId &&
-            pf.PeriodoPagoId == periodoId)
-        .Select(pf => pf.MontoTotal)
-        .ToListAsync()).Sum();
+    var montoFeriados = todosFeriados
+        .Where(pf => pf.EmpleadoId == empleado.EmpleadoId)
+        .Sum(pf => pf.MontoTotal);
 
     var totalDevengado = Math.Round(
         salarioOrdinario + montoHorasExtras +
@@ -267,15 +343,12 @@ foreach (var empleado in empleados)
     decimal deduccionPrestamo = 0m;
     if (!abonosPeriodoExistentes.Contains(empleado.EmpleadoId))
     {
-        var prestamo = await _context.Prestamos
-            .FirstOrDefaultAsync(p =>
+        var prestamo = todosPrestamos
+            .FirstOrDefault(p =>
                 p.EmpleadoId == empleado.EmpleadoId &&
-                p.Activo &&
-                p.FechaPrestamo >= empleado.FechaIngreso &&
-                p.FechaPrestamo <= periodo.FechaFin);
+                p.FechaPrestamo >= empleado.FechaIngreso);
         if (prestamo != null && prestamo.Monto > 0)
         {
-            // Se aplica la cuota tal cual está configurada (sin dividir por período)
             deduccionPrestamo = Math.Round(
                 Math.Min(prestamo.CuotaMensual, prestamo.Monto), 2);
 
@@ -286,26 +359,19 @@ foreach (var empleado in empleados)
     }
 
     // Créditos ferretería — validando fecha ingreso
-    var creditosActivos = await _context.CreditosFerreteria
-        .Where(c =>
-            c.EmpleadoId == empleado.EmpleadoId &&
-            c.Activo &&
-            c.FechaCredito >= empleado.FechaIngreso &&
-            c.FechaCredito <= periodo.FechaFin)
-        .ToListAsync();
+    var creditosActivos = todosCreditosActivos
+        .Where(c => c.EmpleadoId == empleado.EmpleadoId &&
+                    c.FechaCredito >= empleado.FechaIngreso)
+        .ToList();
     var deduccionCredito = Math.Round(
         creditosActivos
             .Where(c => c.Saldo > 0)
             .Sum(c => Math.Min(c.CuotaQuincenal, c.Saldo)), 2);
 
     // Incapacidades — validando fecha ingreso
-    var diasIncapacidad = (await _context.Incapacidades
-        .Where(i =>
-            i.EmpleadoId == empleado.EmpleadoId &&
-            i.FechaInicio <= periodo.FechaFin &&
-            i.FechaFin   >= periodo.FechaInicio &&
-            i.FechaInicio >= empleado.FechaIngreso)
-        .ToListAsync())
+    var diasIncapacidad = todasIncapacidades
+        .Where(i => i.EmpleadoId == empleado.EmpleadoId &&
+                    i.FechaInicio >= empleado.FechaIngreso)
         .Sum(i =>
         {
             var inicio = i.FechaInicio < periodo.FechaInicio
@@ -332,10 +398,9 @@ foreach (var empleado in empleados)
     if (netoAPagar == 0 && totalDeducciones > 0)
         warningMessages.Add($"ADVERTENCIA: {empleado.PrimerApellido} {empleado.Nombre} tiene deducciones que igualan o exceden su salario (Neto = ₡0).");
 
-    var planillaExistente = await _context.PlanillasEmpleado
-        .FirstOrDefaultAsync(p =>
-            p.EmpleadoId == empleado.EmpleadoId &&
-            p.PeriodoPagoId == periodoId);
+    var planillaExistente = todasPlanillasExistentes
+        .FirstOrDefault(p =>
+            p.EmpleadoId == empleado.EmpleadoId);
 
     if (planillaExistente != null)
     {
@@ -353,7 +418,7 @@ foreach (var empleado in empleados)
             deduccionIncapacidad + deduccionVacaciones +
             deduccionHorasNoLab + otrasDeduccionesGuardadas, 2);
 
-        planillaExistente.HorasOrdinarias            = empleado.HorasPorPeriodo;
+        planillaExistente.HorasOrdinarias            = horasOrdinariasEfectivas;
         planillaExistente.HorasExtras                = totalHorasExtras;
         planillaExistente.HorasNoLaboradas           = horasNoLaboradasGuardadas;
         planillaExistente.ValorHora                  = empleado.ValorHora;
@@ -373,6 +438,7 @@ foreach (var empleado in empleados)
         planillaExistente.OtrasDeducciones           = otrasDeduccionesGuardadas;
         planillaExistente.DescripcionOtrasDeducciones = descOtrasGuardada;
         planillaExistente.TotalDeducciones           = totalDeduccionesFinal;
+        planillaExistente.DiasTrabajados             = diasTrabajados;
         planillaExistente.NetoAPagar                 = Math.Max(0, Math.Round(totalDevengado - totalDeduccionesFinal, 2));
     }
     else
@@ -382,7 +448,7 @@ foreach (var empleado in empleados)
             PeriodoPagoId              = periodoId,
             PorcentajeCCSS             = periodo.PorcentajeCCSS,
             EmpleadoId                 = empleado.EmpleadoId,
-            HorasOrdinarias            = empleado.HorasPorPeriodo,
+            HorasOrdinarias            = horasOrdinariasEfectivas,
             HorasExtras                = totalHorasExtras,
             HorasNoLaboradas           = 0m,
             ValorHora                  = empleado.ValorHora,
@@ -401,6 +467,7 @@ foreach (var empleado in empleados)
             DeduccionHorasNoLaboradas  = 0m,
             OtrasDeducciones           = 0m,
             TotalDeducciones           = totalDeducciones,
+            DiasTrabajados             = diasTrabajados,
             NetoAPagar                 = netoAPagar
         });
     }
@@ -622,7 +689,18 @@ foreach (var empleado in empleados)
                 }
 
                 periodo.Estado = EstadoPeriodo.Cerrado;
-                await _context.SaveChangesAsync();
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
 
                 await _auditoria.RegistrarAsync(
                     HttpContext.Session.GetString("Usuario") ?? "",

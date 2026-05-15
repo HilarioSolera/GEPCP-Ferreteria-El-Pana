@@ -3,6 +3,7 @@ using System;
 using GEPCP_Ferreteria_El_Pana.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GEPCP_Ferreteria_El_Pana.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260514035757_AgregarDiasTrabajadosPlanilla")]
+    partial class AgregarDiasTrabajadosPlanilla
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.25");
@@ -95,9 +98,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Property<DateTime>("FechaPago")
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal>("MontoEspecieMensual")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<decimal>("MontoTotal")
                         .HasColumnType("decimal(18,2)");
 
@@ -107,13 +107,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
 
                     b.Property<int>("PeriodosConsiderados")
                         .HasColumnType("INTEGER");
-
-                    b.Property<decimal>("PorcentajeEspecie")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("SalariosMensuales")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("SumaDevengados")
                         .HasColumnType("decimal(18,2)");

@@ -45,7 +45,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
 
         // DEDUCCIONES
         [Display(Name = "% CCSS")]
-        public decimal PorcentajeCCSS { get; set; } = 10.67m;
+        public decimal PorcentajeCCSS { get; set; } = 10.83m;
 
                 [Display(Name = "Deducción CCSS (₡)")]
         public decimal DeduccionCCSS { get; set; }
@@ -77,10 +77,17 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         public PeriodoPago PeriodoPago { get; set; } = null!;
         public Empleado Empleado { get; set; } = null!;
 
-        public const decimal PorcentajeCCSSDefault = 10.67m;
+        public const decimal PorcentajeCCSSDefault = 10.83m;
         public string? DescripcionOtrasDeducciones { get; set; }
 
         public decimal DeduccionRenta { get; set; } = 0;
         public decimal BaseImponibleRenta { get; set; } = 0; // opcional, para auditoría
+
+        /// <summary>
+        /// Días efectivamente trabajados en el período.
+        /// Si el empleado ingresó a mitad del período, refleja solo los días reales desde su FechaIngreso.
+        /// </summary>
+        [Display(Name = "Días Trabajados")]
+        public int DiasTrabajados { get; set; } = 0;
     }
 }

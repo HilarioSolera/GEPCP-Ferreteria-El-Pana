@@ -999,6 +999,20 @@ footer {
         padding: 2.2rem 2.5rem;
     }
 
+@media (max-width: 575px) {
+    .login-card .card-body {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .login-card .card-header {
+        padding: 1.4rem 1.25rem 1.1rem !important;
+    }
+
+        .login-card .card-header h4 {
+            font-size: 1.3rem !important;
+        }
+}
+
     .login-card .form-label {
         color: var(--text-light) !important;
         font-weight: 600 !important;

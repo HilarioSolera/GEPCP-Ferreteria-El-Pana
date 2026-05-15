@@ -1,16 +1,21 @@
 ﻿@model List<GEPCP_Ferreteria_El_Pana.Models.Aguinaldo>
+@using GEPCP_Ferreteria_El_Pana.Models
 @{
     ViewData["Title"] = "Aguinaldos - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var anioActual = (int)(ViewBag.AnioActual ?? DateTime.Today.Year);
     var anios = ViewBag.Anios as List<int> ?? new List<int> { anioActual };
+    var periodosMap = ViewBag.PeriodosContribuyentes as Dictionary<int, List<PeriodoPago>>
+                      ?? new Dictionary<int, List<PeriodoPago>>();
+    var planillasMap = ViewBag.PlanillasContribuyentes as Dictionary<int, List<PlanillaEmpleado>>
+                      ?? new Dictionary<int, List<PlanillaEmpleado>>();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0"><i class="bi bi-gift"></i> Aguinaldos @anioActual</h2>
     <div class="d-flex gap-2">
         <a asp-action="Create" class="btn btn-success btn">
-            <i class="bi bi-plus-circle"></i> Nuevo Aguinaldo
+            <i class="bi bi-calculator"></i> Calcular manualmente
         </a>
         @if (Context.Session.GetString("Rol") == "RRHH")
         {
@@ -55,7 +60,7 @@
     <div class="alert alert-info text-center py-5">
         <i class="bi bi-inbox fs-1 d-block mb-3"></i>
         No hay aguinaldos registrados para este año.<br>
-        Usa el botón "Nuevo Aguinaldo" o "Calcular Automático".
+        Usa el botón "Calcular manualmente" o "Calcular Automático".
     </div>
 }
 else
@@ -65,7 +70,8 @@ else
             <thead style="background:#FF7A00; color:white;">
                 <tr>
                     <th>Empleado</th>
-                    <th>Período</th>
+                    <th>Período base</th>
+                    <th>Períodos incluidos</th>
                     <th>Fecha de Pago</th>
                     <th class="text-end">Monto Total</th>
                     <th class="text-center">Acciones</th>
@@ -74,14 +80,171 @@ else
             <tbody>
                 @foreach (var a in Model)
                 {
+                    var periodos = periodosMap.ContainsKey(a.AguinaldoId)
+                        ? periodosMap[a.AguinaldoId]
+                        : new List<PeriodoPago>();
+                    var planillas = planillasMap.ContainsKey(a.AguinaldoId)
+                        ? planillasMap[a.AguinaldoId]
+                        : new List<PlanillaEmpleado>();
+                    var collapseId = $"periodos-{a.AguinaldoId}";
+                    var esProporcional = a.PeriodosConsiderados > 0 && a.PeriodosConsiderados < 24;
                     <tr>
                         <td>
                             <strong>@a.Empleado.PrimerApellido @a.Empleado.Nombre</strong><br>
                             <small class="text-muted">@a.Empleado.Puesto — @a.Empleado.Departamento</small>
+                            @if (esProporcional)
+                            {
+                                <br><span class="badge bg-warning text-dark mt-1" title="Aguinaldo proporcional MTSS — empleado con menos de 12 meses en el período">
+                                    <i class="bi bi-clock-history me-1"></i>Proporcional
+                                </span>
+                            }
                         </td>
                         <td>
                             @a.FechaInicio.ToString("dd/MM/yyyy") <span class="text-muted">→</span>
                             @a.FechaFin.ToString("dd/MM/yyyy")
+                        </td>
+                        <td>
+                            @if (periodos.Any())
+                            {
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#@collapseId"
+                                        aria-expanded="false">
+                                    @periodos.Count período(s)
+                                    <i class="bi bi-chevron-down ms-1"></i>
+                                </button>
+                                <div class="collapse mt-2" id="@collapseId">
+                                    @{
+                                        // Agrupar por mes/año
+                                        var gruposMes = planillas
+                                            .GroupBy(pe => new { pe.PeriodoPago.Anio, pe.PeriodoPago.Mes })
+                                            .OrderBy(g => g.Key.Anio).ThenBy(g => g.Key.Mes)
+                                            .ToList();
+
+                                        string[] nombresMes = { "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                                                                  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre" };
+                                    }
+                                    <table class="table table-sm table-bordered mb-1" style="font-size:0.79rem;">
+                                        <thead style="background:#FF7A00;color:white;">
+                                            <tr>
+                                                <th>Mes</th>
+                                                <th class="text-center">Días</th>
+                                                <th class="text-end">Sal. Bruto (₡)</th>
+                                                <th>Observación</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var grupo in gruposMes)
+                                            {
+                                                var planillasGrupo = grupo.ToList();
+                                                var tipoPeriodoGrupo = planillasGrupo.First().PeriodoPago.TipoPeriodo;
+
+                                                // Períodos esperados por mes según tipo
+                                                int periodosEsperados = tipoPeriodoGrupo == TipoPeriodo.Mensual ? 1 : 2;
+                                                bool mesCompleto = planillasGrupo.Count >= periodosEsperados;
+
+                                                // Hay prorrateo si alguna planilla tiene DiasTrabajados < días del período
+                                                bool tieneProrrateo = planillasGrupo.Any(pe =>
+                                                    pe.DiasTrabajados > 0 &&
+                                                    pe.DiasTrabajados < (pe.PeriodoPago.FechaFin - pe.PeriodoPago.FechaInicio).Days + 1);
+
+                                                bool esParcial = !mesCompleto || tieneProrrateo;
+
+                                                var brutoGrupo = planillasGrupo.Sum(pe => pe.TotalDevengado);
+                                                var netoGrupo  = planillasGrupo.Sum(pe => pe.NetoAPagar);
+                                                var nombreMes  = nombresMes[grupo.Key.Mes];
+
+                                                if (!esParcial)
+                                                {
+                                                    // Mes completo → una sola fila con neto
+                                                    <tr class="table-light">
+                                                        <td class="fw-semibold">@nombreMes @grupo.Key.Anio</td>
+                                                        <td class="text-center text-muted">—</td>
+                                                        <td class="text-end fw-bold">₡@brutoGrupo.ToString("N2")</td>
+                                                        <td>
+                                                            <span class="badge bg-success" style="font-size:0.70rem;">
+                                                                <i class="bi bi-check-circle me-1"></i>Mes completo
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                                else
+                                                {
+                                                    // Mes parcial → una fila por período con días reales y bruto
+                                                    foreach (var pe in planillasGrupo.OrderBy(x => x.PeriodoPago.FechaInicio))
+                                                    {
+                                                        int diasPeriodo    = (pe.PeriodoPago.FechaFin - pe.PeriodoPago.FechaInicio).Days + 1;
+                                                        int diasEfectivos  = pe.DiasTrabajados > 0 ? pe.DiasTrabajados : diasPeriodo;
+                                                        bool esDiasParcial = diasEfectivos < diasPeriodo;
+
+                                                        string labelPeriodo = tipoPeriodoGrupo == TipoPeriodo.Mensual
+                                                            ? $"{nombreMes} {grupo.Key.Anio}"
+                                                            : $"Quincena {(int)pe.PeriodoPago.Quincena} — {nombreMes} {grupo.Key.Anio}";
+
+                                                        <tr @(esDiasParcial ? "class=table-warning" : "")>
+                                                            <td>
+                                                                <span class="fw-semibold">@labelPeriodo</span><br>
+                                                                <small class="text-muted">
+                                                                    @pe.PeriodoPago.FechaInicio.ToString("dd/MM") al @pe.PeriodoPago.FechaFin.ToString("dd/MM/yyyy")
+                                                                </small>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                @if (esDiasParcial)
+                                                                {
+                                                                    <span class="fw-bold text-danger">
+                                                                        @diasEfectivos <small class="fw-normal text-muted">/ @diasPeriodo días</small>
+                                                                    </span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="text-muted">@diasPeriodo días</span>
+                                                                }
+                                                            </td>
+                                                            <td class="text-end fw-bold">₡@pe.TotalDevengado.ToString("N2")</td>
+                                                            <td>
+                                                                @if (esDiasParcial)
+                                                                {
+                                                                    <span class="badge bg-danger" style="font-size:0.70rem;">
+                                                                        <i class="bi bi-clock-history me-1"></i>Parcial — @diasEfectivos día(s)
+                                                                    </span>
+                                                                }
+                                                                else if (!mesCompleto)
+                                                                {
+                                                                    <span class="badge bg-info text-dark" style="font-size:0.70rem;">
+                                                                        <i class="bi bi-exclamation-circle me-1"></i>Solo quincena @((int)pe.PeriodoPago.Quincena)
+                                                                    </span>
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                }
+                                            }
+                                        </tbody>
+                                        @if (planillas.Any())
+                                        {
+                                            <tfoot style="background:#fff3e0;">
+                                                <tr>
+                                                    <td colspan="2" class="text-end fw-bold">Total bruto del período:</td>
+                                                    <td class="text-end fw-bold">₡@planillas.Sum(x => x.TotalDevengado).ToString("N2")</td>
+                                                    <td></td>
+                                                </tr>
+                                            </tfoot>
+                                        }
+                                    </table>
+                                    @if (a.SumaDevengados > 0)
+                                    {
+                                        <div class="mt-1 px-1 text-muted" style="font-size:0.76rem;">
+                                            <i class="bi bi-calculator me-1"></i>
+                                            Fórmula MTSS: ₡@a.SumaDevengados.ToString("N2") ÷ 12 = <strong class="text-dark">₡@a.MontoTotal.ToString("N2")</strong>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Sin períodos cerrados</span>
+                            }
                         </td>
                         <td>@a.FechaPago.ToString("dd/MM/yyyy")</td>
                         <td class="text-end fw-bold text-success fs-5">
@@ -109,7 +272,7 @@ else
                             @if (Context.Session.GetString("Rol") == "RRHH")
                             {
                                 <form asp-action="Delete" method="post" class="d-inline"
-                                      onsubmit="return confirm('¿Eliminar aguinaldo de @a.Empleado.PrimerApellido @a.Empleado.Nombre?')">
+                                      onsubmit="return confirm('Eliminar aguinaldo de @a.Empleado.PrimerApellido @a.Empleado.Nombre?')">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@a.AguinaldoId" />
                                     <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">

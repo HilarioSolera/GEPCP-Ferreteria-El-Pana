@@ -794,8 +794,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 var emailSvc = HttpContext.RequestServices
                     .GetRequiredService<EmailService>();
 
-                var tipoVacacion = vacacion.Tipo == TipoVacacion.ConPago ? "Con Pago" : "Sin Pago";
-                var asunto = $"Boleta de Vacaciones — {tipoVacacion} — {vacacion.FechaInicio:dd/MM/yyyy}";
+                var asunto = $"Boleta de Vacaciones — {vacacion.FechaInicio:dd/MM/yyyy}";
                 var cuerpo = $@"
 <div style='font-family:Arial,sans-serif;max-width:600px;'>
     <div style='background:#1A1A2E;padding:20px;'>
@@ -814,12 +813,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 <td style='padding:8px;border:1px solid #eee;'>Período</td>
                 <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
                     {vacacion.FechaInicio:dd/MM/yyyy} - {vacacion.FechaFin:dd/MM/yyyy}
-                </td>
-            </tr>
-            <tr>
-                <td style='padding:8px;border:1px solid #eee;'>Tipo</td>
-                <td style='padding:8px;border:1px solid #eee;font-weight:bold;'>
-                    {tipoVacacion}
                 </td>
             </tr>
             <tr>

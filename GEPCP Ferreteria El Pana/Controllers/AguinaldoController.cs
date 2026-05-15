@@ -45,13 +45,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (!anios.Contains(anioActual)) anios.Insert(0, anioActual);
                 ViewBag.Anios = anios;
 
-                if (anio == null && string.IsNullOrWhiteSpace(busqueda))
-                {
-                    ViewBag.TotalEmpleados = 0;
-                    ViewBag.TotalMonto = 0m;
-                    ViewBag.SinAguinaldo = 0;
-                    return View(new List<Aguinaldo>());
-                }
+                // Si no se especificó año ni búsqueda, cargar el año actual por defecto
 
                 var query = _context.Aguinaldos
                     .Include(a => a.Empleado)
@@ -79,6 +73,19 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ViewBag.SinAguinaldo = await _context.Empleados
                     .AsNoTracking()
                     .CountAsync(e => e.Activo && !idsConAguinaldo.Contains(e.EmpleadoId));
+
+                // Cargar los períodos contribuyentes y detalle de planilla de cada aguinaldo
+                var periodosMap = new Dictionary<int, List<PeriodoPago>>();
+                var planillasMap = new Dictionary<int, List<PlanillaEmpleado>>();
+                foreach (var r in registros)
+                {
+                    periodosMap[r.AguinaldoId] = await ObtenerPeriodosContribuyentes(
+                        r.EmpleadoId, r.FechaInicio, r.FechaFin);
+                    planillasMap[r.AguinaldoId] = await ObtenerPlanillasContribuyentes(
+                        r.EmpleadoId, r.FechaInicio, r.FechaFin);
+                }
+                ViewBag.PeriodosContribuyentes = periodosMap;
+                ViewBag.PlanillasContribuyentes = planillasMap;
 
                 return View(registros);
             }
@@ -112,21 +119,29 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 int calculados = 0;
                 int actualizados = 0;
+                var omitidos = new List<string>();
 
                 foreach (var empleado in empleados)
                 {
-                    var sumaDevengados = (await _context.PlanillasEmpleado
-                    .Include(pe => pe.PeriodoPago)
-                    .Where(pe =>
-                        pe.EmpleadoId == empleado.EmpleadoId &&
-                        pe.PeriodoPago.Estado == EstadoPeriodo.Cerrado &&
-                        pe.PeriodoPago.FechaInicio >= fechaInicio &&
-                        pe.PeriodoPago.FechaFin <= fechaFin)
-                    .Select(pe => pe.TotalDevengado)
-                    .ToListAsync()).Sum();
+                    var planillasEmpleado = await _context.PlanillasEmpleado
+                        .Include(pe => pe.PeriodoPago)
+                        .Where(pe =>
+                            pe.EmpleadoId == empleado.EmpleadoId &&
+                            pe.PeriodoPago.Estado == EstadoPeriodo.Cerrado &&
+                            pe.PeriodoPago.FechaInicio >= fechaInicio &&
+                            pe.PeriodoPago.FechaFin <= fechaFin)
+                        .ToListAsync();
 
-                    if (sumaDevengados <= 0) continue;
+                    var sumaDevengados = planillasEmpleado.Sum(pe => pe.TotalDevengado);
+                    var periodosContados = planillasEmpleado.Count;
 
+                    if (sumaDevengados <= 0)
+                    {
+                        omitidos.Add($"{empleado.PrimerApellido} {empleado.Nombre}");
+                        continue;
+                    }
+
+                    // Fórmula MTSS: suma de ingresos brutos ÷ 12 (proporcional desde el primer día)
                     var montoAguinaldo = Math.Round(sumaDevengados / 12m, 2);
                     var existente = await _context.Aguinaldos
                         .FirstOrDefaultAsync(a =>
@@ -135,6 +150,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     if (existente != null)
                     {
                         existente.MontoTotal = montoAguinaldo;
+                        existente.SumaDevengados = sumaDevengados;
+                        existente.PeriodosConsiderados = periodosContados;
                         existente.FechaInicio = fechaInicio;
                         existente.FechaFin = fechaFin;
                         actualizados++;
@@ -149,6 +166,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                             FechaFin = fechaFin,
                             FechaPago = new DateTime(anio, 12, 20),
                             MontoTotal = montoAguinaldo,
+                            SumaDevengados = sumaDevengados,
+                            PeriodosConsiderados = periodosContados,
                             CreadoEn = DateTime.Now
                         });
                         calculados++;
@@ -167,6 +186,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 TempData["Success"] = $"Aguinaldo {anio} calculado: " +
                     $"{calculados} nuevos, {actualizados} actualizados.";
+
+                if (omitidos.Any())
+                    TempData["Warning"] =
+                        $"Los siguientes empleados fueron omitidos por no tener períodos cerrados en el año {anio}: " +
+                        string.Join(", ", omitidos) + ".";
 
                 return RedirectToAction(nameof(Index), new { anio });
             }
@@ -227,6 +251,27 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         $"Este empleado ya tiene aguinaldo registrado para el año {model.Anio}.");
                     await CargarEmpleadosViewBag(model.EmpleadoId);
                     return View(model);
+                }
+
+                // Si vienen los salarios de la calculadora mensual, recalcular SumaDevengados
+                if (!string.IsNullOrWhiteSpace(model.SalariosMensuales))
+                {
+                    var meses = model.SalariosMensuales
+                        .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(s => decimal.TryParse(s, System.Globalization.NumberStyles.Any,
+                                     System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0m)
+                        .ToList();
+
+                    var sumaBase = meses.Sum();
+                    // Sumar especie anual si aplica
+                    if (model.MontoEspecieMensual > 0)
+                        sumaBase += model.MontoEspecieMensual * 12m;
+
+                    model.SumaDevengados = Math.Round(sumaBase, 2);
+                    model.PeriodosConsiderados = meses.Count(m => m > 0);
+                    // Recalcular monto si no fue modificado a mano
+                    if (model.MontoTotal <= 0 && model.SumaDevengados > 0)
+                        model.MontoTotal = Math.Round(model.SumaDevengados / 12m, 2);
                 }
 
                 model.MontoTotal = Math.Round(model.MontoTotal, 2);
@@ -420,8 +465,14 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (aguinaldo == null) return NotFound();
 
+                var periodos = await ObtenerPeriodosContribuyentes(
+                    aguinaldo.EmpleadoId, aguinaldo.FechaInicio, aguinaldo.FechaFin);
+
+                var planillasAg = await ObtenerPlanillasContribuyentes(
+                    aguinaldo.EmpleadoId, aguinaldo.FechaInicio, aguinaldo.FechaFin);
+
                 var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
-                var pdfBytes = _servicioPDF.GenerarPDFAguinaldo(aguinaldo, usuario);
+                var pdfBytes = _servicioPDF.GenerarPDFAguinaldo(aguinaldo, periodos, usuario, planillasAg);
                 var nombreArchivo = $"Aguinaldo_{aguinaldo.Empleado.PrimerApellido}_{aguinaldo.Anio}.pdf";
 
                 await _auditoria.RegistrarAsync(
@@ -466,7 +517,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return RedirectToAction(nameof(Index), new { anio = aguinaldo.Anio });
                 }
 
-                var pdfBytes = _servicioPDF.GenerarPDFAguinaldoSinFirmas(aguinaldo);
+                var periodosEmail = await ObtenerPeriodosContribuyentes(
+                    aguinaldo.EmpleadoId, aguinaldo.FechaInicio, aguinaldo.FechaFin);
+
+                var planillasEmail = await ObtenerPlanillasContribuyentes(
+                    aguinaldo.EmpleadoId, aguinaldo.FechaInicio, aguinaldo.FechaFin);
+
+                var pdfBytes = _servicioPDF.GenerarPDFAguinaldoSinFirmas(aguinaldo, periodosEmail, planillas: planillasEmail);
                 var nombreArchivo =
                     $"Aguinaldo_{aguinaldo.Empleado.PrimerApellido}_{aguinaldo.Anio}.pdf";
 
@@ -547,6 +604,36 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
         }
 
         // HELPERS
+
+        private async Task<List<PeriodoPago>> ObtenerPeriodosContribuyentes(
+            int empleadoId, DateTime fechaInicio, DateTime fechaFin)
+        {
+            return await _context.PlanillasEmpleado
+                .Include(pe => pe.PeriodoPago)
+                .Where(pe =>
+                    pe.EmpleadoId == empleadoId &&
+                    pe.PeriodoPago.Estado == EstadoPeriodo.Cerrado &&
+                    pe.PeriodoPago.FechaInicio >= fechaInicio &&
+                    pe.PeriodoPago.FechaFin <= fechaFin)
+                .Select(pe => pe.PeriodoPago)
+                .Distinct()
+                .OrderBy(p => p.FechaInicio)
+                .ToListAsync();
+        }
+
+        private async Task<List<PlanillaEmpleado>> ObtenerPlanillasContribuyentes(
+            int empleadoId, DateTime fechaInicio, DateTime fechaFin)
+        {
+            return await _context.PlanillasEmpleado
+                .Include(pe => pe.PeriodoPago)
+                .Where(pe =>
+                    pe.EmpleadoId == empleadoId &&
+                    pe.PeriodoPago.Estado == EstadoPeriodo.Cerrado &&
+                    pe.PeriodoPago.FechaInicio >= fechaInicio &&
+                    pe.PeriodoPago.FechaFin <= fechaFin)
+                .OrderBy(pe => pe.PeriodoPago.FechaInicio)
+                .ToListAsync();
+        }
 
         private async Task CargarEmpleadosViewBag(int? selectedId = null)
         {

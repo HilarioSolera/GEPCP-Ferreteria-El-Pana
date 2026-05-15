@@ -110,14 +110,20 @@ namespace GEPCP_Ferreteria_El_Pana.Models
             = new List<PagoFeriado>();
 
         // Propiedades calculadas
+        private static readonly string[] NombresMeses =
+        {
+            "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        };
+
         public string Descripcion => TipoPeriodo switch
         {
             TipoPeriodo.Semanal =>
-                $"Semana — {FechaInicio:dd/MM/yyyy} al {FechaFin:dd/MM/yyyy}",
+                $"Semana — {NombresMeses[Mes]} {Anio} — {FechaInicio:dd/MM/yyyy} al {FechaFin:dd/MM/yyyy}",
             TipoPeriodo.Mensual =>
-                $"Mes {Mes}/{Anio} — {FechaInicio:dd/MM/yyyy} al {FechaFin:dd/MM/yyyy}",
+                $"{NombresMeses[Mes]} {Anio} — {FechaInicio:dd/MM/yyyy} al {FechaFin:dd/MM/yyyy}",
             _ =>
-                $"Quincena {(int)Quincena} — {FechaInicio:dd/MM/yyyy} al {FechaFin:dd/MM/yyyy}"
+                $"Quincena {(int)Quincena} — {NombresMeses[Mes]} {Anio} — {FechaInicio:dd/MM/yyyy} al {FechaFin:dd/MM/yyyy}"
         };
 
         public string TipoPagoCompatible => TipoPeriodo switch

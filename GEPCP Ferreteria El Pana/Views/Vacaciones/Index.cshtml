@@ -125,7 +125,6 @@ else
                     <th>Empleado</th>
                     <th>Período</th>
                     <th class="text-center">Días</th>
-                    <th class="text-center">Tipo</th>
                     <th class="text-center">Estado</th>
                     <th>Registrado por</th>
                     <th class="text-center">Acciones</th>
@@ -151,9 +150,6 @@ else
                             <div class="small text-muted">al @v.FechaFin.ToString("dd/MM/yyyy")</div>
                         </td>
                         <td class="text-center fw-bold">@v.DiasHabiles.ToString("N1")</td>
-                        <td class="text-center">
-                            <span class="badge bg-success">Con Pago</span>
-                        </td>
                         <td class="text-center">
                             <span class="badge @badgeEstado">@v.Estado</span>
                         </td>

@@ -107,16 +107,20 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ultimos6.Reverse();
 
                 var graficoLabels = ultimos6.Select(p => p.Descripcion).ToList();
-                var graficoNetos = new List<decimal>();
 
-                foreach (var p in ultimos6)
-                {
-                    var neto = (await _context.PlanillasEmpleado
-                        .Where(pe => pe.PeriodoPagoId == p.PeriodoPagoId)
-                        .Select(pe => pe.NetoAPagar)
-                        .ToListAsync()).Sum();
-                    graficoNetos.Add(neto);
-                }
+                var ids6 = ultimos6.Select(p => p.PeriodoPagoId).ToList();
+                var netosRaw = await _context.PlanillasEmpleado
+                    .Where(pe => ids6.Contains(pe.PeriodoPagoId))
+                    .Select(pe => new { pe.PeriodoPagoId, pe.NetoAPagar })
+                    .ToListAsync();
+
+                var netosPorPeriodo = netosRaw
+                    .GroupBy(pe => pe.PeriodoPagoId)
+                    .ToDictionary(g => g.Key, g => g.Sum(pe => pe.NetoAPagar));
+
+                var graficoNetos = ultimos6
+                    .Select(p => netosPorPeriodo.TryGetValue(p.PeriodoPagoId, out var n) ? n : 0m)
+                    .ToList();
 
                 ViewBag.GraficoLabels = graficoLabels;
                 ViewBag.GraficoNetos = graficoNetos;

@@ -677,9 +677,11 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             {
                 if (string.IsNullOrWhiteSpace(departamento))
                     return Json(new List<object>());
+
+                var departamentoTrim = departamento.Trim();
                 var puestos = await _context.Puestos
                     .AsNoTracking()
-                    .Where(p => p.Departamento == departamento && p.Activo)
+                    .Where(p => p.Departamento.Trim() == departamentoTrim && p.Activo)
                     .OrderBy(p => p.Nombre)
                     .Select(p => new { p.Nombre, p.Codigo, p.SalarioBase })
                     .ToListAsync();
@@ -706,7 +708,16 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     .Distinct()
                     .OrderBy(d => d)
                     .ToListAsync();
-                return Json(deptos);
+
+                // Filtrar valores vacíos o con solo espacios en blanco
+                var deptosFiltrados = deptos
+                    .Where(d => !string.IsNullOrWhiteSpace(d))
+                    .Select(d => d.Trim())
+                    .Distinct()
+                    .OrderBy(d => d)
+                    .ToList();
+
+                return Json(deptosFiltrados);
             }
             catch (Exception ex)
             {

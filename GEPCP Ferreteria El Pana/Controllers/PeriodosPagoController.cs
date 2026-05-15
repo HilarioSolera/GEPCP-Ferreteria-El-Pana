@@ -68,6 +68,18 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 ViewBag.TotalAbiertos = periodos.Count(p => p.Estado == EstadoPeriodo.Abierto);
                 ViewBag.TotalCerrados = periodos.Count(p => p.Estado == EstadoPeriodo.Cerrado);
 
+                // Advertir si hay más de un período abierto del mismo tipo
+                var tiposConMultiplesAbiertos = periodos
+                    .Where(p => p.Estado == EstadoPeriodo.Abierto)
+                    .GroupBy(p => p.TipoPeriodo)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => g.Key.ToString())
+                    .ToList();
+                if (tiposConMultiplesAbiertos.Any())
+                    TempData["Warning"] =
+                        $"⚠️ Hay más de un período ABIERTO del mismo tipo: {string.Join(", ", tiposConMultiplesAbiertos)}. " +
+                        "Cerrá o eliminá los períodos duplicados para evitar inconsistencias.";
+
                 return View(periodos);
             }
             catch (Exception ex)

@@ -1,11 +1,381 @@
 ﻿@model GEPCP_Ferreteria_El_Pana.Models.Aguinaldo
 @{
-    ViewData["Title"] = "Nuevo Aguinaldo - GEPCP Ferretería El Pana";
+    ViewData["Title"] = "Calcular aguinaldo manualmente - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var anioActual = DateTime.Today.Year;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0"><i class="bi bi-gift"></i> Nuevo Aguinaldo</h4>
+    <h4 class="mb-0"><i class="bi bi-calculator"></i> Calcular aguinaldo manualmente</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-3">
+        <form asp-action="Create" method="post" id="frmAguinaldo">
+            @Html.AntiForgeryToken()
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger mb-2" style="font-size: 0.85rem;">
+                    <ul class="mb-0">
+                        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@e.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <div class="row g-2">
+                <!-- ── Empleado ── -->
+                <div class="col-12">
+                    <label class="form-label fw-bold small">
+                        <i class="bi bi-person-search"></i> Empleado <span class="text-danger">*</span>
+                    </label>
+                    <input type="hidden" asp-for="EmpleadoId" id="EmpleadoId" />
+                    <div class="input-group input-group-sm mb-1">
+                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="buscarEmpleado" class="form-control form-control-sm"
+                               placeholder="Buscar por nombre, apellido o cédula..." autocomplete="off" />
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnTodos">
+                            <i class="bi bi-list-ul"></i> Todos
+                        </button>
+                    </div>
+                    <div id="empleadoSeleccionado" class="d-none alert alert-success py-1" style="font-size:0.85rem;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-person-check-fill"></i>
+                                <strong id="empNombre"></strong>
+                                <span class="text-muted ms-1 small" id="empCedula"></span> —
+                                <span id="empPuesto" style="font-size:0.75rem;"></span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnLimpiar" style="font-size:0.7rem;">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="resultados" class="border rounded shadow-sm"
+                         style="display:none;max-height:200px;overflow-y:auto;background:#fff;position:relative;z-index:100;font-size:0.85rem;"></div>
+                    <span asp-validation-for="EmpleadoId" class="text-danger" style="font-size:0.7rem;"></span>
+                </div>
+
+                <!-- ── Período y fechas ── -->
+                <div class="col-md-3">
+                    <label asp-for="Anio" class="form-label fw-bold small">Año</label>
+                    <input asp-for="Anio" type="number" min="2020" max="2099" id="inputAnio"
+                           class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="FechaInicio" class="form-label fw-bold small">Inicio Período</label>
+                    <input asp-for="FechaInicio" type="date" class="form-control form-control-sm" id="inputFechaInicio" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="FechaFin" class="form-label fw-bold small">Fin Período</label>
+                    <input asp-for="FechaFin" type="date" class="form-control form-control-sm" id="inputFechaFin" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="FechaPago" class="form-label fw-bold small">Fecha Pago</label>
+                    <input asp-for="FechaPago" type="date" class="form-control form-control-sm" />
+                </div>
+            </div>
+
+            <!-- ══ CALCULADORA MENSUAL ══════════════════════════════════════════ -->
+            <hr class="my-3" />
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="bi bi-calculator text-warning fs-5"></i>
+                <strong>Calculadora de Aguinaldo — Salarios Brutos por Mes</strong>
+                <span class="badge bg-secondary ms-1" style="font-size:0.7rem;">
+                    Art. 166 Código de Trabajo CR
+                </span>
+            </div>
+            <p class="text-muted" style="font-size:0.78rem;">
+                Ingresá el salario bruto devengado cada mes (incluye horas extras, comisiones, bonificaciones,
+                <strong>sin</strong> rebajas de cargas sociales ni renta).
+                Diciembre corresponde al año anterior al aguinaldo.
+            </p>
+
+            <!-- Campos ocultos que se envían al servidor -->
+            <input type="hidden" name="SalariosMensuales" id="hidSalariosMensuales" />
+            <input type="hidden" asp-for="PorcentajeEspecie" id="hidPorcentajeEspecie" value="0" />
+            <input type="hidden" asp-for="MontoEspecieMensual" id="hidMontoEspecieMensual" value="0" />
+
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle" style="font-size:0.82rem;">
+                    <thead style="background:#FF7A00;color:white;">
+                        <tr>
+                            <th style="width:30%">Mes</th>
+                            <th>Salario Bruto (₡)</th>
+                            <th class="text-end" style="width:25%">Monto Ingresado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyMeses">
+                        @{
+                            string[] nombresMeses = {
+                                "Diciembre (año anterior)",
+                                "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                                "Julio","Agosto","Setiembre","Octubre","Noviembre"
+                            };
+                            for (int i = 0; i < 12; i++)
+                            {
+                                <tr>
+                                    <td class="fw-bold">@nombresMeses[i]</td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0"
+                                               class="form-control form-control-sm mes-input"
+                                               data-idx="@i"
+                                               placeholder="0.00"
+                                               id="mes_@i" />
+                                    </td>
+                                    <td class="text-end text-muted" id="lbl_@i">₡0.00</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#FFF3E0;">
+                            <td class="fw-bold">Total salarios brutos</td>
+                            <td></td>
+                            <td class="text-end fw-bold" id="lblTotalBruto">₡0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- ── Salario en especie ── -->
+            <div class="card border-warning mb-3" style="background:#FFFDE7;">
+                <div class="card-body py-2 px-3">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="chkEspecie" />
+                        <label class="form-check-label fw-bold small" for="chkEspecie">
+                            <i class="bi bi-box-seam text-warning"></i> Incluir salario en especie
+                        </label>
+                    </div>
+                    <div id="secEspecie" class="row g-2 d-none">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold">Porcentaje de salario en especie (%)</label>
+                            <input type="number" id="inputPctEspecie" step="0.01" min="0" max="50"
+                                   class="form-control form-control-sm" placeholder="Ej: 20" value="0" />
+                            <div class="form-text" style="font-size:0.7rem;">
+                                Máx. 50 % del salario ordinario (Art. 166 CT).
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold">Monto mensual en especie (₡)</label>
+                            <input type="number" id="inputMontoEspecie" step="0.01" min="0"
+                                   class="form-control form-control-sm" placeholder="0.00" value="0" />
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <div class="alert alert-warning py-1 px-2 mb-0 w-100 text-center" style="font-size:0.75rem;">
+                                Anual: <strong id="lblEspecieAnual">₡0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Resultado de la calculadora ── -->
+            <div class="card border-0 mb-3" style="background:#1A1A2E;" id="panelResultado">
+                <div class="card-body py-3 px-4">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="text-white-50 small mb-1">Fórmula: Suma salarios brutos ÷ 12</div>
+                            <div class="d-flex align-items-baseline gap-2">
+                                <span class="text-white">Suma base:</span>
+                                <span class="fw-bold text-warning" id="lblSumaBase">₡0.00</span>
+                                <span class="text-white-50">÷ 12 =</span>
+                                <span class="fw-bold fs-4 text-warning" id="lblMontoCalculado">₡0.00</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-warning btn-sm" id="btnAplicar" disabled>
+                                <i class="bi bi-check2-circle"></i> Aplicar al formulario
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Monto y observaciones ── -->
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <label asp-for="MontoTotal" class="form-label fw-bold small">
+                        Monto Total Aguinaldo (₡) <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">₡</span>
+                        <input asp-for="MontoTotal" type="number" step="0.01" min="0.01" id="inputMontoTotal"
+                               class="form-control form-control-sm" placeholder="Se calcula automáticamente" />
+                    </div>
+                    <div class="form-text" style="font-size:0.7rem;">
+                        Podés editarlo manualmente si necesitás ajustarlo.
+                    </div>
+                    <span asp-validation-for="MontoTotal" class="text-danger" style="font-size:0.7rem;"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Observaciones" class="form-label fw-bold small">Observaciones</label>
+                    <textarea asp-for="Observaciones" class="form-control form-control-sm" rows="2" maxlength="300"></textarea>
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-sm px-4" id="btnGuardar" disabled>
+                    <i class="bi bi-check-circle"></i> Registrar Aguinaldo
+                </button>
+                <a asp-action="Index" class="btn btn-secondary btn-sm px-4">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+
+    <script>
+    // ── Buscador de empleado ─────────────────────────────────────────────────
+    var empData = null;
+    window._empResults = [];
+
+    async function buscar(termino, todos = false) {
+        var url = todos
+            ? '/Aguinaldo/TodosLosEmpleados'
+            : '/Aguinaldo/BuscarEmpleados?termino=' + encodeURIComponent(termino);
+        var res = await fetch(url);
+        var data = await res.json();
+        var div = document.getElementById('resultados');
+        if (!data.length) {
+            div.innerHTML = '<div class="p-3 text-muted text-center">Sin resultados.</div>';
+            div.style.display = 'block';
+            return;
+        }
+        window._empResults = data;
+        div.innerHTML = data.map((e, i) => `
+            <div class="p-3 border-bottom emp-item" data-index="${i}" style="cursor:pointer">
+                <div class="fw-bold">${e.nombre}</div>
+                <div class="small text-muted">${e.cedula} — ${e.puesto}</div>
+            </div>`).join('');
+        div.querySelectorAll('.emp-item').forEach(el =>
+            el.addEventListener('click', () => seleccionar(parseInt(el.dataset.index))));
+        div.style.display = 'block';
+    }
+
+    function seleccionar(index) {
+        var e = window._empResults[index];
+        empData = e;
+        document.getElementById('EmpleadoId').value = e.id;
+        document.getElementById('empNombre').textContent = e.nombre;
+        document.getElementById('empCedula').textContent = e.cedula;
+        document.getElementById('empPuesto').textContent = e.puesto;
+        document.getElementById('empleadoSeleccionado').classList.remove('d-none');
+        document.getElementById('resultados').style.display = 'none';
+        document.getElementById('buscarEmpleado').value = '';
+        document.getElementById('btnGuardar').disabled = false;
+    }
+
+    var timer;
+    document.getElementById('buscarEmpleado').addEventListener('input', function () {
+        clearTimeout(timer);
+        var val = this.value.trim();
+        if (val.length < 2) { document.getElementById('resultados').style.display = 'none'; return; }
+        timer = setTimeout(() => buscar(val), 300);
+    });
+    document.getElementById('btnTodos').addEventListener('click', () => buscar('', true));
+    document.getElementById('btnLimpiar').addEventListener('click', function () {
+        empData = null;
+        document.getElementById('EmpleadoId').value = '';
+        document.getElementById('empleadoSeleccionado').classList.add('d-none');
+        document.getElementById('btnGuardar').disabled = true;
+    });
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('#resultados') &&
+            !e.target.closest('#buscarEmpleado') &&
+            !e.target.closest('#btnTodos'))
+            document.getElementById('resultados').style.display = 'none';
+    });
+
+    // ── Calculadora mensual ──────────────────────────────────────────────────
+    function fmt(v) { return '₡' + v.toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+    function recalcular() {
+        var meses = Array.from(document.querySelectorAll('.mes-input'))
+            .map(inp => parseFloat(inp.value) || 0);
+
+        meses.forEach((v, i) => {
+            document.getElementById('lbl_' + i).textContent = fmt(v);
+        });
+
+        var totalBruto = meses.reduce((a, b) => a + b, 0);
+
+        // Especie
+        var pctEspecie = 0, montoEspecie = 0, especieAnual = 0;
+        if (document.getElementById('chkEspecie').checked) {
+            pctEspecie  = parseFloat(document.getElementById('inputPctEspecie').value)  || 0;
+            montoEspecie = parseFloat(document.getElementById('inputMontoEspecie').value) || 0;
+            especieAnual = montoEspecie * 12;
+            totalBruto += especieAnual;
+        }
+        document.getElementById('lblEspecieAnual').textContent = fmt(especieAnual);
+
+        var aguinaldo = Math.round((totalBruto / 12) * 100) / 100;
+
+        document.getElementById('lblTotalBruto').textContent = fmt(totalBruto);
+        document.getElementById('lblSumaBase').textContent   = fmt(totalBruto);
+        document.getElementById('lblMontoCalculado').textContent = fmt(aguinaldo);
+        document.getElementById('btnAplicar').disabled = (aguinaldo <= 0);
+
+        // Actualizar ocultos
+        document.getElementById('hidSalariosMensuales').value  = meses.join(';');
+        document.getElementById('hidPorcentajeEspecie').value  = pctEspecie;
+        document.getElementById('hidMontoEspecieMensual').value = montoEspecie;
+    }
+
+    document.querySelectorAll('.mes-input').forEach(inp =>
+        inp.addEventListener('input', recalcular));
+    document.getElementById('inputPctEspecie').addEventListener('input', recalcular);
+    document.getElementById('inputMontoEspecie').addEventListener('input', recalcular);
+
+    document.getElementById('chkEspecie').addEventListener('change', function () {
+        document.getElementById('secEspecie').classList.toggle('d-none', !this.checked);
+        recalcular();
+    });
+
+    document.getElementById('btnAplicar').addEventListener('click', function () {
+        var aguinaldo = parseFloat(
+            document.getElementById('lblMontoCalculado').textContent.replace(/[₡,.]/g, '').replace(',','.')
+        );
+        // Re-parse limpio
+        var raw = document.getElementById('lblMontoCalculado').textContent.replace('₡','').replace(/\./g,'').replace(',','.');
+        document.getElementById('inputMontoTotal').value = parseFloat(raw) || 0;
+
+        // También guardar suma devengados en observaciones si vacío (referencia)
+        this.textContent = '✓ Aplicado';
+        this.disabled = true;
+        setTimeout(() => { this.innerHTML = '<i class="bi bi-check2-circle"></i> Aplicar al formulario'; this.disabled = false; }, 1500);
+    });
+
+    // Sync año → fechas de período
+    document.getElementById('inputAnio').addEventListener('change', function () {
+        var anio = parseInt(this.value);
+        if (anio > 2019) {
+            document.getElementById('inputFechaInicio').value = (anio - 1) + '-12-01';
+            document.getElementById('inputFechaFin').value   = anio + '-11-30';
+        }
+    });
+
+    // Al enviar: guardar suma devengados en campo oculto si viene de la calculadora
+    document.getElementById('frmAguinaldo').addEventListener('submit', function () {
+        var meses = Array.from(document.querySelectorAll('.mes-input'))
+            .map(inp => parseFloat(inp.value) || 0);
+        document.getElementById('hidSalariosMensuales').value = meses.join(';');
+    });
+    </script>
+}
+
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-calculator"></i> Calcular aguinaldo manualmente</h4>
     <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Volver
     </a>
@@ -106,83 +476,3 @@
         </form>
     </div>
 </div>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-
-    <script>
-        var empData = null;
-        window._empResults = [];
-
-        async function buscar(termino, todos = false) {
-            var url = todos ? '/Aguinaldo/TodosLosEmpleados' : '/Aguinaldo/BuscarEmpleados?termino=' + encodeURIComponent(termino);
-            var res = await fetch(url);
-            var data = await res.json();
-            var div = document.getElementById('resultados');
-
-            if (!data.length) {
-                div.innerHTML = '<div class="p-3 text-muted text-center">Sin resultados.</div>';
-                div.style.display = 'block';
-                return;
-            }
-
-            window._empResults = data;
-            div.innerHTML = data.map((e, i) => `
-                        <div class="p-3 border-bottom emp-item" data-index="${i}" style="cursor:pointer">
-                            <div class="fw-bold">${e.nombre}</div>
-                            <div class="small text-muted">${e.cedula} — ${e.puesto}</div>
-                        </div>
-                    `).join('');
-
-            div.querySelectorAll('.emp-item').forEach(el => {
-                el.addEventListener('click', () => seleccionar(parseInt(el.getAttribute('data-index'))));
-            });
-            div.style.display = 'block';
-        }
-
-        function seleccionar(index) {
-            var e = window._empResults[index];
-            empData = e;
-            document.getElementById('EmpleadoId').value = e.id;
-            document.getElementById('empNombre').textContent = e.nombre;
-            document.getElementById('empCedula').textContent = e.cedula;
-            document.getElementById('empPuesto').textContent = e.puesto;
-
-            document.getElementById('empleadoSeleccionado').classList.remove('d-none');
-            document.getElementById('resultados').style.display = 'none';
-            document.getElementById('buscarEmpleado').value = '';
-            document.getElementById('btnGuardar').disabled = false;
-        }
-
-        // Eventos
-        var timer;
-        document.getElementById('buscarEmpleado').addEventListener('input', function() {
-            clearTimeout(timer);
-            var val = this.value.trim();
-            if (val.length < 2) {
-                document.getElementById('resultados').style.display = 'none';
-                return;
-            }
-            timer = setTimeout(() => buscar(val), 300);
-        });
-
-        document.getElementById('btnTodos').addEventListener('click', () => buscar('', true));
-
-        document.getElementById('btnLimpiar').addEventListener('click', function() {
-            empData = null;
-            document.getElementById('EmpleadoId').value = '';
-            document.getElementById('empleadoSeleccionado').classList.add('d-none');
-            document.getElementById('btnGuardar').disabled = true;
-        });
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('#resultados') &&
-                !e.target.closest('#buscarEmpleado') &&
-                !e.target.closest('#btnTodos')) {
-                document.getElementById('resultados').style.display = 'none';
-            }
-        });
-    </script>
-}

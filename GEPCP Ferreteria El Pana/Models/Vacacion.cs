@@ -40,7 +40,7 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         public EstadoVacacion Estado { get; set; } = EstadoVacacion.Pendiente;
 
         [Display(Name = "Días Hábiles Tomados")]
-        [Range(1, 12, ErrorMessage = "Los días deben ser entre 1 y 12 (Art. 153 Código de Trabajo CR).")]
+        [Range(1, 365, ErrorMessage = "Los días deben ser al menos 1.")]
         public decimal DiasHabiles { get; set; }
 
         [Display(Name = "Días Disponibles al Momento")]

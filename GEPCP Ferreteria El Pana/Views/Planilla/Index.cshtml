@@ -271,6 +271,17 @@ else
                                     {
                                         <span class="badge bg-secondary">Efectivo</span>
                                     }
+                                    @{
+                                        var diasPer = (periodo!.FechaFin - periodo.FechaInicio).Days + 1;
+                                        var diasEf = p.DiasTrabajados > 0 ? p.DiasTrabajados : diasPer;
+                                        var esParcialPer = diasEf < diasPer;
+                                    }
+                                    @if (esParcialPer)
+                                    {
+                                        <br /><span class="badge bg-warning text-dark" title="Ingresó a mitad del período: @p.Empleado.FechaIngreso.ToString("dd/MM/yyyy")">
+                                            <i class="bi bi-clock-history"></i> @diasEf/@diasPer días
+                                        </span>
+                                    }
                                 </td>
                                 @{
                                     var factorMes = periodo!.TipoPeriodo switch

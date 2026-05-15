@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>GEPCP_Ferreteria_El_Pana</RootNamespace>
+    <UserSecretsId>58db9786-3f80-4357-8804-bbc66d2b32b5</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
