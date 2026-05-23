@@ -763,6 +763,12 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("MontoIncapacidades")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("MontoVacaciones")
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("NetoAPagar")
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
@@ -1044,26 +1050,6 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.HasKey("UsuarioId");
 
                     b.ToTable("Usuarios");
-
-                    b.HasData(
-                        new
-                        {
-                            UsuarioId = 1,
-                            CorreoElectronico = "solerahilario207@gmail.com",
-                            NombreCompleto = "Administrador RRHH",
-                            NombreUsuario = "admin.rrhh",
-                            PasswordHash = "$2a$11$/mJGbQrxHo3bDUtdY6MWoeaJc/6aYPE7EG9ukr6ln9mNupX3Y8Wz.",
-                            Rol = "RRHH"
-                        },
-                        new
-                        {
-                            UsuarioId = 2,
-                            CorreoElectronico = "solerahilario207@gmail.com",
-                            NombreCompleto = "Usuario Jefatura",
-                            NombreUsuario = "jefatura",
-                            PasswordHash = "$2a$11$T72F0Mu8ocYejSTck6bprueMSoi5WgVtSD.hIraw5PvhnjDde6rD6",
-                            Rol = "Jefatura"
-                        });
                 });
 
             modelBuilder.Entity("GEPCP_Ferreteria_El_Pana.Models.Vacacion", b =>

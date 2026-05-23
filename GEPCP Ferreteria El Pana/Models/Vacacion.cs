@@ -11,7 +11,8 @@ namespace GEPCP_Ferreteria_El_Pana.Models
     {
         Pendiente = 1,
         Aprobada = 2,
-        Rechazada = 3
+        Rechazada = 3,
+        Cancelada = 4
     }
 
     public class Vacacion

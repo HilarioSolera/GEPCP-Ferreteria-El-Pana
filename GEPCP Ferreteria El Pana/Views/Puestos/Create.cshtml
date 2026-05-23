@@ -33,15 +33,18 @@
                     <label asp-for="Departamento" class="form-label fw-bold small">
                         <i class="bi bi-building"></i> Departamento <span class="text-danger">*</span>
                     </label>
-                    <select asp-for="Departamento" class="form-select form-select-sm" id="selectDepartamento">
-                        <option value="">-- Seleccione --</option>
-                        <option value="Administrativo">Administrativo</option>
-                        <option value="Caja">Caja</option>
-                        <option value="Ventas">Ventas</option>
-                        <option value="Bodega">Bodega</option>
-                        <option value="Conductores">Conductores</option>
-                    </select>
-                    <div class="form-text" style="font-size: 0.7rem;">O escribí uno nuevo.</div>
+                    <input asp-for="Departamento" class="form-control form-control-sm"
+                           list="departamentosSugeridos" maxlength="100"
+                           placeholder="Ej: Ventas, Recursos Humanos" />
+                    <datalist id="departamentosSugeridos">
+                        <option value="Administrativo"></option>
+                        <option value="Caja"></option>
+                        <option value="Ventas"></option>
+                        <option value="Bodega"></option>
+                        <option value="Conductores"></option>
+                        <option value="Recursos Humanos"></option>
+                    </datalist>
+                    <div class="form-text" style="font-size: 0.7rem;">Podés seleccionar uno existente o escribir uno nuevo.</div>
                     <span asp-validation-for="Departamento" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 

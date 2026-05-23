@@ -1,0 +1,130 @@
+═══════════════════════════════════════════════════════════════
+  GEPCP FERRETERÍA EL PANA - CREDENCIALES POR DEFECTO
+═══════════════════════════════════════════════════════════════
+
+📌 USUARIOS DEL SISTEMA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  AMBOS USUARIOS USAN LA MISMA CONTRASEÑA: Pana2024
+
+1. ADMINISTRADOR RRHH
+   ───────────────────────────────
+   Usuario:    admin.rrhh
+   Contraseña: Pana2024
+   Rol:        RRHH
+   Email:      solerahilario207@gmail.com
+
+2. USUARIO JEFATURA
+   ───────────────────────────────
+   Usuario:    jefatura
+   Contraseña: Pana2024
+   Rol:        Jefatura
+   Email:      solerahilario207@gmail.com
+
+
+═══════════════════════════════════════════════════════════════
+⚠️  IMPORTANTE ANTES DE INSTALAR
+═══════════════════════════════════════════════════════════════
+
+✓ Los usuarios se crean automáticamente al arrancar la aplicación
+✓ Las contraseñas se generan con BCrypt en runtime
+✓ NO necesitas borrar nada manualmente
+✓ La instalación creará la base de datos automáticamente
+
+
+═══════════════════════════════════════════════════════════════
+🔑 CÓMO INICIAR SESIÓN
+═══════════════════════════════════════════════════════════════
+
+1. Instala el .exe
+2. Abre la aplicación (se abrirá el navegador automáticamente)
+3. Usa las credenciales:
+
+   Usuario: admin.rrhh
+   Contraseña: Pana2024
+
+   O:
+
+   Usuario: jefatura
+   Contraseña: Pana2024
+
+
+═══════════════════════════════════════════════════════════════
+📧 CONFIGURACIÓN DE EMAIL (Para recuperación de contraseña)
+═══════════════════════════════════════════════════════════════
+
+IMPORTANTE: Para que funcione la recuperación de contraseña,
+debés configurar una "Contraseña de aplicación" de Gmail.
+
+Pasos:
+1. Ir a: https://myaccount.google.com/security
+2. Activar "Verificación en dos pasos" (si no está activa)
+3. Ir a "Contraseñas de aplicaciones"
+4. Generar una nueva contraseña para "Correo"
+5. Usar esa contraseña de 16 caracteres en appsettings.Production.json
+
+Ubicación del archivo de configuración:
+C:\Program Files\GEPCP Ferreteria El Pana\appsettings.Production.json
+
+O usar el script de configuración:
+C:\Program Files\GEPCP Ferreteria El Pana\ConfigurarEmail.ps1
+
+
+═══════════════════════════════════════════════════════════════
+🔧 RUTAS IMPORTANTES
+═══════════════════════════════════════════════════════════════
+
+Instalación:
+  C:\Program Files\GEPCP Ferreteria El Pana\
+
+Base de datos SQLite:
+  C:\Program Files\GEPCP Ferreteria El Pana\ferreteria.db
+
+Archivo de puerto dinámico:
+  C:\Program Files\GEPCP Ferreteria El Pana\puerto.txt
+
+Logs:
+  C:\Program Files\GEPCP Ferreteria El Pana\logs\
+
+Ícono personalizado:
+  C:\Program Files\GEPCP Ferreteria El Pana\app-icon.ico
+
+Scripts de mantenimiento:
+  - IniciarConSplash.bat     (Arranque normal con splash)
+  - RepararSistema.bat       (Reparación si hay problemas)
+  - ConfigurarEmail.ps1      (Configurar SMTP para recuperación)
+
+
+═══════════════════════════════════════════════════════════════
+🚀 INSTALADOR GENERADO
+═══════════════════════════════════════════════════════════════
+
+Ubicación del instalador:
+GEPCP Ferreteria El Pana\Instalador\Output\GEPCP_FerreteriaElPana_Setup_v1.0.0.exe
+
+Última compilación: Mayo 2025
+
+Características:
+✓ Ícono personalizado con logo "FP" (Ferretería El Pana)
+✓ Credenciales actualizadas y validadas
+✓ Puerto dinámico automático
+✓ Splash screen con logo
+
+
+═══════════════════════════════════════════════════════════════
+⚠️ NOTAS IMPORTANTES
+═══════════════════════════════════════════════════════════════
+
+• La aplicación usa PUERTO DINÁMICO para evitar conflictos
+• El puerto seleccionado se guarda en "puerto.txt"
+• El splash screen lee ese archivo y redirige automáticamente
+• Si hay problemas de arranque, ejecutá "RepararSistema.bat"
+• Las contraseñas están cifradas con BCrypt en la base de datos
+• Para resetear usuarios, borrá ferreteria.db antes de instalar
+• El ícono naranja "FP" aparecerá en el escritorio y menú inicio
+
+
+═══════════════════════════════════════════════════════════════
+Fecha de generación: 18 de Mayo 2025
+Versión del sistema: 1.0.0
+═══════════════════════════════════════════════════════════════

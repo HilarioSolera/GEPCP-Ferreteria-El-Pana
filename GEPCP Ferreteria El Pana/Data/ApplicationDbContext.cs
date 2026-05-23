@@ -237,8 +237,10 @@ namespace GEPCP_Ferreteria_El_Pana.Data
                 .IsUnique();
 
             // SEED: Puestos
-            modelBuilder.Entity<Puesto>().HasData(new Puesto { PuestoId = 1, Nombre = "Encargada de RR.H.H.", SalarioBase = 450000, Activo = true },
-                                                  new Puesto { PuestoId = 2, Nombre = "Vendedor", SalarioBase = 380000, Activo = true });
+            modelBuilder.Entity<Puesto>().HasData(
+                new Puesto { PuestoId = 1, Codigo = "TOCG", Departamento = "Recursos Humanos", Nombre = "Encargada de RR.H.H.", SalarioBase = 450000, Activo = true },
+                new Puesto { PuestoId = 2, Codigo = "TOCG", Departamento = "Ventas", Nombre = "Vendedor", SalarioBase = 380000, Activo = true }
+            );
             // SEED: Roles
             modelBuilder.Entity<Rol>().HasData(
                 new Rol { RolId = 1, Nombre = "RRHH" },
@@ -260,26 +262,8 @@ namespace GEPCP_Ferreteria_El_Pana.Data
             );
 
             // SEED: Usuarios
-            modelBuilder.Entity<Usuario>().HasData(
-    new Usuario
-    {
-        UsuarioId = 1,
-        NombreUsuario = "admin.rrhh",
-        NombreCompleto = "Administrador RRHH",
-        PasswordHash = "$2a$11$/mJGbQrxHo3bDUtdY6MWoeaJc/6aYPE7EG9ukr6ln9mNupX3Y8Wz.",
-        Rol = "RRHH",
-        CorreoElectronico = "solerahilario207@gmail.com"
-    },
-    new Usuario
-    {
-        UsuarioId = 2,
-        NombreUsuario = "jefatura",
-        NombreCompleto = "Usuario Jefatura",
-        PasswordHash = "$2a$11$T72F0Mu8ocYejSTck6bprueMSoi5WgVtSD.hIraw5PvhnjDde6rD6",
-        Rol = "Jefatura",
-        CorreoElectronico = "solerahilario207@gmail.com"
-    }
-);
+            // Los usuarios se crean automáticamente en Program.cs al iniciar la aplicación
+            // Credenciales por defecto: admin.rrhh / Pana2024 | jefatura / Pana2024
 
         }
     }

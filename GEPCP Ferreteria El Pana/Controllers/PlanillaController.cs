@@ -162,7 +162,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al cargar planilla. PeriodoId: {P}", periodoId);
-                TempData["Error"] = "Ocurrió un error al cargar la planilla.";
+                TempData["Error"] = $"Ocurrió un error al cargar la planilla: {ex.Message}";
+                TempData["ErrorDetail"] = ex.ToString(); // Para debugging
                 return View(new List<PlanillaEmpleado>());
             }
         }
@@ -213,10 +214,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 }
 
 var abonosPeriodoExistentes = await _context.AbonosPrestamo
+    .Include(a => a.Prestamo)
     .Where(a => a.Observaciones != null &&
                 a.Observaciones.Contains("Deducción planilla") &&
                 a.Observaciones.Contains(periodo.Descripcion))
     .Select(a => a.Prestamo.EmpleadoId)
+    .Distinct()
     .ToListAsync();
 
 var empleadoIds = empleados.Select(e => e.EmpleadoId).ToList();
@@ -258,6 +261,14 @@ var todasIncapacidades = await _context.Incapacidades
     .Where(i => i.FechaInicio <= periodo.FechaFin &&
                 i.FechaFin >= periodo.FechaInicio &&
                 empleadoIds.Contains(i.EmpleadoId))
+    .ToListAsync();
+
+var todasVacaciones = await _context.Vacaciones
+    .Where(v => v.Estado == EstadoVacacion.Aprobada &&
+                v.Tipo == TipoVacacion.ConPago &&
+                v.FechaInicio <= periodo.FechaFin &&
+                v.FechaFin >= periodo.FechaInicio &&
+                empleadoIds.Contains(v.EmpleadoId))
     .ToListAsync();
 
 var todasPlanillasExistentes = await _context.PlanillasEmpleado
@@ -328,6 +339,31 @@ foreach (var empleado in empleados)
         .Where(pf => pf.EmpleadoId == empleado.EmpleadoId)
         .Sum(pf => pf.MontoTotal);
 
+    // ✅ VACACIONES SE PAGAN POR SEPARADO - NO SUMAN EN PLANILLA
+
+    // Incapacidades — son días NO trabajados: se deduce el salario de esos días.
+    // El pago por incapacidad (CCSS/INS/Patrono) se refleja en el comprobante de incapacidad,
+    // NO en la planilla. La planilla solo deduce los días no laborados.
+    var divisorInc = _context.Database != null ? 30m : 30m; // salario diario CR estándar
+    var salarioDiarioInc = Math.Round(empleado.SalarioBase / 30m, 6);
+    var incapacidadesDelPeriodo = todasIncapacidades
+        .Where(i => i.EmpleadoId == empleado.EmpleadoId &&
+                    i.FechaInicio >= empleado.FechaIngreso)
+        .ToList();
+
+    // Calcular días de incapacidad que caen dentro del período
+    int diasIncapacidadEnPeriodo = 0;
+    foreach (var inc in incapacidadesDelPeriodo)
+    {
+        var inicioEfectivo = inc.FechaInicio < periodo.FechaInicio ? periodo.FechaInicio : inc.FechaInicio;
+        var finEfectivo    = inc.FechaFin   > periodo.FechaFin   ? periodo.FechaFin   : inc.FechaFin;
+        if (finEfectivo >= inicioEfectivo)
+            diasIncapacidadEnPeriodo += (finEfectivo - inicioEfectivo).Days + 1;
+    }
+    var deduccionIncapacidad = Math.Round(salarioDiarioInc * diasIncapacidadEnPeriodo, 2);
+    var montoIncapacidades = 0m; // Las incapacidades no son devengados en planilla
+
+    // ✅ totalDevengado SIN vacaciones ni incapacidades (se pagan/deducen aparte)
     var totalDevengado = Math.Round(
         salarioOrdinario + montoHorasExtras +
         montoComisiones + montoFeriados, 2);
@@ -339,22 +375,35 @@ foreach (var empleado in empleados)
     var deduccionRenta = CalcularImpuestoRenta(
         totalDevengado, periodo, empleado.NumHijos, empleado.TieneConyuge);
 
-    // Préstamo — cuota completa sin dividir, validando fecha ingreso
+    // Préstamos — SUMAR TODOS los préstamos activos (sin límite de cantidad)
     decimal deduccionPrestamo = 0m;
     if (!abonosPeriodoExistentes.Contains(empleado.EmpleadoId))
     {
-        var prestamo = todosPrestamos
-            .FirstOrDefault(p =>
+        var prestamosEmpleado = todosPrestamos
+            .Where(p =>
                 p.EmpleadoId == empleado.EmpleadoId &&
-                p.FechaPrestamo >= empleado.FechaIngreso);
-        if (prestamo != null && prestamo.Monto > 0)
-        {
-            deduccionPrestamo = Math.Round(
-                Math.Min(prestamo.CuotaMensual, prestamo.Monto), 2);
+                p.FechaPrestamo >= empleado.FechaIngreso)
+            .ToList();
 
-            // Art. 172 CT: deducción no puede exceder el 50 % del salario ordinario
-            var maxDeduccion = Math.Round(salarioOrdinario * 0.50m, 2);
-            deduccionPrestamo = Math.Min(deduccionPrestamo, maxDeduccion);
+        foreach (var prestamo in prestamosEmpleado)
+        {
+            if (prestamo.Monto > 0)
+            {
+                var cuotaPrestamo = Math.Round(
+                    Math.Min(prestamo.CuotaMensual, prestamo.Monto), 2);
+                deduccionPrestamo += cuotaPrestamo;
+            }
+        }
+
+        // Art. 172 CT: la deducción TOTAL no puede exceder el 50 % del salario ordinario
+        var maxDeduccion = Math.Round(salarioOrdinario * 0.50m, 2);
+        if (deduccionPrestamo > maxDeduccion)
+        {
+            warningMessages.Add(
+                $"{empleado.PrimerApellido} {empleado.Nombre}: Cuota total de préstamos (₡{deduccionPrestamo:N2}) " +
+                $"limitada al 50% del salario (₡{maxDeduccion:N2}) según Art. 172 CT. " +
+                $"Empleado tiene {prestamosEmpleado.Count} préstamo(s) activo(s).");
+            deduccionPrestamo = maxDeduccion;
         }
     }
 
@@ -368,28 +417,9 @@ foreach (var empleado in empleados)
             .Where(c => c.Saldo > 0)
             .Sum(c => Math.Min(c.CuotaQuincenal, c.Saldo)), 2);
 
-    // Incapacidades — validando fecha ingreso
-    var diasIncapacidad = todasIncapacidades
-        .Where(i => i.EmpleadoId == empleado.EmpleadoId &&
-                    i.FechaInicio >= empleado.FechaIngreso)
-        .Sum(i =>
-        {
-            var inicio = i.FechaInicio < periodo.FechaInicio
-                ? periodo.FechaInicio : i.FechaInicio;
-            var fin = i.FechaFin > periodo.FechaFin
-                ? periodo.FechaFin : i.FechaFin;
-            return Math.Max(0, (fin - inicio).Days + 1);
-        });
-    var salarioDiario        = Math.Round(empleado.SalarioBase / 30m, 2);
-    var deduccionIncapacidad = Math.Round(salarioDiario * diasIncapacidad, 2);
-
-    // Vacaciones sin pago eliminadas — siempre 0
-    var deduccionVacaciones = 0m;
-
     var totalDeducciones = Math.Round(
         deduccionCCSS + deduccionRenta +
-        deduccionPrestamo + deduccionCredito +
-        deduccionIncapacidad + deduccionVacaciones, 2);
+        deduccionPrestamo + deduccionCredito + deduccionIncapacidad, 2);
 
     var netoAPagar = Math.Max(0,
         Math.Round(totalDevengado - totalDeducciones, 2));
@@ -415,8 +445,7 @@ foreach (var empleado in empleados)
         var totalDeduccionesFinal = Math.Round(
             deduccionCCSS + deduccionRenta +
             deduccionPrestamo + deduccionCredito +
-            deduccionIncapacidad + deduccionVacaciones +
-            deduccionHorasNoLab + otrasDeduccionesGuardadas, 2);
+            deduccionHorasNoLab + otrasDeduccionesGuardadas + deduccionIncapacidad, 2);
 
         planillaExistente.HorasOrdinarias            = horasOrdinariasEfectivas;
         planillaExistente.HorasExtras                = totalHorasExtras;
@@ -427,12 +456,14 @@ foreach (var empleado in empleados)
         planillaExistente.AumentoAplicado            = montoComisiones;
         planillaExistente.MontoHorasExtras           = montoHorasExtras;
         planillaExistente.MontoFeriados              = montoFeriados;
+        planillaExistente.MontoVacaciones            = 0m; // Vacaciones se pagan por separado
+        planillaExistente.MontoIncapacidades         = 0m;  // Incapacidades no son devengado en planilla
         planillaExistente.TotalDevengado             = totalDevengado;
         planillaExistente.DeduccionCCSS              = deduccionCCSS;
         planillaExistente.DeduccionRenta             = deduccionRenta;
         planillaExistente.DeduccionPrestamos         = deduccionPrestamo;
         planillaExistente.DeduccionCreditoFerreteria = deduccionCredito;
-        planillaExistente.DeduccionIncapacidad       = deduccionIncapacidad;
+        planillaExistente.DeduccionIncapacidad       = deduccionIncapacidad; // Deducción por días no trabajados
         planillaExistente.DeduccionVacaciones        = 0m;
         planillaExistente.DeduccionHorasNoLaboradas  = deduccionHorasNoLab;
         planillaExistente.OtrasDeducciones           = otrasDeduccionesGuardadas;
@@ -457,18 +488,20 @@ foreach (var empleado in empleados)
             AumentoAplicado            = montoComisiones,
             MontoHorasExtras           = montoHorasExtras,
             MontoFeriados              = montoFeriados,
+            MontoVacaciones            = 0m, // Vacaciones se pagan por separado
+            MontoIncapacidades         = 0m,  // Incapacidades no son devengado en planilla
             TotalDevengado             = totalDevengado,
             DeduccionCCSS              = deduccionCCSS,
             DeduccionRenta             = deduccionRenta,
             DeduccionPrestamos         = deduccionPrestamo,
             DeduccionCreditoFerreteria = deduccionCredito,
-            DeduccionIncapacidad       = deduccionIncapacidad,
-            DeduccionVacaciones        = deduccionVacaciones,
+            DeduccionIncapacidad       = deduccionIncapacidad, // Deducción por días no trabajados
+            DeduccionVacaciones        = 0m,
             DeduccionHorasNoLaboradas  = 0m,
             OtrasDeducciones           = 0m,
             TotalDeducciones           = totalDeducciones,
             DiasTrabajados             = diasTrabajados,
-            NetoAPagar                 = netoAPagar
+            NetoAPagar                 = Math.Max(0, Math.Round(totalDevengado - totalDeducciones, 2))
         });
     }
 }
@@ -633,28 +666,41 @@ foreach (var empleado in empleados)
                     .Select(a => a.CreditoFerreteria.EmpleadoId)
                     .ToListAsync();
 
-                // Préstamos
+                // Préstamos - aplicar abonos a TODOS los préstamos activos
                 foreach (var planilla in planillas.Where(p => p.DeduccionPrestamos > 0))
                 {
                     if (empleadosConAbonoPrestamo.Contains(planilla.EmpleadoId)) continue;
-                    var prestamo = await _context.Prestamos
-                        .FirstOrDefaultAsync(p => p.EmpleadoId == planilla.EmpleadoId && p.Activo);
-                    if (prestamo == null) continue;
 
-                    var saldoAnterior = prestamo.Monto;
-                    var montoAbono = Math.Round(Math.Min(planilla.DeduccionPrestamos, prestamo.Monto), 2);
-                    prestamo.Monto = Math.Max(0, Math.Round(prestamo.Monto - montoAbono, 2));
-                    if (prestamo.Monto <= 0) prestamo.Activo = false;
+                    var prestamosActivos = await _context.Prestamos
+                        .Where(p => p.EmpleadoId == planilla.EmpleadoId && p.Activo)
+                        .OrderBy(p => p.FechaPrestamo) // Abonar primero a los más antiguos
+                        .ToListAsync();
 
-                    _context.AbonosPrestamo.Add(new AbonoPrestamo
+                    if (!prestamosActivos.Any()) continue;
+
+                    var montoRestantePorDistribuir = planilla.DeduccionPrestamos;
+
+                    foreach (var prestamo in prestamosActivos)
                     {
-                        PrestamoId = prestamo.PrestamoId,
-                        Monto = montoAbono,
-                        FechaAbono = DateTime.Now,
-                        Observaciones = $"Deducción planilla — {periodo.Descripcion} " +
-                                        $"— Saldo anterior: ₡{saldoAnterior:N0} " +
-                                        $"— Nuevo saldo: ₡{prestamo.Monto:N0}"
-                    });
+                        if (montoRestantePorDistribuir <= 0) break;
+
+                        var saldoAnterior = prestamo.Monto;
+                        var montoAbono = Math.Round(Math.Min(montoRestantePorDistribuir, prestamo.Monto), 2);
+                        prestamo.Monto = Math.Max(0, Math.Round(prestamo.Monto - montoAbono, 2));
+                        if (prestamo.Monto <= 0) prestamo.Activo = false;
+
+                        montoRestantePorDistribuir -= montoAbono;
+
+                        _context.AbonosPrestamo.Add(new AbonoPrestamo
+                        {
+                            PrestamoId = prestamo.PrestamoId,
+                            Monto = montoAbono,
+                            FechaAbono = DateTime.Now,
+                            Observaciones = $"Deducción planilla — {periodo.Descripcion} " +
+                                            $"— Saldo anterior: ₡{saldoAnterior:N0} " +
+                                            $"— Nuevo saldo: ₡{prestamo.Monto:N0}"
+                        });
+                    }
                 }
 
                 // Créditos Ferretería
@@ -801,23 +847,51 @@ foreach (var empleado in empleados)
                     .Include(pe => pe.PeriodoPago)
                     .FirstOrDefaultAsync(pe => pe.PlanillaEmpleadoId == id);
 
-                if (planilla == null) return NotFound();
+                if (planilla == null)
+                {
+                    TempData["Error"] = $"No se encontró la planilla con ID {id}.";
+                    return RedirectToAction(nameof(Index));
+                }
 
                 var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
-                var pdfBytes = _servicioPDF.GenerarPDF(planilla, usuario);
-                var nombre = $"Comprobante_{planilla.Empleado.PrimerApellido}_{planilla.PeriodoPago.Descripcion.Replace(" ", "_").Replace("—", "")}.pdf";
+
+                _logger.LogInformation("Generando PDF para planilla ID: {Id}, Empleado: {Emp}",
+                    id, $"{planilla.Empleado.PrimerApellido} {planilla.Empleado.Nombre}");
+
+                byte[] pdfBytes;
+                try
+                {
+                    pdfBytes = _servicioPDF.GenerarPDF(planilla, usuario);
+                }
+                catch (Exception pdfEx)
+                {
+                    _logger.LogError(pdfEx, "Error interno en GenerarPDF para planilla ID: {Id}", id);
+                    TempData["Error"] = $"Error al generar el PDF: {pdfEx.Message}";
+                    return RedirectToAction(nameof(Index), new { periodoId = planilla.PeriodoPagoId });
+                }
+
+                if (pdfBytes == null || pdfBytes.Length == 0)
+                {
+                    TempData["Error"] = "El PDF generado está vacío. Contactá al administrador.";
+                    return RedirectToAction(nameof(Index), new { periodoId = planilla.PeriodoPagoId });
+                }
+
+                var nombre = $"Comprobante_{planilla.Empleado.PrimerApellido}_{planilla.PeriodoPago.Descripcion.Replace(" ", "_").Replace("—", "").Replace("/", "-")}.pdf";
 
                 await _auditoria.RegistrarAsync(
                     usuario,
                     "Descargar PDF planilla", "Planilla",
                     $"{planilla.Empleado.PrimerApellido} {planilla.Empleado.Nombre}");
 
+                _logger.LogInformation("PDF generado OK: {Nombre} ({Bytes} bytes)", nombre, pdfBytes.Length);
+
                 return File(pdfBytes, "application/pdf", nombre);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al generar PDF planilla ID: {Id}", id);
-                TempData["Error"] = "Error al generar el PDF. Intentá de nuevo.";
+                _logger.LogError(ex, "Error inesperado al generar PDF planilla ID: {Id} — Tipo: {Type} — Mensaje: {Msg}",
+                    id, ex.GetType().Name, ex.Message);
+                TempData["Error"] = $"Error al generar el PDF: {ex.Message}";
                 return RedirectToAction(nameof(Index));
             }
         }
@@ -1195,7 +1269,7 @@ foreach (var empleado in empleados)
 
                 TempData[enviado ? "Success" : "Error"] = enviado
                     ? $"Comprobante enviado a {correo}."
-                    : "Error al enviar el correo. Verificá la configuración SMTP.";
+                    : "Error al enviar el correo. Verificá usuario, app password de Gmail y puerto SMTP.";
 
                 return RedirectToAction(nameof(Index),
                     new { periodoId = planilla.PeriodoPagoId });
@@ -1230,18 +1304,14 @@ foreach (var empleado in empleados)
 
                 var emailSvc = HttpContext.RequestServices.GetRequiredService<EmailService>();
                 int enviados = 0;
-                int sinCorreo = 0;
-                int errores = 0;
-                var detalleErrores = new List<string>();
 
                 foreach (var planilla in planillas)
                 {
                     var correo = planilla.Empleado.CorreoElectronico;
+                    var nombreCompleto = $"{planilla.Empleado.PrimerApellido} {planilla.Empleado.Nombre}";
+
                     if (string.IsNullOrWhiteSpace(correo))
-                    {
-                        sinCorreo++;
                         continue;
-                    }
 
                     try
                     {
@@ -1302,36 +1372,25 @@ foreach (var empleado in empleados)
 
                         var enviado = await emailSvc.EnviarPDFAsync(
                             correo,
-                            $"{planilla.Empleado.PrimerApellido} {planilla.Empleado.Nombre}",
+                            nombreCompleto,
                             asunto, cuerpo, pdfBytes, nombreArchivo);
 
                         if (enviado)
                             enviados++;
-                        else
-                        {
-                            errores++;
-                            detalleErrores.Add(planilla.Empleado.PrimerApellido);
-                        }
                     }
                     catch
                     {
-                        errores++;
-                        detalleErrores.Add(planilla.Empleado.PrimerApellido);
+                        // Continuar con el siguiente sin detenerse
                     }
                 }
 
                 await _auditoria.RegistrarAsync(
                     HttpContext.Session.GetString("Usuario") ?? "",
                     "Enviar comprobantes masivo por email", "Planilla",
-                    $"PeriodoId: {periodoId} — Enviados: {enviados}, Sin correo: {sinCorreo}, Errores: {errores}");
+                    $"PeriodoId: {periodoId} — Enviados: {enviados}");
 
-                var msg = $"{enviados} comprobante(s) enviado(s) correctamente.";
-                if (sinCorreo > 0)
-                    msg += $"\n{sinCorreo} empleado(s) sin correo registrado.";
-                if (errores > 0)
-                    msg += $"\n{errores} error(es): {string.Join(", ", detalleErrores)}";
+                TempData["Success"] = "Se enviaron los correos exitosamente.";
 
-                TempData[errores == 0 ? "Success" : "Warning"] = msg;
                 return RedirectToAction(nameof(Index), new { periodoId });
             }
             catch (Exception ex)

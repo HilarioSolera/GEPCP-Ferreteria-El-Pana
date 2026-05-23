@@ -96,11 +96,16 @@ else
             <tbody>
                 @foreach (var item in Model)
                 {
-                    <tr class="@(item.Estado == "Inactivo" ? "table-light text-muted" : "")">
+                    <tr class="@(item.Estado == "Inactivo" ? "table-danger" : "")" 
+                        style="@(item.Estado == "Inactivo" ? "background-color: #ffe6e6 !important;" : "")">
                         <td><code>@item.Cedula</code></td>
                         <td>
                             <strong>@item.PrimerApellido @item.SegundoApellido</strong>
                             @item.Nombre
+                            @if (item.Estado == "Inactivo")
+                            {
+                                <span class="badge bg-danger ms-2">INACTIVO</span>
+                            }
                             <div class="small text-muted">
                                 Ingresó: @item.FechaIngreso.ToString("dd/MM/yyyy")
                             </div>
@@ -156,79 +161,179 @@ else
                                 </a>
                                 @if (item.Estado == "Activo")
                                 {
-                                    <form asp-action="Desactivar" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Desactivar a @item.PrimerApellido @item.Nombre?')">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@item.EmpleadoId" />
-                                        <input type="hidden" name="busqueda" value="@busqueda" />
-                                        <button type="submit" class="btn btn-sm btn-secondary" title="Desactivar">
-                                            <i class="bi bi-pause-circle"></i>
-                                        </button>
-                                    </form>
-                                }
-                                else
-                                {
-                                    <form asp-action="Activar" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Activar a @item.PrimerApellido @item.Nombre?')">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@item.EmpleadoId" />
-                                        <input type="hidden" name="busqueda" value="@busqueda" />
-                                        <button type="submit" class="btn btn-sm btn-success" title="Activar">
-                                            <i class="bi bi-play-circle"></i>
-                                        </button>
-                                    </form>
-                                }
-                                <a asp-action="Delete" asp-route-id="@item.EmpleadoId"
-                                       class="btn btn-sm btn-danger" title="Eliminar">
-                                    <i class="bi bi-trash"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                                                                     <button type="button" class="btn btn-sm btn-secondary btnDesactivarEmpleadoLista"
+                                                                        data-id="@item.EmpleadoId"
+                                                                        data-nombre="@item.PrimerApellido @item.Nombre"
+                                                                        data-busqueda="@busqueda"
+                                                                        title="Desactivar">
+                                                                        <i class="bi bi-pause-circle"></i>
+                                                                    </button>
+                                                            }
+                                                            else
+                                                            {
+                                                                <button type="button" class="btn btn-sm btn-success btnActivarEmpleadoLista"
+                                                                        data-id="@item.EmpleadoId"
+                                                                        data-nombre="@item.PrimerApellido @item.Nombre"
+                                                                        data-busqueda="@busqueda"
+                                                                        title="Activar">
+                                                                    <i class="bi bi-play-circle"></i>
+                                                                </button>
+                                                            }
+                                                            <a asp-action="Delete" asp-route-id="@item.EmpleadoId"
+                                                                   class="btn btn-sm btn-danger" title="Eliminar">
+                                                                <i class="bi bi-trash"></i>
+                                                            </a>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
     </div>
 
-    <div class="text-muted small mt-2 text-end">
-        Total: <strong>@Model.Count()</strong> empleado(s) —
-        Activos: <strong>@Model.Count(e => e.Estado == "Activo")</strong> /
-        Inactivos: <strong>@Model.Count(e => e.Estado == "Inactivo")</strong>
+         <div class="text-muted small mt-2 text-end">
+             Total: <strong>@Model.Count()</strong> empleado(s) —
+             Activos: <strong>@Model.Count(e => e.Estado == "Activo")</strong> /
+             Inactivos: <strong>@Model.Count(e => e.Estado == "Inactivo")</strong>
+         </div>
+    }
+
+    <!-- Modal Activar/Desactivar Empleado en Lista -->
+    <div class="modal fade" id="confirmAccionEmpleadoListaModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+                <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                    <h5 class="modal-title text-white fw-bold" id="modalAccionEmpleadoListaTitulo">
+                        <i class="bi bi-exclamation-triangle"></i> Cambiar Estado
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding: 24px;">
+                    <div style="background-color: #FFF5EB; border-left: 4px solid #FF7A00; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+                        <div style="color: #333; font-weight: 600;" id="modalAccionEmpleadoListaMensaje">
+                            <i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>
+                            Mensaje
+                        </div>
+                    </div>
+
+                    <div style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px;">
+                        <p style="color: #888; font-size: 0.85rem; margin-bottom: 0;">
+                            <i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>
+                            Asegúrese de que esta es la acción correcta.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #E0E0E0; padding: 12px 16px;">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarAccionEmpleadoLista">
+                        <i class="bi bi-check-circle"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
-}
 
-@section Scripts {
-    <script>
-        // Preservar búsqueda en sessionStorage
-        var input = document.getElementById('inputBusqueda');
-        var key = 'empleados_busqueda';
+    <!-- Formularios ocultos para acciones de empleado -->
+    <form method="post" asp-action="Desactivar" style="display:none;" id="formDesactivarEmpleadoLista">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="inputIdEmpleadoLista" />
+        <input type="hidden" name="busqueda" id="inputBusquedaEmpleadoLista" />
+    </form>
+    <form method="post" asp-action="Activar" style="display:none;" id="formActivarEmpleadoLista">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="inputIdEmpleadoLista2" />
+        <input type="hidden" name="busqueda" id="inputBusquedaEmpleadoLista2" />
+    </form>
 
-        // Al cargar: si no hay valor en el input pero hay uno guardado, restaurarlo
-        if (input && !input.value) {
-            var guardado = sessionStorage.getItem(key);
-            if (guardado) {
-                input.value = guardado;
-            }
-        }
+    @section Scripts {
+         <script>
+             // Preservar búsqueda en sessionStorage
+             var input = document.getElementById('inputBusqueda');
+             var key = 'empleados_busqueda';
 
-        // Al hacer submit: guardar el valor
-        var form = document.getElementById('formBusqueda');
-        if (form) {
-            form.addEventListener('submit', function() {
-                sessionStorage.setItem(key, input.value);
-            });
-        }
+             // Al cargar: si no hay valor en el input pero hay uno guardado, restaurarlo
+             if (input && !input.value) {
+                 var guardado = sessionStorage.getItem(key);
+                 if (guardado) {
+                     input.value = guardado;
+                 }
+             }
 
-        // Si hay valor en la URL, guardarlo también
-        if (input && input.value) {
-            sessionStorage.setItem(key, input.value);
-        }
+             // Al hacer submit: guardar el valor
+             var form = document.getElementById('formBusqueda');
+             if (form) {
+                 form.addEventListener('submit', function() {
+                     sessionStorage.setItem(key, input.value);
+                 });
+             }
 
-        // Limpiar sessionStorage si se presiona Limpiar o Mostrar todos
-        document.querySelectorAll('a[href*="busqueda"]').forEach(function(a) {
-            a.addEventListener('click', function() {
-                sessionStorage.removeItem(key);
-            });
-        });
-    </script>
-}
+             // Si hay valor en la URL, guardarlo también
+             if (input && input.value) {
+                 sessionStorage.setItem(key, input.value);
+             }
+
+             // Limpiar sessionStorage si se presiona Limpiar o Mostrar todos
+             document.querySelectorAll('a[href*="busqueda"]').forEach(function(a) {
+                 a.addEventListener('click', function() {
+                     sessionStorage.removeItem(key);
+                 });
+             });
+
+             // Modal de empleados en lista
+             document.addEventListener('DOMContentLoaded', function() {
+                 const btnsDesactivar = document.querySelectorAll('.btnDesactivarEmpleadoLista');
+                 const btnsActivar = document.querySelectorAll('.btnActivarEmpleadoLista');
+                 const formDesactivar = document.getElementById('formDesactivarEmpleadoLista');
+                 const formActivar = document.getElementById('formActivarEmpleadoLista');
+                 let accionActual = null;
+
+                 const modal = new bootstrap.Modal(document.getElementById('confirmAccionEmpleadoListaModal'), {
+                     backdrop: 'static',
+                     keyboard: false
+                 });
+
+                 btnsDesactivar.forEach(function(btn) {
+                     btn.addEventListener('click', function() {
+                         accionActual = 'desactivar';
+                         document.getElementById('modalAccionEmpleadoListaTitulo').textContent = 'Desactivar Empleado';
+                         document.getElementById('modalAccionEmpleadoListaMensaje').innerHTML = 
+                             '<i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>' +
+                             '¿Desactivar a ' + this.dataset.nombre + '?';
+                         document.getElementById('inputIdEmpleadoLista').value = this.dataset.id;
+                         document.getElementById('inputBusquedaEmpleadoLista').value = this.dataset.busqueda;
+                         modal.show();
+                     });
+                 });
+
+                 btnsActivar.forEach(function(btn) {
+                     btn.addEventListener('click', function() {
+                         accionActual = 'activar';
+                         document.getElementById('modalAccionEmpleadoListaTitulo').textContent = 'Activar Empleado';
+                         document.getElementById('modalAccionEmpleadoListaMensaje').innerHTML = 
+                             '<i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>' +
+                             '¿Activar a ' + this.dataset.nombre + '?';
+                         document.getElementById('inputIdEmpleadoLista2').value = this.dataset.id;
+                         document.getElementById('inputBusquedaEmpleadoLista2').value = this.dataset.busqueda;
+                         modal.show();
+                     });
+                 });
+
+                 const btnConfirmar = document.getElementById('btnConfirmarAccionEmpleadoLista');
+                 if (btnConfirmar) {
+                     btnConfirmar.addEventListener('click', function() {
+                         modal.hide();
+                         Loading.show('Procesando acción...');
+                         setTimeout(function() {
+                             if (accionActual === 'desactivar') {
+                                 formDesactivar.submit();
+                             } else if (accionActual === 'activar') {
+                                 formActivar.submit();
+                             }
+                         }, 100);
+                     });
+                 }
+             });
+         </script>
+    }

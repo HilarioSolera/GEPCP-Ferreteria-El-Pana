@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Services;
+using GEPCP_Ferreteria_El_Pana.Helpers;
 
 namespace GEPCP_Ferreteria_El_Pana.Controllers
 {
@@ -108,11 +109,14 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     .AsNoTracking()
                     .FirstOrDefaultAsync(e => e.EmpleadoId == model.EmpleadoId);
 
-                if (empleado == null)
-                {
-                    ModelState.AddModelError("EmpleadoId", "Empleado no encontrado.");
+                // Validar que el empleado esté activo
+                if (!EmpleadoValidationHelper.ValidarEmpleadoActivo(empleado, ModelState, "crear un crédito"))
                     return View(model);
-                }
+
+                // Validar que la fecha del crédito no sea anterior a la fecha de ingreso
+                if (!EmpleadoValidationHelper.ValidarFechaContraIngreso(
+                    empleado!, model.FechaCredito, ModelState, "FechaCredito", "crédito"))
+                    return View(model);
 
                 var salarioReferencia = Math.Round(
      empleado.SalarioBase / empleado.FactorCuotaPrestamo, 2);
@@ -240,12 +244,72 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index), new { verTodos = true });
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AumentarMonto(
+            int creditoId, decimal montoExtra, string? observaciones)
+        {
+            try
+            {
+                if (montoExtra <= 0)
+                {
+                    TempData["Error"] = "El monto adicional debe ser mayor a cero.";
+                    return RedirectToAction(nameof(Index), new { verTodos = true });
+                }
+
+                var credito = await _context.CreditosFerreteria
+                    .Include(c => c.Empleado)
+                    .FirstOrDefaultAsync(c => c.CreditoFerreteriaId == creditoId);
+
+                if (credito == null)
+                {
+                    TempData["Error"] = "Crédito no encontrado.";
+                    return RedirectToAction(nameof(Index), new { verTodos = true });
+                }
+
+                if (!credito.Activo)
+                {
+                    TempData["Error"] = "Solo se puede aumentar un crédito activo.";
+                    return RedirectToAction(nameof(Index), new { verTodos = true });
+                }
+
+                montoExtra = Math.Round(montoExtra, 2);
+                var saldoAnterior = credito.Saldo;
+                var cuotaAnterior = credito.CuotaQuincenal;
+                var cuotasPendientes = credito.CuotaQuincenal > 0
+                    ? Math.Max(1, (int)Math.Ceiling((double)(credito.Saldo / credito.CuotaQuincenal)))
+                    : 1;
+
+                credito.MontoTotal = Math.Round(credito.MontoTotal + montoExtra, 2);
+                credito.Saldo = Math.Round(credito.Saldo + montoExtra, 2);
+                credito.CuotaQuincenal = Math.Round(credito.Saldo / cuotasPendientes, 2);
+
+                await _context.SaveChangesAsync();
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Aumentar monto crédito", "Créditos",
+                    $"{credito.Empleado.PrimerApellido} {credito.Empleado.Nombre} — " +
+                    $"Aumento: ₡{montoExtra:N0} — Saldo anterior: ₡{saldoAnterior:N0} → Nuevo saldo: ₡{credito.Saldo:N0} — " +
+                    $"Cuota anterior: ₡{cuotaAnterior:N0} → Nueva cuota: ₡{credito.CuotaQuincenal:N0}");
+
+                TempData["Success"] =
+                    $"Se sumaron ₡{montoExtra:N0} al crédito. Nuevo saldo: ₡{credito.Saldo:N0} y cuota recalculada: ₡{credito.CuotaQuincenal:N0}.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al aumentar crédito. CreditoId: {Id}", creditoId);
+                TempData["Error"] = "Error al aumentar el crédito. Intentá de nuevo.";
+            }
+
+            return RedirectToAction(nameof(Index), new { verTodos = true });
+        }
+
         // CORREGIR ABONO
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CorregirAbono(
-            int abonoId, decimal montoNuevo, string? observaciones)
+        public async Task<IActionResult> CorregirAbono(            int abonoId, decimal montoNuevo, string? observaciones)
         {
             try
             {

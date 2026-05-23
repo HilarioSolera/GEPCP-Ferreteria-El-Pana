@@ -2,6 +2,7 @@ using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
+using GEPCP_Ferreteria_El_Pana.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -103,10 +104,19 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 }
 
                 var empleado = await _context.Empleados.FindAsync(model.EmpleadoId);
-                if (empleado == null)
+
+                // Validar que el empleado esté activo
+                if (!EmpleadoValidationHelper.ValidarEmpleadoActivo(empleado, ModelState, "registrar incapacidad"))
                 {
-                    ModelState.AddModelError("EmpleadoId", "Empleado no encontrado.");
-                    await CargarEmpleadosViewBag();
+                    await CargarEmpleadosViewBag(model.EmpleadoId);
+                    return View(model);
+                }
+
+                // Validar que la fecha de inicio de incapacidad no sea anterior a la fecha de ingreso
+                if (!EmpleadoValidationHelper.ValidarFechaContraIngreso(
+                    empleado!, model.FechaInicio, ModelState, "FechaInicio", "inicio de incapacidad"))
+                {
+                    await CargarEmpleadosViewBag(model.EmpleadoId);
                     return View(model);
                 }
 
@@ -235,6 +245,17 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     .FirstOrDefaultAsync(i => i.IncapacidadId == id);
 
                 if (registro == null) return NotFound();
+
+                // Validar que la fecha de inicio de incapacidad no sea anterior a la fecha de ingreso
+                if (model.FechaInicio < registro.Empleado.FechaIngreso)
+                {
+                    ModelState.AddModelError("FechaInicio", 
+                        $"La fecha de inicio de la incapacidad no puede ser anterior a la fecha de ingreso del empleado ({registro.Empleado.FechaIngreso:dd/MM/yyyy}).");
+                    ViewBag.EmpleadoNombre = $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre}";
+                    ViewBag.EmpleadoCedula = registro.Empleado.Cedula;
+                    await CargarEmpleadosViewBag(model.EmpleadoId);
+                    return View(model);
+                }
 
                 var solapamiento = await _context.Incapacidades.AnyAsync(i =>
                     i.EmpleadoId == model.EmpleadoId &&
@@ -490,7 +511,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 TempData[enviado ? "Success" : "Error"] = enviado
                     ? $"Boleta enviada a {correo}."
-                    : "Error al enviar el correo. Verificá la configuración SMTP.";
+                    : "Error al enviar el correo. Verificá usuario, app password de Gmail y puerto SMTP.";
 
                 return RedirectToAction(nameof(Index));
             }

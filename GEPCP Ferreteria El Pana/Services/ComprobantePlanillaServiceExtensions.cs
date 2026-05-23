@@ -1,4 +1,4 @@
-using QuestPDF.Fluent;
+﻿using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using GEPCP_Ferreteria_El_Pana.Models;
@@ -40,7 +40,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                     page.Content().Column(col =>
                     {
                         EncabezadoDigital(col, logo, "COMPROBANTE DE HORAS EXTRAS — COPIA DIGITAL",
-                            $"Período: {hx.PeriodoPago.Descripcion}");
+                            $"Período: {hx.PeriodoPago.Descripcion} | Año: {hx.PeriodoPago.Anio}");
 
                         col.Item().Padding(20).Column(inner =>
                         {
@@ -57,6 +57,8 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     "CÉDULA:", emp.Cedula);
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
                                     "PUESTO:", emp.Puesto);
+                                FilaDatos(t, "PERÍODO:", hx.PeriodoPago.Descripcion,
+                                    "AÑO:", hx.PeriodoPago.Anio.ToString());
                                 FilaDatos(t, "TOTAL HORAS:", $"{hx.TotalHoras:N2} hrs",
                                     "PORCENTAJE:", $"{hx.Porcentaje:N1}%");
                             });
@@ -118,7 +120,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                     page.Content().Column(col =>
                     {
                         EncabezadoDigital(col, logo, "COMPROBANTE DE INCAPACIDAD — COPIA DIGITAL",
-                            $"{inc.FechaInicio:dd/MM/yyyy} — {inc.FechaFin:dd/MM/yyyy}");
+                            $"Período: {inc.FechaInicio:dd/MM/yyyy} — {inc.FechaFin:dd/MM/yyyy} | Año: {inc.FechaInicio:yyyy}");
 
                         col.Item().Padding(20).Column(inner =>
                         {
@@ -210,7 +212,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                     page.Content().Column(col =>
                     {
                         EncabezadoDigital(col, logo, "COMPROBANTE DE AGUINALDO — COPIA DIGITAL",
-                            $"Período: {ag.FechaInicio:dd/MM/yyyy} — {ag.FechaFin:dd/MM/yyyy}");
+                            $"Período: {ag.FechaInicio:dd/MM/yyyy} — {ag.FechaFin:dd/MM/yyyy} | Año: {ag.Anio}");
 
                         col.Item().Padding(20).Column(inner =>
                         {
@@ -306,7 +308,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
                                     "PUESTO:", emp.Puesto);
                                 FilaDatos(t, "TIPO DE PAGO:", emp.DescripcionTipoPago,
-                                    "PERÍODO:", comision.PeriodoPago?.Descripcion ?? "—");
+                                    "PERÍODO:", $"{comision.PeriodoPago?.Descripcion ?? "—"} | Año {comision.PeriodoPago?.Anio.ToString() ?? "—"}");
                             });
 
                             SeccionLabel(inner, "Detalle de la Comisión");
@@ -318,7 +320,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     c.ConstantColumn(90); c.RelativeColumn(2);
                                 });
                                 FilaDatos(t, "FECHA:", $"{comision.Fecha:dd/MM/yyyy}",
-                                    "PERÍODO:", comision.PeriodoPago?.Descripcion ?? "—");
+                                    "PERÍODO:", $"{comision.PeriodoPago?.Descripcion ?? "—"} | Año {comision.PeriodoPago?.Anio.ToString() ?? "—"}");
                                 t.Cell().Background(GrisFondo).Padding(4)
                                     .Text("DESCRIPCIÓN:").Bold().FontSize(9);
                                 t.Cell().ColumnSpan(3).Padding(4)
@@ -393,7 +395,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "FECHA INICIO:", $"{vacacion.FechaInicio:dd/MM/yyyy}",
                                     "FECHA FIN:", $"{vacacion.FechaFin:dd/MM/yyyy}");
                                 FilaDatos(t, "DÍAS SOLICITADOS:", $"{vacacion.DiasHabiles:N1} día(s)",
-                                    "BASE LEGAL:", "Art. 153 Código de Trabajo CR");
+                                    "TIPO:", "Con Pago");
                             });
 
                             SeccionLabel(inner, "Resumen de Días (Art. 153 Código de Trabajo CR)");
@@ -548,7 +550,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
             var env = (IWebHostEnvironment?)campo?.GetValue(service);
             if (env == null) return null;
 
-            var logoPath = Path.Combine(env.WebRootPath, "images", "logo-el-pana.jpg");
+            var logoPath = Path.Combine(env.WebRootPath, "css", "images", "logo-el-pana.jpg");
             try { return File.Exists(logoPath) ? File.ReadAllBytes(logoPath) : null; }
             catch { return null; }
         }
@@ -620,3 +622,4 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         }
     }
 }
+

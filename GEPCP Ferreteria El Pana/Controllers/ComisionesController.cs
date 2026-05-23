@@ -2,6 +2,7 @@
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
+using GEPCP_Ferreteria_El_Pana.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
@@ -306,6 +307,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             {
                 var comision = await _context.Comisiones
                     .Include(c => c.Empleado)
+                    .Include(c => c.PeriodoPago)
                     .AsNoTracking()
                     .FirstOrDefaultAsync(c => c.ComisionId == id);
 
@@ -344,6 +346,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             {
                 var comision = await _context.Comisiones
                     .Include(c => c.Empleado)
+                    .Include(c => c.PeriodoPago)
                     .FirstOrDefaultAsync(c => c.ComisionId == id);
 
                 if (comision == null)
@@ -424,7 +427,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 TempData[enviado ? "Success" : "Error"] = enviado
                     ? $"Boleta enviada a {correo}."
-                    : "Error al enviar el correo. Verificá la configuración SMTP.";
+                    : "Error al enviar el correo. Verificá usuario, app password de Gmail y puerto SMTP.";
 
                 return RedirectToAction(nameof(Index));
             }

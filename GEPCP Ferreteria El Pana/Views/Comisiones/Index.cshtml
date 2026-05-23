@@ -175,12 +175,12 @@ else
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <a asp-action="DescargarPDF" asp-route-id="@c.ComisionId"
-                                       class="btn btn-sm btn-outline-danger" title="PDF">
+                                       class="btn btn-sm btn-outline-danger long-action" data-loading-message="Generando PDF..." title="PDF">
                                     <i class="bi bi-file-earmark-pdf"></i>
                                 </a>
                                 @if (!string.IsNullOrEmpty(c.Empleado.CorreoElectronico))
                                 {
-                                    <form asp-action="EnviarPorEmail" method="post" class="d-inline">
+                                    <form asp-action="EnviarPorEmail" method="post" class="d-inline form-loading" data-loading-message="Enviando correo...">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@c.ComisionId" />
                                         <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar correo">
@@ -188,15 +188,13 @@ else
                                         </button>
                                     </form>
                                 }
-                                <form asp-action="Delete" method="post" class="d-inline"
-                                      onsubmit="return confirm('¿Eliminar comisión de ₡@c.Monto.ToString("N0") de @c.Empleado.PrimerApellido?')">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@c.ComisionId" />
-                                    <button type="submit"
-                                            class="btn btn-sm btn-danger" title="Eliminar">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-danger btnEliminarComision"
+                                        data-id="@c.ComisionId"
+                                        data-monto="@c.Monto.ToString("N0")"
+                                        data-empleado="@c.Empleado.PrimerApellido"
+                                        title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -209,11 +207,84 @@ else
                         ₡@Model.Sum(c => c.Monto).ToString("N0")
                     </td>
                     <td colspan="2"></td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-    <div class="text-muted small mt-2 text-end">
-        @Model.Count comisión(es)
-    </div>
-}
+                                 </tr>
+                             </tfoot>
+                         </table>
+                     </div>
+                     <div class="text-muted small mt-2 text-end">
+                         @Model.Count comisión(es)
+                     </div>
+                }
+
+                <!-- Modal Eliminar Comisión -->
+                <div class="modal fade" id="confirmEliminarComisionModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+                            <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                                <h5 class="modal-title text-white fw-bold">
+                                    <i class="bi bi-exclamation-triangle"></i> Eliminar Comisión
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body" style="padding: 24px;">
+                                <div style="background-color: #FFF5EB; border-left: 4px solid #FF7A00; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+                                    <div style="color: #333; font-weight: 600;">
+                                        <i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>
+                                        ¿Eliminar comisión de ₡<span id="modalComisionMonto"></span> de <span id="modalComisionEmpleado"></span>?
+                                    </div>
+                                </div>
+
+                                <div style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px;">
+                                    <p style="color: #888; font-size: 0.85rem; margin-bottom: 0;">
+                                        <i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>
+                                        Esta operación no se puede deshacer.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="modal-footer" style="border-top: 1px solid #E0E0E0; padding: 12px 16px;">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </button>
+                                <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarEliminarComision">
+                                    <i class="bi bi-check-circle"></i> Sí, Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulario oculto -->
+                <form method="post" asp-action="Delete" style="display:none;" id="formEliminarComision">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="inputIdComision" />
+                </form>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const botonesEliminar = document.querySelectorAll('.btnEliminarComision');
+                        const modalEliminar = new bootstrap.Modal(document.getElementById('confirmEliminarComisionModal'), {
+                            backdrop: 'static',
+                            keyboard: false
+                        });
+                        const btnConfirmar = document.getElementById('btnConfirmarEliminarComision');
+                        const formEliminar = document.getElementById('formEliminarComision');
+                        const inputId = document.getElementById('inputIdComision');
+
+                        botonesEliminar.forEach(function(btn) {
+                            btn.addEventListener('click', function() {
+                                document.getElementById('modalComisionMonto').textContent = this.dataset.monto;
+                                document.getElementById('modalComisionEmpleado').textContent = this.dataset.empleado;
+                                inputId.value = this.dataset.id;
+                                modalEliminar.show();
+                            });
+                        });
+
+                        btnConfirmar.addEventListener('click', function() {
+                            modalEliminar.hide();
+                            Loading.show('Eliminando comisión...');
+                            setTimeout(function() {
+                                formEliminar.submit();
+                            }, 100);
+                        });
+                    });
+                </script>

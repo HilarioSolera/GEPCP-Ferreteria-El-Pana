@@ -1,0 +1,100 @@
+# INSTRUCCIONES DE INSTALACION RAPIDA
+
+## PASO 1: DESINSTALAR VERSION ANTERIOR (si existe)
+
+1. Abri "Panel de Control" > "Programas y caracteristicas"
+2. Busca "GEPCP Ferreteria El Pana"
+3. Click derecho > Desinstalar
+4. Espera a que termine
+
+## PASO 2: INSTALAR NUEVA VERSION
+
+1. Busca el archivo:
+   `GEPCP Ferreteria El Pana\Instalador\Output\GEPCP_FerreteriaElPana_Setup_v1.0.0.exe`
+
+2. Click derecho > "Ejecutar como administrador"
+
+3. Sigue el asistente de instalacion
+
+4. Marca la opcion "Crear acceso directo en el escritorio" (opcional)
+
+## PASO 3: INICIAR EL SISTEMA
+
+Opcion A: Doble click en el acceso directo del escritorio
+Opcion B: Menu Inicio > "GEPCP Ferreteria El Pana"
+
+## QUE ESPERAR AL INICIAR
+
+1. Se abre una ventana de CONSOLA NEGRA (NO LA CIERRES, es normal)
+   - Esta consola muestra los logs en tiempo real
+   - Debe decir "Now listening on: http://localhost:XXXX"
+
+2. Se abre el SPLASH SCREEN en el navegador
+   - Muestra el logo de Ferreteria El Pana
+   - Dice "Iniciando sistema..."
+   - Automaticamente te redirige al sistema
+
+3. Se abre el SISTEMA en el navegador
+   - Pagina de login
+   - Ingresa:
+	 Usuario: admin.rrhh
+	 Password: Pana2024
+
+## CORRECIONES EN ESTA VERSION
+
+✅ SIN ERROR DE PERMISOS
+   - El archivo puerto.txt ahora se guarda en carpeta temporal
+   - No necesita permisos de administrador
+
+✅ RECUPERACION DE CONTRASENA FUNCIONA
+   - Email configurado con contrasena de aplicacion de Gmail
+   - Envia codigos de 6 digitos al correo
+
+✅ LOGO EN ACCESOS DIRECTOS
+   - Todos los accesos directos muestran el logo de El Pana
+
+✅ CONSOLA VISIBLE
+   - Podes ver errores en tiempo real
+   - Util para diagnostico
+
+## SI HAY PROBLEMAS
+
+### El sistema no inicia
+1. Ejecuta "Reparar Sistema" desde Menu Inicio
+2. Espera 30 segundos
+3. Revisa la consola de logs
+
+### No llega el email de recuperacion
+1. Revisa la consola, debe decir:
+   "✓ Codigo enviado exitosamente a: tu@email.com"
+2. Revisa la carpeta de SPAM
+3. Espera hasta 2 minutos
+
+### Conflicto de puerto
+- El sistema detecta automaticamente un puerto libre
+- Si el puerto 5001 esta ocupado, usa 5002, 5003, etc.
+
+## CREDENCIALES POR DEFECTO
+
+Administrador RRHH:
+  Usuario: admin.rrhh
+  Password: Pana2024
+  Email: ferreteriaelpana2026@gmail.com
+
+Usuario Jefatura:
+  Usuario: jefatura
+  Password: Pana2024
+  Email: ferreteriaelpana2026@gmail.com
+
+IMPORTANTE: Cambia las contrasenas despues del primer inicio
+
+## SOPORTE
+
+- Repositorio: https://github.com/HilarioSolera/GEPCP-Ferreteria-El-Pana
+- Email: ferreteriaelpana2026@gmail.com
+- Documentacion: README_INSTALACION_PROFESIONAL.md
+
+---
+
+VERSION: 1.0.0
+FECHA: Mayo 2026

@@ -128,15 +128,12 @@ else
 
                                 @if (p.Activo)
                                 {
-                                    <form asp-action="Desactivar" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Desactivar el puesto @p.Nombre?')">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@p.PuestoId" />
-                                        <button type="submit" class="btn btn-sm btn-secondary"
-                                                title="Desactivar">
-                                            <i class="bi bi-pause-circle"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-sm btn-secondary btnDesactivarPuesto"
+                                            data-id="@p.PuestoId"
+                                            data-nombre="@p.Nombre"
+                                            title="Desactivar">
+                                        <i class="bi bi-pause-circle"></i>
+                                    </button>
                                 }
                                 else
                                 {
@@ -151,15 +148,12 @@ else
                                     </form>
                                 }
 
-                                <form asp-action="Delete" method="post" class="d-inline"
-                                      onsubmit="return confirm('¿Eliminar permanentemente el puesto @p.Nombre? Esta acción no se puede deshacer.')">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@p.PuestoId" />
-                                    <button type="submit" class="btn btn-sm btn-danger"
-                                            title="Eliminar">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-danger btnEliminarPuesto"
+                                        data-id="@p.PuestoId"
+                                        data-nombre="@p.Nombre"
+                                        title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
 
                             </div>
                         </td>
@@ -170,8 +164,160 @@ else
     </div>
 
     <div class="text-muted small mt-2 text-end">
-        Total: <strong>@Model.Count</strong> puesto(s) —
-        Activos: <strong>@Model.Count(p => p.Activo)</strong> /
-        Inactivos: <strong>@Model.Count(p => !p.Activo)</strong>
-    </div>
-}
+             Total: <strong>@Model.Count</strong> puesto(s) —
+             Activos: <strong>@Model.Count(p => p.Activo)</strong> /
+             Inactivos: <strong>@Model.Count(p => !p.Activo)</strong>
+         </div>
+        }
+
+        <!-- Modal Eliminar Puesto -->
+        <div class="modal fade" id="confirmEliminarPuestoModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+                    <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                        <h5 class="modal-title text-white fw-bold">
+                            <i class="bi bi-exclamation-triangle"></i> Eliminar Puesto
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" style="padding: 24px;">
+                        <div style="background-color: #FFF5EB; border-left: 4px solid #FF7A00; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+                            <div style="color: #333; font-weight: 600;">
+                                <i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>
+                                ¿Eliminar permanentemente el puesto <span id="modalPuestoNombre"></span>?
+                            </div>
+                        </div>
+
+                        <p style="color: #555; margin-bottom: 12px; font-size: 0.95rem;">
+                            Esta acción eliminará el registro y no se puede deshacer.
+                        </p>
+
+                        <div style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px;">
+                            <p style="color: #888; font-size: 0.85rem; margin-bottom: 0;">
+                                <i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>
+                                Asegúrese de que esta es la acción correcta.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #E0E0E0; padding: 12px 16px;">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </button>
+                        <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarEliminarPuesto">
+                            <i class="bi bi-check-circle"></i> Sí, Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario oculto para eliminar puesto -->
+        <form id="formEliminarPuesto" method="post" asp-action="Delete" style="display:none;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="inputIdPuesto" />
+        </form>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const botonesEliminar = document.querySelectorAll('.btnEliminarPuesto');
+                const modalEliminar = new bootstrap.Modal(document.getElementById('confirmEliminarPuestoModal'), {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                const btnConfirmar = document.getElementById('btnConfirmarEliminarPuesto');
+                const formEliminar = document.getElementById('formEliminarPuesto');
+                const inputId = document.getElementById('inputIdPuesto');
+                const modalNombre = document.getElementById('modalPuestoNombre');
+                let idActual = null;
+
+                botonesEliminar.forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        idActual = this.dataset.id;
+                        const nombre = this.dataset.nombre;
+                        modalNombre.textContent = nombre;
+                        inputId.value = idActual;
+                        modalEliminar.show();
+                    });
+                });
+
+                btnConfirmar.addEventListener('click', function() {
+                    modalEliminar.hide();
+                    Loading.show('Eliminando puesto...');
+                    setTimeout(function() {
+                        formEliminar.submit();
+                    }, 100);
+                });
+            });
+        </script>
+
+        <!-- Modal Desactivar Puesto -->
+        <div class="modal fade" id="confirmDesactivarPuestoModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+                    <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                        <h5 class="modal-title text-white fw-bold">
+                            <i class="bi bi-exclamation-triangle"></i> Desactivar Puesto
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" style="padding: 24px;">
+                        <div style="background-color: #FFF5EB; border-left: 4px solid #FF7A00; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+                            <div style="color: #333; font-weight: 600;">
+                                <i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>
+                                ¿Desactivar el puesto <span id="modalPuestoNombre"></span>?
+                            </div>
+                        </div>
+
+                        <div style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px;">
+                            <p style="color: #888; font-size: 0.85rem; margin-bottom: 0;">
+                                <i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>
+                                Los empleados asignados a este puesto deberán ser reasignados.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #E0E0E0; padding: 12px 16px;">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </button>
+                        <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarDesactivarPuesto">
+                            <i class="bi bi-check-circle"></i> Sí, Desactivar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario oculto -->
+        <form method="post" asp-action="Desactivar" style="display:none;" id="formDesactivarPuesto">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="inputIdPuesto" />
+        </form>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const botonesDesactivar = document.querySelectorAll('.btnDesactivarPuesto');
+                const modalDesactivar = new bootstrap.Modal(document.getElementById('confirmDesactivarPuestoModal'), {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                const btnConfirmar = document.getElementById('btnConfirmarDesactivarPuesto');
+                const formDesactivar = document.getElementById('formDesactivarPuesto');
+                const inputId = document.getElementById('inputIdPuesto');
+
+                botonesDesactivar.forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        document.getElementById('modalPuestoNombre').textContent = this.dataset.nombre;
+                        inputId.value = this.dataset.id;
+                        modalDesactivar.show();
+                    });
+                });
+
+                btnConfirmar.addEventListener('click', function() {
+                    modalDesactivar.hide();
+                    Loading.show('Desactivando puesto...');
+                    setTimeout(function() {
+                        formDesactivar.submit();
+                    }, 100);
+                });
+            });
+        </script>

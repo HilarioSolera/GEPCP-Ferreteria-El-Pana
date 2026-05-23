@@ -142,42 +142,36 @@ else
                                     <a asp-controller="Planilla" asp-action="Index"
                                            asp-route-periodoId="@p.PeriodoPagoId"
                                            class="btn btn-sm btn-outline-info"
-                                           title="Ver planilla de este período">
-                                        <i class="bi bi-file-earmark-text"></i>
-                                    </a>
-                                }
+                                                      title="Ver planilla de este período">
+                                                   <i class="bi bi-file-earmark-text"></i>
+                                               </a>
+                                           }
 
-                                @if (!esCerrado)
-                                {
-                                    @* Cerrar *@
-                                    <form asp-action="Cerrar" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Cerrar el período @p.Descripcion?\n\nEsta acción consolida los registros. Los períodos cerrados son inmutables.')">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@p.PeriodoPagoId" />
-                                        <button type="submit" class="btn btn-sm btn-secondary"
-                                                title="Cerrar período">
-                                            <i class="bi bi-lock"></i> Cerrar
-                                        </button>
-                                    </form>
+                                           @if (!esCerrado)
+                                           {
+                                               @* Cerrar *@
+                                               <button type="button" class="btn btn-sm btn-secondary btnCerrarPeriodo"
+                                                       data-id="@p.PeriodoPagoId"
+                                                       data-descripcion="@p.Descripcion"
+                                                       title="Cerrar período">
+                                                   <i class="bi bi-lock"></i> Cerrar
+                                               </button>
 
-                                    @* Eliminar — solo si no tiene planilla *@
-                                    @if (empCount == 0)
-                                    {
-                                        <form asp-action="Eliminar" method="post" class="d-inline"
-                                              onsubmit="return confirm('¿Eliminar el período @p.Descripcion?')">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@p.PeriodoPagoId" />
-                                            <button type="submit" class="btn btn-sm btn-danger"
-                                                    title="Eliminar período">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    }
-                                }
-                                else
-                                {
-                                    @* Reabrir — solo Jefatura *@
-                                    @if (rol == "Jefatura")
+                                               @* Eliminar — solo si no tiene planilla *@
+                                               @if (empCount == 0)
+                                               {
+                                                   <button type="button" class="btn btn-sm btn-danger btnEliminarPeriodo"
+                                                           data-id="@p.PeriodoPagoId"
+                                                           data-descripcion="@p.Descripcion"
+                                                           title="Eliminar período">
+                                                       <i class="bi bi-trash"></i>
+                                                   </button>
+                                               }
+                                           }
+                                           else
+                                           {
+                                               @* Reabrir — solo Jefatura *@
+                                               @if (rol == "Jefatura")
                                     {
                                         <form asp-action="Reabrir" method="post" class="d-inline"
                                               onsubmit="return confirm('⚠️ ¿Reabrir el período CERRADO @p.Descripcion?\n\nEsta acción es excepcional. Los saldos de préstamos ya descontados NO se revierten.\n\n¿Confirmar?')">
@@ -204,9 +198,148 @@ else
         </table>
     </div>
 
-    <div class="text-muted small mt-2 text-end">
-        @Model.Count período(s) en @anio —
-        Abiertos: <strong>@Model.Count(p => p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Abierto)</strong> /
-        Cerrados: <strong>@Model.Count(p => p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado)</strong>
+         <div class="text-muted small mt-2 text-end">
+             @Model.Count período(s) en @anio —
+             Abiertos: <strong>@Model.Count(p => p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Abierto)</strong> /
+             Cerrados: <strong>@Model.Count(p => p.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoPeriodo.Cerrado)</strong>
+         </div>
+    }
+
+    <!-- Modal Acciones de Período -->
+    <div class="modal fade" id="confirmAccionPeriodoModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+                <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                    <h5 class="modal-title text-white fw-bold" id="modalAccionPeriodoTitulo">
+                        <i class="bi bi-exclamation-triangle"></i> Acción de Período
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding: 24px;">
+                    <div style="background-color: #FFF5EB; border-left: 4px solid #FF7A00; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+                        <div style="color: #333; font-weight: 600;" id="modalAccionPeriodoMensaje">
+                            <i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>
+                            Mensaje
+                        </div>
+                    </div>
+
+                    <div id="detalleAdicional" style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px; margin-bottom: 12px; display:none;">
+                        <p style="color: #888; font-size: 0.85rem; margin-bottom: 0;" id="textoDetalleAdicional">
+                            Detalle
+                        </p>
+                    </div>
+
+                    <div style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px;">
+                        <p style="color: #888; font-size: 0.85rem; margin-bottom: 0;">
+                            <i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>
+                            Asegúrese de que esta es la acción correcta.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #E0E0E0; padding: 12px 16px;">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarAccionPeriodo">
+                        <i class="bi bi-check-circle"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
-}
+
+    <!-- Formularios ocultos para acciones de período -->
+    @foreach (var p in Model)
+    {
+        <form method="post" asp-action="Cerrar" style="display:none;" data-accion-periodo="cerrar" data-id="@p.PeriodoPagoId">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@p.PeriodoPagoId" />
+        </form>
+        <form method="post" asp-action="Eliminar" style="display:none;" data-accion-periodo="eliminar" data-id="@p.PeriodoPagoId">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@p.PeriodoPagoId" />
+        </form>
+    }
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnsCerrar = document.querySelectorAll('.btnCerrarPeriodo');
+            const btnsEliminar = document.querySelectorAll('.btnEliminarPeriodo');
+
+            let accionActual = null;
+            let idActual = null;
+
+            const modal = new bootstrap.Modal(document.getElementById('confirmAccionPeriodoModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+
+            function abrirModal(accion, id, descripcion) {
+                accionActual = accion;
+                idActual = id;
+                let titulo = '';
+                let mensaje = '';
+                let detalle = '';
+
+                if (accion === 'cerrar') {
+                    titulo = 'Cerrar Período';
+                    mensaje = `¿Cerrar el período ${descripcion}?`;
+                    detalle = 'Esta acción consolida los registros. Los períodos cerrados son inmutables.';
+                } else if (accion === 'eliminar') {
+                    titulo = 'Eliminar Período';
+                    mensaje = `¿Eliminar el período ${descripcion}?`;
+                    detalle = 'Esta acción no se puede deshacer.';
+                }
+
+                document.getElementById('modalAccionPeriodoTitulo').textContent = titulo;
+                document.getElementById('modalAccionPeriodoMensaje').innerHTML = 
+                    '<i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>' + mensaje;
+
+                if (detalle) {
+                    document.getElementById('textoDetalleAdicional').innerHTML = 
+                        '<i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>' + detalle;
+                    document.getElementById('detalleAdicional').style.display = 'block';
+                } else {
+                    document.getElementById('detalleAdicional').style.display = 'none';
+                }
+
+                modal.show();
+            }
+
+            btnsCerrar.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    abrirModal('cerrar', this.dataset.id, this.dataset.descripcion);
+                });
+            });
+
+            btnsEliminar.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    abrirModal('eliminar', this.dataset.id, this.dataset.descripcion);
+                });
+            });
+
+            const btnConfirmar = document.getElementById('btnConfirmarAccionPeriodo');
+            if (btnConfirmar) {
+                btnConfirmar.addEventListener('click', function() {
+                    const forms = document.querySelectorAll('form[data-accion-periodo]');
+                    let formularioAEnviar = null;
+
+                    forms.forEach(function(form) {
+                        const id = form.getAttribute('data-id');
+                        const accion = form.getAttribute('data-accion-periodo');
+                        if (id === idActual && accion === accionActual) {
+                            formularioAEnviar = form;
+                        }
+                    });
+
+                    if (formularioAEnviar) {
+                        modal.hide();
+                        Loading.show('Procesando acción...');
+                        setTimeout(function() {
+                            formularioAEnviar.submit();
+                        }, 100);
+                    }
+                });
+            }
+        });
+    </script>

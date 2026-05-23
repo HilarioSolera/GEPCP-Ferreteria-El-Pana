@@ -80,6 +80,7 @@
                 <option value="Pendiente" selected="@(ViewBag.Estado == "Pendiente" ? "selected" : null)">Pendiente</option>
                 <option value="Aprobada" selected="@(ViewBag.Estado == "Aprobada" ? "selected" : null)">Aprobada</option>
                 <option value="Rechazada" selected="@(ViewBag.Estado == "Rechazada" ? "selected" : null)">Rechazada</option>
+                <option value="Cancelada" selected="@(ViewBag.Estado == "Cancelada" ? "selected" : null)">Cancelada</option>
             </select>
         </div>
         <div class="col-md-1">
@@ -137,10 +138,14 @@ else
                     {
                         GEPCP_Ferreteria_El_Pana.Models.EstadoVacacion.Aprobada => "bg-success",
                         GEPCP_Ferreteria_El_Pana.Models.EstadoVacacion.Rechazada => "bg-danger",
+                        GEPCP_Ferreteria_El_Pana.Models.EstadoVacacion.Cancelada => "bg-secondary",
                         _ => "bg-warning text-dark"
                     };
+                    var filaStyle = v.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoVacacion.Cancelada
+                        ? "background-color:#f1f3f5;"
+                        : string.Empty;
 
-                    <tr>
+                    <tr style="@filaStyle">
                         <td>
                             <strong>@v.Empleado.PrimerApellido @v.Empleado.Nombre</strong>
                             <div class="small text-muted">@v.Empleado.Puesto</div>
@@ -159,34 +164,47 @@ else
                         </td>
                         <td class="text-center">
                             <div class="d-flex gap-1 justify-content-center">
-                                <a asp-action="Edit" asp-route-id="@v.VacacionId"
-                                       class="btn btn-sm btn-warning" title="Editar">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                @if (v.Estado != GEPCP_Ferreteria_El_Pana.Models.EstadoVacacion.Aprobada)
+                                @if (v.Estado != GEPCP_Ferreteria_El_Pana.Models.EstadoVacacion.Cancelada)
                                 {
-                                    <form asp-action="Delete" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Eliminar la vacación de @v.Empleado.PrimerApellido @v.Empleado.Nombre?')">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@v.VacacionId" />
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                }
-                                <a asp-action="DescargarBoleta" asp-route-id="@v.VacacionId"
-                                       class="btn btn-sm btn-outline-danger" title="Descargar PDF boleta">
-                                    <i class="bi bi-file-earmark-pdf"></i>
-                                </a>
-                                @if (!string.IsNullOrEmpty(v.Empleado.CorreoElectronico))
+                                    <a asp-action="Edit" asp-route-id="@v.VacacionId"
+                                              class="btn btn-sm btn-warning" title="Editar">
+                                               <i class="bi bi-pencil"></i>
+                                           </a>
+                                       }
+                                       @if (v.Estado == GEPCP_Ferreteria_El_Pana.Models.EstadoVacacion.Aprobada && DateTime.Today < v.FechaInicio.Date)
+                                       {
+                                           <button type="button" class="btn btn-sm btn-secondary btnCancelarVacacion"
+                                                   data-id="@v.VacacionId"
+                                                   data-empleado="@v.Empleado.PrimerApellido @v.Empleado.Nombre"
+                                                   title="Cancelar vacación aprobada">
+                                               <i class="bi bi-x-circle"></i>
+                                           </button>
+                                       }
+                                       @if (v.Estado != GEPCP_Ferreteria_El_Pana.Models.EstadoVacacion.Aprobada)
+                                       {
+                                           <button type="button" class="btn btn-sm btn-danger btnEliminarVacacion"
+                                                   data-id="@v.VacacionId"
+                                                   data-empleado="@v.Empleado.PrimerApellido @v.Empleado.Nombre"
+                                                   title="Eliminar">
+                                               <i class="bi bi-trash"></i>
+                                           </button>
+                                       }
+                                @if (v.Estado != GEPCP_Ferreteria_El_Pana.Models.EstadoVacacion.Cancelada)
                                 {
-                                    <form asp-action="EnviarPorEmail" method="post" class="d-inline">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@v.VacacionId" />
-                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar correo">
-                                            <i class="bi bi-envelope"></i>
-                                        </button>
-                                    </form>
+                                    <a asp-action="DescargarBoleta" asp-route-id="@v.VacacionId"
+                                       class="btn btn-sm btn-outline-danger long-action" data-loading-message="Generando PDF..." title="Descargar PDF boleta">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                    </a>
+                                    @if (!string.IsNullOrEmpty(v.Empleado.CorreoElectronico))
+                                    {
+                                        <form asp-action="EnviarPorEmail" method="post" class="d-inline form-loading" data-loading-message="Enviando correo...">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@v.VacacionId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar correo">
+                                                <i class="bi bi-envelope"></i>
+                                            </button>
+                                        </form>
+                                    }
                                 }
                             </div>
                         </td>
@@ -194,8 +212,109 @@ else
                 }
             </tbody>
         </table>
+         </div>
+         <div class="text-muted small mt-2 text-end">
+             @Model.Count registro(s)
+         </div>
+    }
+
+    <!-- Modal Eliminar/Cancelar Vacación -->
+    <div class="modal fade" id="confirmAccionVacacionModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+                <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                    <h5 class="modal-title text-white fw-bold" id="modalAccionVacacionTitulo">
+                        <i class="bi bi-exclamation-triangle"></i> Acción Vacación
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding: 24px;">
+                    <div style="background-color: #FFF5EB; border-left: 4px solid #FF7A00; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+                        <div style="color: #333; font-weight: 600;" id="modalAccionVacacionMensaje">
+                            <i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>
+                            Mensaje
+                        </div>
+                    </div>
+
+                    <div style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px;">
+                        <p style="color: #888; font-size: 0.85rem; margin-bottom: 0;">
+                            <i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>
+                            Asegúrese de que esta es la acción correcta.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #E0E0E0; padding: 12px 16px;">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarAccionVacacion">
+                        <i class="bi bi-check-circle"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="text-muted small mt-2 text-end">
-        @Model.Count registro(s)
-    </div>
-}
+
+    <!-- Formularios ocultos -->
+    <form method="post" asp-action="Cancelar" style="display:none;" id="formCancelarVacacion">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="inputIdVacacion" />
+    </form>
+    <form method="post" asp-action="Delete" style="display:none;" id="formEliminarVacacion">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="inputIdVacacion2" />
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnsCancelar = document.querySelectorAll('.btnCancelarVacacion');
+            const btnsEliminar = document.querySelectorAll('.btnEliminarVacacion');
+            const formCancelar = document.getElementById('formCancelarVacacion');
+            const formEliminar = document.getElementById('formEliminarVacacion');
+            let accionActual = null;
+
+            const modal = new bootstrap.Modal(document.getElementById('confirmAccionVacacionModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+
+            btnsCancelar.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    accionActual = 'cancelar';
+                    document.getElementById('modalAccionVacacionTitulo').textContent = 'Cancelar Vacación';
+                    document.getElementById('modalAccionVacacionMensaje').innerHTML = 
+                        '<i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>' +
+                        '¿Cancelar la vacación aprobada de ' + this.dataset.empleado + '?';
+                    document.getElementById('inputIdVacacion').value = this.dataset.id;
+                    modal.show();
+                });
+            });
+
+            btnsEliminar.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    accionActual = 'eliminar';
+                    document.getElementById('modalAccionVacacionTitulo').textContent = 'Eliminar Vacación';
+                    document.getElementById('modalAccionVacacionMensaje').innerHTML = 
+                        '<i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>' +
+                        '¿Eliminar la vacación de ' + this.dataset.empleado + '?';
+                    document.getElementById('inputIdVacacion2').value = this.dataset.id;
+                    modal.show();
+                });
+            });
+
+            const btnConfirmar = document.getElementById('btnConfirmarAccionVacacion');
+            if (btnConfirmar) {
+                btnConfirmar.addEventListener('click', function() {
+                    modal.hide();
+                    Loading.show('Procesando acción...');
+                    setTimeout(function() {
+                        if (accionActual === 'cancelar') {
+                            formCancelar.submit();
+                        } else if (accionActual === 'eliminar') {
+                            formEliminar.submit();
+                        }
+                    }, 100);
+                });
+            }
+        });
+    </script>

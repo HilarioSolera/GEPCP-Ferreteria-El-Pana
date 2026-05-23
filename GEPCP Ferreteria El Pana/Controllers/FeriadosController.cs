@@ -330,6 +330,13 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 {
                     foreach (var empleado in empleados)
                     {
+                        // Validar que el feriado no sea anterior a la fecha de ingreso del empleado
+                        if (feriado.Fecha < empleado.FechaIngreso)
+                        {
+                            // No generar pago para este empleado si no había ingresado aún
+                            continue;
+                        }
+
                         // Si ya existe, no se sobreescribe
                         var existe = await _context.PagosFeriado
                             .AnyAsync(pf =>

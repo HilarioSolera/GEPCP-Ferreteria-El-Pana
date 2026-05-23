@@ -182,10 +182,19 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 TempData["Info"] = "Si el usuario existe y tiene correo registrado, recibirás el código.";
                 return RedirectToAction(nameof(VerificarCodigo), new { usuario });
             }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Error de configuración en recuperación: {U}", usuario);
+                ModelState.AddModelError(string.Empty, 
+                    "El servicio de recuperación de contraseña no está disponible. " +
+                    "Contactá al administrador del sistema.");
+                return View();
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error en recuperación: {U}", usuario);
-                TempData["Error"] = "Ocurrió un error. Intentá de nuevo.";
+                ModelState.AddModelError(string.Empty, 
+                    "Ocurrió un error al enviar el código. Verificá tu conexión e intentá de nuevo.");
                 return View();
             }
         }

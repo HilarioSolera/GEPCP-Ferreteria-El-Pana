@@ -2,6 +2,7 @@
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
+using GEPCP_Ferreteria_El_Pana.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -109,16 +110,21 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
 
                 var empleado = await _context.Empleados.FindAsync(model.EmpleadoId);
-                if (empleado == null)
-                {
-                    ModelState.AddModelError("EmpleadoId", "Empleado no encontrado.");
+
+                // Validar que el empleado esté activo
+                if (!EmpleadoValidationHelper.ValidarEmpleadoActivo(empleado, ModelState, "registrar vacaciones"))
                     return View(model);
-                }
+
+                // Validar que la fecha de inicio de vacaciones no sea anterior a la fecha de ingreso
+                if (!EmpleadoValidationHelper.ValidarFechaContraIngreso(
+                    empleado!, model.FechaInicio, ModelState, "FechaInicio", "inicio de vacaciones"))
+                    return View(model);
 
                 // Validar traslape de fechas
                 var traslape = await _context.Vacaciones
                     .Where(v => v.EmpleadoId == model.EmpleadoId &&
                                 v.Estado != EstadoVacacion.Rechazada &&
+                                v.Estado != EstadoVacacion.Cancelada &&
                                 v.FechaInicio <= model.FechaFin &&
                                 v.FechaFin >= model.FechaInicio)
                     .FirstOrDefaultAsync();
@@ -154,6 +160,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 var solicitudesEnPeriodo = await _context.Vacaciones
                     .CountAsync(v => v.EmpleadoId == model.EmpleadoId &&
                                      v.Estado != EstadoVacacion.Rechazada &&
+                                     v.Estado != EstadoVacacion.Cancelada &&
                                      v.FechaInicio >= inicioPeriodoActual);
                 if (solicitudesEnPeriodo >= 2)
                 {
@@ -178,7 +185,16 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 model.SalarioDiario = Math.Round(empleado.SalarioBase / DiasSalarioMensual, 2);
                 model.RegistradoPor = HttpContext.Session.GetString("Usuario") ?? "";
                 model.FechaRegistro = DateTime.Now;
-                model.MontoDeducido = 0;
+
+                // Calcular el monto a pagar por vacaciones con pago
+                if (model.Tipo == TipoVacacion.ConPago)
+                {
+                    model.MontoDeducido = Math.Round(model.SalarioDiario * model.DiasHabiles, 2);
+                }
+                else
+                {
+                    model.MontoDeducido = 0;
+                }
 
                 _context.Add(model);
                 await _context.SaveChangesAsync();
@@ -258,10 +274,27 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (registro == null) return NotFound();
 
+                // Validar que la fecha de inicio de vacaciones no sea anterior a la fecha de ingreso
+                if (model.FechaInicio < registro.Empleado.FechaIngreso)
+                {
+                    ModelState.AddModelError("FechaInicio", 
+                        $"La fecha de inicio de las vacaciones no puede ser anterior a la fecha de ingreso del empleado ({registro.Empleado.FechaIngreso:dd/MM/yyyy}).");
+                    var emp = await _context.Empleados.FindAsync(model.EmpleadoId);
+                    var (db, dt, disp) = await CalcularDisponiblesInterno(model.EmpleadoId, id);
+                    ViewBag.EmpleadoNombre = $"{emp?.PrimerApellido} {emp?.Nombre}";
+                    ViewBag.EmpleadoCedula = emp?.Cedula;
+                    ViewBag.SalarioDiario = registro.SalarioDiario;
+                    ViewBag.DiasBase = db;
+                    ViewBag.DiasTomados = dt;
+                    ViewBag.DiasDisponibles = disp;
+                    return View(model);
+                }
+
                 // Validar traslape (excluyendo el registro actual)
                 var traslape = await _context.Vacaciones
                     .Where(v => v.EmpleadoId == model.EmpleadoId &&
                                 v.Estado != EstadoVacacion.Rechazada &&
+                                v.Estado != EstadoVacacion.Cancelada &&
                                 v.VacacionId != id &&
                                 v.FechaInicio <= model.FechaFin &&
                                 v.FechaFin >= model.FechaInicio)
@@ -317,6 +350,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     var solicitudesEdit = await _context.Vacaciones
                         .CountAsync(v => v.EmpleadoId == model.EmpleadoId &&
                                          v.Estado != EstadoVacacion.Rechazada &&
+                                         v.Estado != EstadoVacacion.Cancelada &&
                                          v.VacacionId != id &&
                                          v.FechaInicio >= inicioPerEdit);
                     if (solicitudesEdit >= 2)
@@ -345,7 +379,16 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 registro.Estado = model.Estado;
                 registro.Observaciones = model.Observaciones;
                 registro.DiasDisponiblesAlRegistrar = model.DiasDisponiblesAlRegistrar;
-                registro.MontoDeducido = 0;
+
+                // Recalcular el monto a pagar
+                if (registro.Tipo == TipoVacacion.ConPago)
+                {
+                    registro.MontoDeducido = Math.Round(registro.SalarioDiario * registro.DiasHabiles, 2);
+                }
+                else
+                {
+                    registro.MontoDeducido = 0;
+                }
 
                 _context.Update(registro);
                 await _context.SaveChangesAsync();
@@ -372,6 +415,54 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 _logger.LogError(ex, "Error al editar vacación ID: {Id}", id);
                 ModelState.AddModelError(string.Empty, "Error inesperado. Intentá de nuevo.");
                 return View(model);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Cancelar(int id)
+        {
+            try
+            {
+                var registro = await _context.Vacaciones
+                    .Include(v => v.Empleado)
+                    .FirstOrDefaultAsync(v => v.VacacionId == id);
+
+                if (registro == null)
+                {
+                    TempData["Error"] = "Registro no encontrado.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (registro.Estado != EstadoVacacion.Aprobada)
+                {
+                    TempData["Error"] = "Solo se pueden cancelar vacaciones aprobadas.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (DateTime.Today >= registro.FechaInicio.Date)
+                {
+                    TempData["Error"] = "Solo se pueden cancelar vacaciones aprobadas antes de la fecha de inicio.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                registro.Estado = EstadoVacacion.Cancelada;
+                await _context.SaveChangesAsync();
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Cancelar vacación aprobada", "Vacaciones",
+                    $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre} — " +
+                    $"{registro.FechaInicio:dd/MM/yyyy} al {registro.FechaFin:dd/MM/yyyy}");
+
+                TempData["Success"] = "Vacación cancelada correctamente.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cancelar vacación ID: {Id}", id);
+                TempData["Error"] = "Error al cancelar la vacación. Intentá de nuevo.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
@@ -725,6 +816,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
 
                 if (vacacion == null) return NotFound();
 
+                if (vacacion.Estado == EstadoVacacion.Cancelada)
+                {
+                    TempData["Error"] = "No se puede generar boleta para una vacación cancelada.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 var (diasBase, diasTomados, disponibles) =
                     await CalcularDisponiblesInterno(vacacion.EmpleadoId);
 
@@ -767,6 +864,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 if (vacacion == null)
                 {
                     TempData["Error"] = "Vacación no encontrada.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (vacacion.Estado == EstadoVacacion.Cancelada)
+                {
+                    TempData["Error"] = "No se puede enviar por correo una vacación cancelada.";
                     return RedirectToAction(nameof(Index));
                 }
 

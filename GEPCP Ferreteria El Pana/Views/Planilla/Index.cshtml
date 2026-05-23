@@ -96,20 +96,20 @@ else
         <div class="d-flex gap-2">
             @if (!periodoCerrado)
             {
-                <form asp-action="Calcular" method="post" onsubmit="return confirm('¿Recalcular la planilla?')">
+                <form asp-action="Calcular" method="post" class="form-loading" data-loading-message="Calculando planilla para todos los empleados..." data-skip-beforeunload="true" id="formCalcular">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="periodoId" value="@periodo.PeriodoPagoId" />
-                    <button type="submit" class="btn btn-dark btn-sm">
+                    <button type="button" class="btn btn-sm" id="btnCalcular" style="background-color: #FF7A00; color: white; border-color: #FF7A00;">
                         <i class="bi bi-calculator"></i> Calcular Planilla
                     </button>
                 </form>
 
                 @if (Model.Any())
                 {
-                    <form asp-action="CerrarPeriodo" method="post" onsubmit="return confirm('¿Cerrar el período? Esta acción es irreversible.')">
+                    <form asp-action="CerrarPeriodo" method="post" class="form-loading" data-loading-message="Cerrando período..." id="formCerrarPeriodo">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="periodoId" value="@periodo.PeriodoPagoId" />
-                        <button type="submit" class="btn btn-danger btn-sm">
+                        <button type="button" class="btn btn-danger btn-sm" id="btnCerrarPeriodo">
                             <i class="bi bi-lock"></i> Cerrar Período
                         </button>
                     </form>
@@ -117,7 +117,7 @@ else
             }
             @if (periodoCerrado)
             {
-                <form asp-action="ReabrirPeriodo" method="post">
+                <form asp-action="ReabrirPeriodo" method="post" class="form-loading" data-loading-message="Reabriendo período..." id="formReabrir">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="periodoId" value="@periodo.PeriodoPagoId" />
                     <button type="submit" class="btn btn-warning btn-sm">
@@ -127,6 +127,7 @@ else
             }
         </div>
     }
+
 </div>
 
 <!-- KPIs -->
@@ -197,51 +198,267 @@ else
     </div>
 
     <div class="d-flex gap-2 mb-3">
-        <a asp-action="ExportarExcel" asp-route-periodoId="@periodo!.PeriodoPagoId" class="btn btn-dark">
+        <a asp-action="ExportarExcel" asp-route-periodoId="@periodo!.PeriodoPagoId" class="btn btn-dark long-action" data-loading-message="Exportando Excel...">
             <i class="bi bi-file-earmark-excel"></i> Excel
         </a>
-        <a asp-action="ExportarPDF" asp-route-periodoId="@periodo!.PeriodoPagoId" class="btn btn-dark">
+        <a asp-action="ExportarPDF" asp-route-periodoId="@periodo!.PeriodoPagoId" class="btn btn-dark long-action" data-loading-message="Generando PDF general...">
             <i class="bi bi-file-earmark-pdf"></i> PDF General
         </a>
-        <form asp-action="EnviarTodosPorEmail" method="post" class="d-inline"
-              onsubmit="return confirm('¿Enviar el comprobante de pago por correo a todos los empleados?')">
+        <form asp-action="EnviarTodosPorEmail" method="post" class="d-inline form-loading" data-loading-message="Enviando boletas a todos los empleados..." id="formEnviarTodos">
             @Html.AntiForgeryToken()
             <input type="hidden" name="periodoId" value="@periodo.PeriodoPagoId" />
-            <button type="submit" class="btn btn-dark">
+            <button type="button" class="btn btn-dark" id="btnEnviarTodos">
                 <i class="bi bi-envelope-fill"></i> Enviar Boletas a Todos
             </button>
         </form>
     </div>
 }
 
+<!-- Modal de Confirmación - Enviar Boletas -->
+<div class="modal fade" id="confirmEnvioModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Confirmar Envío</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Enviar el comprobante de pago por correo a <strong>todos los empleados</strong>?</p>
+                <p class="text-muted small">Este proceso puede tomar algunos minutos.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" id="btnConfirmarEnvio">Sí, Enviar Ahora</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación - Calcular Planilla -->
+<div class="modal fade" id="confirmCalcularModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+            <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                <h5 class="modal-title text-white fw-bold">
+                    <i class="bi bi-calculator"></i> Recalcular Planilla
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                                <p style="color: #333;">¿Recalcular la planilla para <strong>todos los empleados</strong>?</p>
+                                <p class="text-muted small">Los cálculos anteriores serán reemplazados.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarCalcular">Sí, Recalcular</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal de Confirmación - Cerrar Período -->
+<div class="modal fade" id="confirmCerrarPeriodoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+            <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                <h5 class="modal-title text-white fw-bold">
+                    <i class="bi bi-lock"></i> Cerrar Período
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding: 24px;">
+                <div style="background-color: #FFF5EB; border-left: 4px solid #FF7A00; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+                    <div style="color: #333; font-weight: 600; margin-bottom: 8px;">
+                        <i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>
+                        Esta acción es IRREVERSIBLE
+                    </div>
+                    <p style="color: #555; margin: 0; font-size: 0.9rem;">
+                        Los períodos cerrados son inmutables. No podrás hacer cambios posteriores.
+                    </p>
+                </div>
+
+                <p style="color: #333; margin-bottom: 12px;">¿Cerrar el período?</p>
+
+                <div style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                    <div style="font-size: 0.9rem; color: #666;">
+                        <strong style="color: #333;">@periodo.Descripcion</strong>
+                        <br />
+                        <span style="color: #888;">@periodo.FechaInicio.ToString("dd/MM/yyyy") — @periodo.FechaFin.ToString("dd/MM/yyyy")</span>
+                    </div>
+                </div>
+
+                <p style="color: #555; font-size: 0.9rem; margin-bottom: 0;">
+                    <i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>
+                    Esta acción consolida los registros.
+                </p>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #E0E0E0; padding: 12px 16px;">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarCerrarPeriodo">
+                    <i class="bi bi-check-circle"></i> Sí, Cerrar Período
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // ===== ENVIAR BOLETAS =====
+        const btnEnviarTodos = document.getElementById('btnEnviarTodos');
+        const btnConfirmarEnvio = document.getElementById('btnConfirmarEnvio');
+        const formEnviarTodos = document.getElementById('formEnviarTodos');
+        const modalEnvio = new bootstrap.Modal(document.getElementById('confirmEnvioModal'));
+
+        if (btnEnviarTodos) {
+            btnEnviarTodos.addEventListener('click', function(e) {
+                e.preventDefault();
+                modalEnvio.show();
+            });
+        }
+
+        if (btnConfirmarEnvio) {
+            btnConfirmarEnvio.addEventListener('click', function() {
+                modalEnvio.hide();
+                Loading.show('Enviando boletas a todos los empleados...');
+                setTimeout(function() {
+                    formEnviarTodos.submit();
+                }, 200);
+            });
+        }
+
+        // ===== CALCULAR PLANILLA =====
+        const btnCalcular = document.getElementById('btnCalcular');
+        const btnConfirmarCalcular = document.getElementById('btnConfirmarCalcular');
+        const formCalcular = document.getElementById('formCalcular');
+        const modalCalcular = new bootstrap.Modal(document.getElementById('confirmCalcularModal'));
+
+        if (btnCalcular) {
+            btnCalcular.addEventListener('click', function(e) {
+                e.preventDefault();
+                modalCalcular.show();
+            });
+        }
+
+        if (btnConfirmarCalcular) {
+            btnConfirmarCalcular.addEventListener('click', function() {
+                modalCalcular.hide();
+                Loading.show('Calculando planilla para todos los empleados...');
+                setTimeout(function() {
+                    formCalcular.submit();
+                }, 200);
+            });
+        }
+
+        // ===== CERRAR PERÍODO =====
+        const btnCerrarPeriodo = document.getElementById('btnCerrarPeriodo');
+        const btnConfirmarCerrarPeriodo = document.getElementById('btnConfirmarCerrarPeriodo');
+        const formCerrarPeriodo = document.getElementById('formCerrarPeriodo');
+        const modalCerrarPeriodo = new bootstrap.Modal(document.getElementById('confirmCerrarPeriodoModal'));
+
+        if (btnCerrarPeriodo) {
+            btnCerrarPeriodo.addEventListener('click', function(e) {
+                e.preventDefault();
+                modalCerrarPeriodo.show();
+            });
+        }
+
+        if (btnConfirmarCerrarPeriodo) {
+            btnConfirmarCerrarPeriodo.addEventListener('click', function() {
+                modalCerrarPeriodo.hide();
+                Loading.show('Cerrando período...');
+                setTimeout(function() {
+                    formCerrarPeriodo.submit();
+                }, 200);
+            });
+        }
+    });
+</script>
+
 <!-- Tabla Única con Columna de Renta -->
 @if (Model.Any())
 {
+    <!-- CSS mejorado para mejor legibilidad -->
+    <style>
+        .planilla-table {
+            font-size: 0.875rem; /* Aumentado de 0.82rem */
+            min-width: 1800px; /* Ancho mínimo para evitar que se aplaste */
+        }
+        .planilla-table th,
+        .planilla-table td {
+            padding: 0.75rem 0.5rem !important; /* Mejor espaciado vertical */
+            white-space: nowrap;
+        }
+        .planilla-table .text-end {
+            padding-right: 0.75rem !important;
+        }
+        .planilla-table thead th {
+            font-size: 0.85rem;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .planilla-table tbody td {
+            font-size: 0.875rem;
+        }
+        /* Mejorar visibilidad de números */
+        .planilla-table .text-end {
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+        /* Separadores visuales */
+        .planilla-table td:nth-child(3),
+        .planilla-table td:nth-child(9),
+        .planilla-table td:nth-child(16) {
+            border-right: 2px solid #dee2e6;
+        }
+    </style>
+
     <div class="card shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" style="font-size: 0.82rem;">
+                <table class="table table-hover align-middle mb-0 planilla-table">
                     <thead class="table-dark">
                         <tr>
-                            <th>Empleado</th>
-                            <th class="text-end fw-bold" style="background:#e8f4fd;">Salario Bruto Mensual</th>
-                            <th>Departamento</th>
-                            <th class="text-end">Sal. Ord.</th>
-                            <th class="text-end">H. Extra</th>
-                            <th class="text-end">Comisión</th>
-                            <th class="text-end">Feriados</th>
-                            <th class="text-end fw-bold">Total Dev.</th>
-                            <th class="text-end">CCSS</th>
-                            <th class="text-end">Renta (ISR)</th>   <!-- NUEVA COLUMNA -->
-                            <th class="text-end">Préstamos</th>
-                            <th class="text-end">Crédito</th>
-                            <th class="text-end">Incap.</th>
-                            <th class="text-end">Vac.</th>
-                            <th class="text-end">H.N/L</th>
-                            <th class="text-end">Otras D.</th>
-                            <th class="text-end fw-bold">Total Ded.</th>
-                            <th class="text-end fw-bold" style="background:#f8f9fa; color:#000;">Neto</th>
-                            <th class="text-center">Acciones</th>
+                            <th rowspan="2" style="vertical-align:middle;">Empleado</th>
+                            <th rowspan="2" class="text-end fw-bold" style="background:#e8f4fd; vertical-align:middle;">Salario Bruto Mensual</th>
+                            <th rowspan="2" style="vertical-align:middle;">Departamento</th>
+
+                            <!-- SECCIÓN DEVENGADOS -->
+                            <th colspan="6" class="text-center" style="background:#d4edda; color:#155724; font-weight:bold; border-left:3px solid #28a745;">
+                                <i class="bi bi-plus-circle"></i> DEVENGADOS
+                            </th>
+
+                            <!-- SECCIÓN DEDUCCIONES -->
+                            <th colspan="7" class="text-center" style="background:#f8d7da; color:#721c24; font-weight:bold; border-left:3px solid #dc3545;">
+                                <i class="bi bi-dash-circle"></i> DEDUCCIONES
+                            </th>
+
+                            <th rowspan="2" class="text-end fw-bold" style="background:#fff3cd; color:#856404; vertical-align:middle; border-left:3px solid #ffc107;">
+                                <i class="bi bi-cash-coin"></i> Neto
+                            </th>
+                            <th rowspan="2" class="text-center" style="vertical-align:middle;">Acciones</th>
+                        </tr>
+                        <tr>
+                            <!-- DETALLE DEVENGADOS -->
+                            <th class="text-end" style="background:#e8f5e9; border-left:3px solid #28a745;">Sal. Ord.</th>
+                            <th class="text-end" style="background:#e8f5e9;">H. Extra</th>
+                            <th class="text-end" style="background:#e8f5e9;">Comisión</th>
+                            <th class="text-end" style="background:#e8f5e9;">Feriados</th>
+                            <th class="text-end fw-bold" style="background:#c8e6c9;">Total Dev.</th>
+
+                            <!-- DETALLE DEDUCCIONES -->
+                            <th class="text-end" style="background:#ffebee; border-left:3px solid #dc3545;">CCSS</th>
+                            <th class="text-end" style="background:#ffebee;">Renta</th>
+                            <th class="text-end" style="background:#ffebee;">Préstamos</th>
+                            <th class="text-end" style="background:#ffebee;">Crédito</th>
+                            <th class="text-end" style="background:#ffebee;">H.N/L</th>
+                            <th class="text-end" style="background:#ffebee;" title="Deducción por días de incapacidad no trabajados">Incap.</th>
+                            <th class="text-end" style="background:#ffebee;">Otras D.</th>
+                            <th class="text-end fw-bold" style="background:#ffcdd2;">Total Ded.</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -295,28 +512,27 @@ else
                                 <td class="text-end fw-bold" style="background:#e8f4fd; font-size:0.95rem;">₡@brutoMensual.ToString("N0")</td>
                                 <td><strong>@p.Empleado.Departamento</strong></td>
 
-                                <!-- Devengados -->
-                                <td class="text-end">@p.SalarioOrdinario.ToString("N0")</td>
-                                <td class="text-end">@(p.MontoHorasExtras > 0 ? p.MontoHorasExtras.ToString("N0") : "—")</td>
-                                <td class="text-end">@(p.AumentoAplicado > 0 ? p.AumentoAplicado.ToString("N0") : "—")</td>
-                                <td class="text-end">@(p.MontoFeriados > 0 ? p.MontoFeriados.ToString("N0") : "—")</td>
-                                <td class="text-end fw-bold">@p.TotalDevengado.ToString("N0")</td>
+                                <!-- ✅ DEVENGADOS - Fondo verde claro -->
+                                <td class="text-end" style="background:#f1f8f4; border-left:3px solid #28a745;">@p.SalarioOrdinario.ToString("N0")</td>
+                                <td class="text-end" style="background:#f1f8f4;">@(p.MontoHorasExtras > 0 ? p.MontoHorasExtras.ToString("N0") : "—")</td>
+                                <td class="text-end" style="background:#f1f8f4;">@(p.AumentoAplicado > 0 ? p.AumentoAplicado.ToString("N0") : "—")</td>
+                                <td class="text-end" style="background:#f1f8f4;">@(p.MontoFeriados > 0 ? p.MontoFeriados.ToString("N0") : "—")</td>
+                                <td class="text-end fw-bold" style="background:#d4edda; color:#155724;">₡@p.TotalDevengado.ToString("N0")</td>
 
-                                <!-- Deducciones -->
-                                <td class="text-end">@p.DeduccionCCSS.ToString("N0")</td>
-                                <td class="text-end text-danger">@(p.DeduccionRenta > 0 ? p.DeduccionRenta.ToString("N0") : "—")</td> <!-- NUEVA -->
-                                <td class="text-end">@(p.DeduccionPrestamos > 0 ? p.DeduccionPrestamos.ToString("N0") : "—")</td>
-                                <td class="text-end">@(p.DeduccionCreditoFerreteria > 0 ? p.DeduccionCreditoFerreteria.ToString("N0") : "—")</td>
-                                <td class="text-end">@(p.DeduccionIncapacidad > 0 ? p.DeduccionIncapacidad.ToString("N0") : "—")</td>
-                                <td class="text-end">@(p.DeduccionVacaciones > 0 ? p.DeduccionVacaciones.ToString("N0") : "—")</td>
-                                <td class="text-end">@(p.DeduccionHorasNoLaboradas > 0 ? p.DeduccionHorasNoLaboradas.ToString("N0") : "—")</td>
-                                <td class="text-end" title="@p.DescripcionOtrasDeducciones">
+                                <!-- ❌ DEDUCCIONES - Fondo rojo claro -->
+                                <td class="text-end" style="background:#fef5f5; border-left:3px solid #dc3545;">@p.DeduccionCCSS.ToString("N0")</td>
+                                <td class="text-end text-danger" style="background:#fef5f5;">@(p.DeduccionRenta > 0 ? p.DeduccionRenta.ToString("N0") : "—")</td>
+                                <td class="text-end" style="background:#fef5f5;">@(p.DeduccionPrestamos > 0 ? p.DeduccionPrestamos.ToString("N0") : "—")</td>
+                                <td class="text-end" style="background:#fef5f5;">@(p.DeduccionCreditoFerreteria > 0 ? p.DeduccionCreditoFerreteria.ToString("N0") : "—")</td>
+                                <td class="text-end" style="background:#fef5f5;">@(p.DeduccionHorasNoLaboradas > 0 ? p.DeduccionHorasNoLaboradas.ToString("N0") : "—")</td>
+                                <td class="text-end text-danger" style="background:#fef5f5;">@(p.DeduccionIncapacidad > 0 ? p.DeduccionIncapacidad.ToString("N0") : "—")</td>
+                                <td class="text-end" style="background:#fef5f5;" title="@p.DescripcionOtrasDeducciones">
                                     @(p.OtrasDeducciones > 0 ? p.OtrasDeducciones.ToString("N0") : "—")
                                 </td>
-                                <td class="text-end fw-bold">@p.TotalDeducciones.ToString("N0")</td>
+                                <td class="text-end fw-bold" style="background:#f8d7da; color:#721c24;">₡@p.TotalDeducciones.ToString("N0")</td>
 
-                                <!-- Neto -->
-                                <td class="text-end fw-bold" style="background:#f8f9fa; font-size:1rem;">₡@p.NetoAPagar.ToString("N0")</td>
+                                <!-- 💰 NETO - Fondo amarillo -->
+                                <td class="text-end fw-bold" style="background:#fff3cd; font-size:1rem; color:#856404; border-left:3px solid #ffc107;">₡@p.NetoAPagar.ToString("N0")</td>
 
                                 <!-- Acciones -->
                                 <td class="text-center">
@@ -327,12 +543,12 @@ else
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         }
-                                        <a asp-action="DescargarPDF" asp-route-id="@p.PlanillaEmpleadoId" class="btn btn-outline-secondary" title="PDF">
+                                        <a asp-action="DescargarPDF" asp-route-id="@p.PlanillaEmpleadoId" class="btn btn-outline-secondary long-action" data-loading-message="Generando PDF..." title="Descargar PDF">
                                             <i class="bi bi-file-earmark-pdf"></i>
                                         </a>
                                         @if (!string.IsNullOrEmpty(p.Empleado.CorreoElectronico))
                                         {
-                                            <form asp-action="EnviarPorEmail" method="post" class="d-inline">
+                                            <form asp-action="EnviarPorEmail" method="post" class="d-inline form-loading" data-loading-message="Enviando correo...">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@p.PlanillaEmpleadoId" />
                                                 <button type="submit" class="btn btn-outline-secondary" title="Enviar correo">
@@ -350,31 +566,55 @@ else
         </div>
     </div>
 
-    <!-- Total General -->
-    <div class="card mt-4 shadow-sm border-0" style="background:#f8f9fa;">
-        <div class="card-body">
-            <div class="d-flex flex-wrap justify-content-between align-items-center">
-                <div>
-                    <strong>Total General</strong> — @Model.Count() empleados
+    <!-- Total General con división visual -->
+    <div class="card mt-4 shadow-sm border-0">
+        <div class="card-body py-4">
+            <div class="row align-items-center text-center">
+                <!-- Devengado -->
+                <div class="col-md-4">
+                    <div class="p-3 rounded" style="background:#d4edda; border-left:5px solid #28a745;">
+                        <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                            <i class="bi bi-plus-circle-fill text-success fs-4"></i>
+                            <small class="text-muted fw-bold">TOTAL DEVENGADO</small>
+                        </div>
+                        <h3 class="mb-0" style="color:#155724;">₡@Model.Sum(p => p.TotalDevengado).ToString("N0")</h3>
+                        <small class="text-muted">@Model.Count() empleados</small>
+                    </div>
                 </div>
-                <div class="d-flex gap-4">
-                    <div>
-                        <small class="text-muted">Devengado</small><br>
-                        <strong>₡@Model.Sum(p => p.TotalDevengado).ToString("N0")</strong>
+
+                <!-- Símbolo menos -->
+                <div class="col-md-1">
+                    <h2 class="mb-0 text-muted">−</h2>
+                </div>
+
+                <!-- Deducciones -->
+                <div class="col-md-3">
+                    <div class="p-3 rounded" style="background:#f8d7da; border-left:5px solid #dc3545;">
+                        <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                            <i class="bi bi-dash-circle-fill text-danger fs-4"></i>
+                            <small class="text-muted fw-bold">TOTAL DEDUCCIONES</small>
+                        </div>
+                        <h3 class="mb-0" style="color:#721c24;">₡@Model.Sum(p => p.TotalDeducciones).ToString("N0")</h3>
                     </div>
-                    <div>−</div>
-                    <div>
-                        <small class="text-muted">Deducciones</small><br>
-                        <strong>₡@Model.Sum(p => p.TotalDeducciones).ToString("N0")</strong>
+                </div>
+
+                <!-- Símbolo igual -->
+                <div class="col-md-1">
+                    <h2 class="mb-0 text-muted">=</h2>
+                </div>
+
+                <!-- Neto -->
+                <div class="col-md-3">
+                    <div class="p-3 rounded" style="background:#fff3cd; border-left:5px solid #ffc107;">
+                        <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                            <i class="bi bi-cash-coin fs-4" style="color:#856404;"></i>
+                            <small class="text-muted fw-bold">NETO A PAGAR</small>
+                        </div>
+                        <h3 class="mb-0 fw-bold" style="color:#856404;">₡@Model.Sum(p => p.NetoAPagar).ToString("N0")</h3>
                     </div>
-                    <div>=</div>
-                    <div>
-                        <small class="text-muted">Neto a Pagar</small><br>
-                                            <strong style="font-size:1.25rem;">₡@Model.Sum(p => p.NetoAPagar).ToString("N0")</strong>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
+                </div>
+            </div>
+        </div>
+    </div>
+}
                         } @* cierre else (hay períodos) *@

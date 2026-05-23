@@ -8,6 +8,30 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0"><i class="bi bi-shield-check"></i> Auditoría del Sistema</h2>
+
+    @if (Model.Any())
+    {
+        <div class="d-flex gap-2">
+            <a asp-action="ExportarExcel"
+               asp-route-usuario="@ViewBag.Usuario"
+               asp-route-modulo="@ViewBag.Modulo"
+               asp-route-desde="@ViewBag.Desde"
+               asp-route-hasta="@ViewBag.Hasta"
+               class="btn btn-success btn-sm long-action"
+               data-loading-message="Exportando auditoría en Excel...">
+                <i class="bi bi-file-earmark-excel"></i> Excel
+            </a>
+            <a asp-action="ExportarPDF"
+               asp-route-usuario="@ViewBag.Usuario"
+               asp-route-modulo="@ViewBag.Modulo"
+               asp-route-desde="@ViewBag.Desde"
+               asp-route-hasta="@ViewBag.Hasta"
+               class="btn btn-danger btn-sm long-action"
+               data-loading-message="Generando auditoría en PDF...">
+                <i class="bi bi-file-earmark-pdf"></i> PDF
+            </a>
+        </div>
+    }
 </div>
 
 @* Filtros *@

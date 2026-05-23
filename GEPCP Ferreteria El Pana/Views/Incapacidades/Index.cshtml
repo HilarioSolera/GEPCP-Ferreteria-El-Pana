@@ -136,36 +136,106 @@ else
                         <td class="text-center">
                             <div class="d-flex gap-1 justify-content-center">
                                 <a asp-action="DescargarPDF" asp-route-id="@i.IncapacidadId"
-                                       class="btn btn-sm btn-outline-danger" title="PDF">
-                                    <i class="bi bi-file-earmark-pdf"></i>
-                                </a>
-                                @if (!string.IsNullOrEmpty(i.Empleado.CorreoElectronico))
-                                {
-                                    <form asp-action="EnviarPorEmail" method="post" class="d-inline">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@i.IncapacidadId" />
-                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar correo">
-                                            <i class="bi bi-envelope"></i>
-                                        </button>
-                                    </form>
-                                }
-                                <a asp-action="Edit" asp-route-id="@i.IncapacidadId"
-                                       class="btn btn-sm btn-warning" title="Editar">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <form asp-action="Delete" method="post" class="d-inline"
-                                      onsubmit="return confirm('¿Eliminar esta incapacidad de @i.Empleado.PrimerApellido?')">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@i.IncapacidadId" />
-                                    <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
+                                       class="btn btn-sm btn-outline-danger long-action" data-loading-message="Generando PDF..." title="PDF">
+                                                <i class="bi bi-file-earmark-pdf"></i>
+                                            </a>
+                                            @if (!string.IsNullOrEmpty(i.Empleado.CorreoElectronico))
+                                            {
+                                                <form asp-action="EnviarPorEmail" method="post" class="d-inline form-loading" data-loading-message="Enviando correo...">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@i.IncapacidadId" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar correo">
+                                                        <i class="bi bi-envelope"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            <a asp-action="Edit" asp-route-id="@i.IncapacidadId"
+                                                   class="btn btn-sm btn-warning" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger btnEliminarIncapacidad"
+                                                    data-id="@i.IncapacidadId"
+                                                    data-empleado="@i.Empleado.PrimerApellido"
+                                                    title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
                     </tr>
+                                 }
+                             </tbody>
+                         </table>
+                     </div>
                 }
-            </tbody>
-        </table>
-    </div>
-}
+
+                <!-- Modal Eliminar Incapacidad -->
+                <div class="modal fade" id="confirmEliminarIncapacidadModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+                            <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                                <h5 class="modal-title text-white fw-bold">
+                                    <i class="bi bi-exclamation-triangle"></i> Eliminar Incapacidad
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body" style="padding: 24px;">
+                                <div style="background-color: #FFF5EB; border-left: 4px solid #FF7A00; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+                                    <div style="color: #333; font-weight: 600;">
+                                        <i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>
+                                        ¿Eliminar esta incapacidad de <span id="modalIncapacidadEmpleado"></span>?
+                                    </div>
+                                </div>
+
+                                <div style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px;">
+                                    <p style="color: #888; font-size: 0.85rem; margin-bottom: 0;">
+                                        <i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>
+                                        Esta operación no se puede deshacer.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="modal-footer" style="border-top: 1px solid #E0E0E0; padding: 12px 16px;">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </button>
+                                <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarEliminarIncapacidad">
+                                    <i class="bi bi-check-circle"></i> Sí, Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulario oculto -->
+                <form method="post" asp-action="Delete" style="display:none;" id="formEliminarIncapacidad">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="inputIdIncapacidad" />
+                </form>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const botonesEliminar = document.querySelectorAll('.btnEliminarIncapacidad');
+                        const modalEliminar = new bootstrap.Modal(document.getElementById('confirmEliminarIncapacidadModal'), {
+                            backdrop: 'static',
+                            keyboard: false
+                        });
+                        const btnConfirmar = document.getElementById('btnConfirmarEliminarIncapacidad');
+                        const formEliminar = document.getElementById('formEliminarIncapacidad');
+                        const inputId = document.getElementById('inputIdIncapacidad');
+
+                        botonesEliminar.forEach(function(btn) {
+                            btn.addEventListener('click', function() {
+                                document.getElementById('modalIncapacidadEmpleado').textContent = this.dataset.empleado;
+                                inputId.value = this.dataset.id;
+                                modalEliminar.show();
+                            });
+                        });
+
+                        btnConfirmar.addEventListener('click', function() {
+                            modalEliminar.hide();
+                            Loading.show('Eliminando incapacidad...');
+                            setTimeout(function() {
+                                formEliminar.submit();
+                            }, 100);
+                        });
+                    });
+                </script>

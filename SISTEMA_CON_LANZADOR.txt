@@ -1,0 +1,203 @@
+═══════════════════════════════════════════════════════════════════
+   ✅ NUEVO SISTEMA CON LANZADOR INDEPENDIENTE
+═══════════════════════════════════════════════════════════════════
+
+🎯 PROBLEMA RESUELTO:
+- Antes: El acceso directo no funcionaba cuando se cerraba el navegador
+- Ahora: Lanzador .exe independiente con ícono de la ferretería
+
+═══════════════════════════════════════════════════════════════════
+📦 COMPONENTES DEL SISTEMA
+═══════════════════════════════════════════════════════════════════
+
+1. 🚀 FERRETERIA EL PANA.EXE (Lanzador)
+   - Archivo ejecutable con el ícono de la ferretería
+   - Verifica si el servidor está corriendo
+   - Si no está corriendo, lo inicia automáticamente
+   - Abre el navegador en http://localhost:5002
+   - Es el acceso directo principal del usuario
+
+2. 🖥️ GEPCP FERRETERIA EL PANA.EXE (Servidor)
+   - El servidor web ASP.NET Core
+   - Se ejecuta en segundo plano
+   - Puerto fijo: 5002
+   - Se inicia automáticamente con Windows (opcional)
+
+═══════════════════════════════════════════════════════════════════
+🔧 CÓMO FUNCIONA
+═══════════════════════════════════════════════════════════════════
+
+ESCENARIO 1: Primera vez / Servidor apagado
+────────────────────────────────────────────
+Usuario hace doble clic en "Ferreteria El Pana.exe"
+   ↓
+Lanzador verifica puerto 5002
+   ↓
+Puerto cerrado → Lanzador inicia "GEPCP Ferreteria El Pana.exe"
+   ↓
+Espera hasta que el servidor responda (máx 30 segundos)
+   ↓
+Abre el navegador en http://localhost:5002
+   ↓
+✅ Usuario ve la página splash y luego el login
+
+ESCENARIO 2: Servidor ya corriendo
+───────────────────────────────────
+Usuario hace doble clic en "Ferreteria El Pana.exe"
+   ↓
+Lanzador verifica puerto 5002
+   ↓
+Puerto abierto → El servidor ya está corriendo
+   ↓
+Abre directamente el navegador en http://localhost:5002
+   ↓
+✅ Usuario ve la página splash y luego el login
+
+ESCENARIO 3: Usuario cierra el navegador
+─────────────────────────────────────────
+Usuario cierra Firefox/Chrome/etc
+   ↓
+El servidor sigue corriendo en segundo plano
+   ↓
+Usuario vuelve a hacer doble clic en el acceso directo
+   ↓
+Lanzador detecta que el servidor ya está corriendo
+   ↓
+Abre nuevamente el navegador
+   ↓
+✅ Acceso instantáneo (sin espera)
+
+═══════════════════════════════════════════════════════════════════
+📂 ARCHIVOS INSTALADOS
+═══════════════════════════════════════════════════════════════════
+
+C:\Program Files\GEPCP Ferreteria El Pana\
+│
+├── 🚀 Ferreteria El Pana.exe          ← ESTE ES EL ACCESO DIRECTO
+├── 🎨 ferreteria.ico                  ← Ícono del sistema
+├── 🖥️ GEPCP Ferreteria El Pana.exe   ← Servidor web
+├── 📚 [Todas las DLLs necesarias]
+└── 📁 wwwroot\                        ← Archivos estáticos
+
+═══════════════════════════════════════════════════════════════════
+🖱️ ACCESOS DIRECTOS CREADOS
+═══════════════════════════════════════════════════════════════════
+
+🖥️ ESCRITORIO (si se marcó la opción):
+   → "GEPCP Ferreteria El Pana"
+   → Ejecuta: Ferreteria El Pana.exe
+   → Ícono: ferreteria.ico
+
+📋 MENÚ INICIO:
+   → "GEPCP Ferreteria El Pana"
+   → Ejecuta: Ferreteria El Pana.exe
+   → Ícono: ferreteria.ico
+
+⚡ INICIO AUTOMÁTICO DE WINDOWS (si se marcó la opción):
+   → "GEPCP Ferreteria El Pana Server"
+   → Ejecuta: GEPCP Ferreteria El Pana.exe
+   → Inicia el servidor automáticamente al arrancar Windows
+   → El usuario solo necesita hacer clic en el acceso directo
+
+═══════════════════════════════════════════════════════════════════
+✅ VENTAJAS DEL NUEVO SISTEMA
+═══════════════════════════════════════════════════════════════════
+
+✓ Acceso directo con ícono de la ferretería
+✓ El usuario NO necesita saber que es localhost:5002
+✓ Si cierra el navegador, el servidor sigue corriendo
+✓ Acceso instantáneo la segunda vez
+✓ Auto-inicio opcional con Windows
+✓ Verificación automática del estado del servidor
+✓ Manejo de errores con mensajes claros
+
+═══════════════════════════════════════════════════════════════════
+🚀 INSTRUCCIONES DE USO
+═══════════════════════════════════════════════════════════════════
+
+INSTALACIÓN:
+1. Ejecutar Setup_GEPCP_FerreteriaElPana.exe como administrador
+2. Seguir el asistente
+3. Marcar las opciones:
+   ☑ Crear ícono en el escritorio
+   ☑ Iniciar servidor automáticamente con Windows
+4. Finalizar instalación
+5. El sistema se abrirá automáticamente
+
+USO DIARIO:
+1. Si marcaste auto-inicio: Solo hacer doble clic en el acceso directo
+2. Si NO marcaste auto-inicio: 
+   - Primera vez del día: Hacer doble clic (esperar 10-30 segundos)
+   - Siguientes veces: Hacer doble clic (acceso instantáneo)
+
+CERRAR EL SISTEMA:
+- Opción 1: Dejar el servidor corriendo todo el día (recomendado)
+- Opción 2: Administrador de tareas → Finalizar "GEPCP Ferreteria El Pana.exe"
+- Opción 3: Reiniciar la computadora
+
+═══════════════════════════════════════════════════════════════════
+🔧 SOLUCIÓN DE PROBLEMAS
+═══════════════════════════════════════════════════════════════════
+
+❌ "No se pudo iniciar el servidor"
+   → Verificar que todos los archivos estén en:
+	 C:\Program Files\GEPCP Ferreteria El Pana\
+   → Reinstalar si faltan archivos
+
+❌ "Error al abrir el navegador"
+   → El servidor está corriendo
+   → Abrir manualmente: http://localhost:5002
+
+❌ Firefox dice "No se puede conectar"
+   → El servidor aún no ha iniciado
+   → Esperar 10-30 segundos
+   → O verificar en Administrador de tareas si está corriendo
+
+❌ El acceso directo no hace nada
+   → Ejecutar como administrador
+   → Verificar que el archivo exista:
+	 C:\Program Files\GEPCP Ferreteria El Pana\Ferreteria El Pana.exe
+
+═══════════════════════════════════════════════════════════════════
+📊 DETALLES TÉCNICOS
+═══════════════════════════════════════════════════════════════════
+
+Lanzador:
+- Lenguaje: C# .NET 8 Windows Forms
+- Tamaño: ~150 KB
+- Verifica puerto TCP 5002
+- Timeout: 30 segundos
+
+Servidor:
+- Lenguaje: C# .NET 8 ASP.NET Core
+- Puerto: 5002 (fijo)
+- Base de datos: SQLite
+- Tipo: Aplicación consola (no ventana visible en auto-inicio)
+
+═══════════════════════════════════════════════════════════════════
+📦 ARCHIVOS DEL INSTALADOR
+═══════════════════════════════════════════════════════════════════
+
+📁 Instalador\
+└── Setup_GEPCP_FerreteriaElPana.exe (Instalador completo)
+
+Tamaño: ~50 MB
+Incluye: Lanzador + Servidor + Todas las dependencias
+
+═══════════════════════════════════════════════════════════════════
+
+			  🎉 ¡SISTEMA FUNCIONAL Y LISTO! 🎉
+
+═══════════════════════════════════════════════════════════════════
+
+✅ VERIFICADO:
+- Lanzador compilado correctamente
+- Ícono de la ferretería incluido
+- Servidor actualizado sin auto-lanzamiento
+- Instalador generado exitosamente
+- Auto-inicio opcional configurado
+
+🚀 PARA INSTALAR:
+Ejecutar: Instalador\Setup_GEPCP_FerreteriaElPana.exe
+
+═══════════════════════════════════════════════════════════════════

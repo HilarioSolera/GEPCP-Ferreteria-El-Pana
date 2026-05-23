@@ -2,6 +2,7 @@ using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
+using GEPCP_Ferreteria_El_Pana.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -242,6 +243,23 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
+                // Validar que las fechas del aguinaldo no sean anteriores a la fecha de ingreso
+                var empleado = await _context.Empleados.FindAsync(model.EmpleadoId);
+                if (empleado == null)
+                {
+                    ModelState.AddModelError("EmpleadoId", "Empleado no encontrado.");
+                    await CargarEmpleadosViewBag();
+                    return View(model);
+                }
+
+                if (model.FechaInicio < empleado.FechaIngreso)
+                {
+                    ModelState.AddModelError("FechaInicio", 
+                        $"La fecha de inicio del período de aguinaldo no puede ser anterior a la fecha de ingreso del empleado ({empleado.FechaIngreso:dd/MM/yyyy}).");
+                    await CargarEmpleadosViewBag(model.EmpleadoId);
+                    return View(model);
+                }
+
                 var existe = await _context.Aguinaldos
                     .AnyAsync(a => a.EmpleadoId == model.EmpleadoId && a.Anio == model.Anio);
 
@@ -366,6 +384,23 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
+                // Validar que las fechas del aguinaldo no sean anteriores a la fecha de ingreso
+                var empleado = await _context.Empleados.FindAsync(model.EmpleadoId);
+                if (empleado == null)
+                {
+                    ModelState.AddModelError("EmpleadoId", "Empleado no encontrado.");
+                    await CargarEmpleadosViewBag();
+                    return View(model);
+                }
+
+                if (model.FechaInicio < empleado.FechaIngreso)
+                {
+                    ModelState.AddModelError("FechaInicio", 
+                        $"La fecha de inicio del período de aguinaldo no puede ser anterior a la fecha de ingreso del empleado ({empleado.FechaIngreso:dd/MM/yyyy}).");
+                    await CargarEmpleadosViewBag(model.EmpleadoId);
+                    return View(model);
+                }
+
                 var existe = await _context.Aguinaldos
                     .AnyAsync(a =>
                         a.EmpleadoId == model.EmpleadoId &&
@@ -472,7 +507,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     aguinaldo.EmpleadoId, aguinaldo.FechaInicio, aguinaldo.FechaFin);
 
                 var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
-                var pdfBytes = _servicioPDF.GenerarPDFAguinaldo(aguinaldo, periodos, usuario, planillasAg);
+                var pdfBytes = _servicioPDF.GenerarPDFAguinaldo(aguinaldo, usuario);
                 var nombreArchivo = $"Aguinaldo_{aguinaldo.Empleado.PrimerApellido}_{aguinaldo.Anio}.pdf";
 
                 await _auditoria.RegistrarAsync(
@@ -523,7 +558,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 var planillasEmail = await ObtenerPlanillasContribuyentes(
                     aguinaldo.EmpleadoId, aguinaldo.FechaInicio, aguinaldo.FechaFin);
 
-                var pdfBytes = _servicioPDF.GenerarPDFAguinaldoSinFirmas(aguinaldo, periodosEmail, planillas: planillasEmail);
+                var pdfBytes = _servicioPDF.GenerarPDFAguinaldoSinFirmas(aguinaldo);
                 var nombreArchivo =
                     $"Aguinaldo_{aguinaldo.Empleado.PrimerApellido}_{aguinaldo.Anio}.pdf";
 

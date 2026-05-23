@@ -1,0 +1,154 @@
+═══════════════════════════════════════════════════════════════════
+   GEPCP FERRETERÍA EL PANA - GUÍA DE INICIO RÁPIDO
+═══════════════════════════════════════════════════════════════════
+
+✅ VERSIÓN LIMPIA Y FUNCIONAL
+✅ LISTO PARA INSTALAR Y USAR
+✅ SIN ARCHIVOS INNECESARIOS
+
+═══════════════════════════════════════════════════════════════════
+📦 INSTALACIÓN
+═══════════════════════════════════════════════════════════════════
+
+1. Ubicar el instalador:
+   📁 Instalador\Setup_GEPCP_FerreteriaElPana.exe
+
+2. Clic derecho → Ejecutar como administrador
+
+3. Seguir el asistente de instalación
+
+4. ✅ ¡Listo! El sistema se inicia automáticamente
+
+═══════════════════════════════════════════════════════════════════
+🚀 PRIMER USO
+═══════════════════════════════════════════════════════════════════
+
+El navegador se abrirá automáticamente en:
+   🌐 http://localhost:5002
+
+Usuarios predeterminados:
+
+   👤 RECURSOS HUMANOS
+   Usuario:     admin.rrhh
+   Contraseña:  Pana2024
+
+   👤 JEFATURA
+   Usuario:     jefatura
+   Contraseña:  Pana2024
+
+═══════════════════════════════════════════════════════════════════
+🔑 ACCESO POSTERIOR
+═══════════════════════════════════════════════════════════════════
+
+1. Hacer doble clic en el acceso directo del escritorio:
+   🖥️ GEPCP Ferreteria El Pana
+
+2. El navegador abrirá automáticamente el sistema
+
+3. Si cerraste el navegador:
+   - El sistema sigue corriendo en segundo plano
+   - Solo vuelve a hacer clic en el acceso directo
+
+═══════════════════════════════════════════════════════════════════
+📊 MÓDULOS DISPONIBLES
+═══════════════════════════════════════════════════════════════════
+
+✅ Gestión de Empleados
+   - Alta, baja, modificación
+   - Información personal y laboral
+
+✅ Planilla
+   - Cálculo automático quincenal/mensual
+   - Deducciones: CCSS, impuesto renta, asociación
+   - Generación de comprobantes en PDF
+   - Exportación a Excel
+   - SEPARACIÓN VISUAL entre devengados y deducciones
+
+✅ Horas Extras
+   - Registro de horas normales y dobles
+   - Cálculo automático
+
+✅ Incapacidades
+   - Registro y seguimiento
+   - Cálculo de días y montos
+
+✅ Vacaciones
+   - SIEMPRE PAGADAS (no afectan planilla actual)
+   - Seguimiento de días disponibles
+
+✅ Aguinaldo
+   - Cálculo automático
+   - Generación de comprobantes
+
+✅ Usuarios
+   - Gestión de accesos
+   - Roles: RRHH y Jefatura
+
+═══════════════════════════════════════════════════════════════════
+⚙️ CARACTERÍSTICAS TÉCNICAS
+═══════════════════════════════════════════════════════════════════
+
+🔹 Puerto fijo:           5002
+🔹 Base de datos:         SQLite (automática)
+🔹 Ubicación BD:          %LOCALAPPDATA%\GEPCP Ferreteria El Pana\
+🔹 Auto-inicio:           Configurado con Windows
+🔹 Sin consola visible:   Ejecución en segundo plano
+🔹 Página de carga:       Splash screen incluido
+
+═══════════════════════════════════════════════════════════════════
+📝 IMPORTANTE
+═══════════════════════════════════════════════════════════════════
+
+✅ NO cerrar procesos "GEPCP Ferreteria El Pana.exe" manualmente
+✅ Dejar que el sistema corra en segundo plano
+✅ Usar el acceso directo para abrir el navegador
+✅ Cerrar el navegador NO cierra la aplicación
+✅ Para detener el sistema: Desinstalar desde Panel de Control
+
+═══════════════════════════════════════════════════════════════════
+🛠️ SOLUCIÓN DE PROBLEMAS
+═══════════════════════════════════════════════════════════════════
+
+❌ No abre el navegador:
+   → Abrir manualmente: http://localhost:5002
+
+❌ Mensaje "No se puede conectar":
+   → Verificar que la aplicación esté corriendo
+   → Buscar "GEPCP Ferreteria El Pana" en Administrador de tareas
+   → Si no está, ejecutar desde Menú Inicio
+
+❌ Error de base de datos:
+   → La base de datos se crea automáticamente al primer inicio
+   → Esperar unos segundos y recargar la página
+
+═══════════════════════════════════════════════════════════════════
+📞 ARCHIVOS DE AYUDA
+═══════════════════════════════════════════════════════════════════
+
+📄 README.md              → Documentación completa
+📄 RESUMEN_LIMPIEZA.txt   → Detalles técnicos de la limpieza
+
+═══════════════════════════════════════════════════════════════════
+✅ VERIFICACIONES REALIZADAS
+═══════════════════════════════════════════════════════════════════
+
+✅ Proyecto compila sin errores
+✅ Base de datos funcional
+✅ Todos los módulos operativos
+✅ Instalador generado correctamente
+✅ Splash screen configurado
+✅ Auto-inicio habilitado
+✅ Archivos innecesarios eliminados
+✅ Estructura de carpetas limpia
+
+═══════════════════════════════════════════════════════════════════
+
+		  🎉 ¡SISTEMA LISTO PARA USAR! 🎉
+
+═══════════════════════════════════════════════════════════════════
+
+Versión:    1.0 LIMPIA
+Estado:     ✅ FUNCIONAL
+Instalador: Instalador\Setup_GEPCP_FerreteriaElPana.exe
+
+═══════════════════════════════════════════════════════════════════

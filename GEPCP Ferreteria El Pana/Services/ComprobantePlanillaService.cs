@@ -1,4 +1,4 @@
-﻿using QuestPDF.Fluent;
+﻿﻿using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using GEPCP_Ferreteria_El_Pana.Models;
@@ -39,7 +39,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
 
         // HELPERS
         private string LogoPath =>
-            Path.Combine(_env.WebRootPath, "images", "logo-el-pana.jpg");
+            Path.Combine(_env.WebRootPath, "css", "images", "logo-el-pana.jpg");
 
         private byte[]? ObtenerLogoBytes()
         {
@@ -221,7 +221,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                     page.Content().Column(col =>
                     {
                         Encabezado(col, logo, "COMPROBANTE DE PAGO",
-                            $"Período: {planilla.PeriodoPago.FechaInicio:dd/MM/yyyy} — {planilla.PeriodoPago.FechaFin:dd/MM/yyyy}");
+                            $"Período: {planilla.PeriodoPago.Descripcion} | Año: {planilla.PeriodoPago.Anio}");
 
                         col.Item().Padding(12).Column(inner =>
                         {
@@ -239,27 +239,9 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     "CÉDULA:", emp.Cedula);
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
                                     "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
-                                FilaDatos(t, "FECHA INGRESO:", emp.FechaIngreso.ToString("dd/MM/yyyy"),
-                                    "CORTE PERÍODO:", $"{planilla.PeriodoPago.FechaInicio:dd/MM/yyyy} — {planilla.PeriodoPago.FechaFin:dd/MM/yyyy}");
+                                FilaDatos(t, "TIPO DE PAGO:", emp.DescripcionTipoPago,
+                                    "PERÍODO:", $"{planilla.PeriodoPago.Descripcion} | Año {planilla.PeriodoPago.Anio}");
                             });
-
-                            // Aviso de período parcial si el empleado ingresó a mitad del período
-                            {
-                                int diasPeriodoPdf = (planilla.PeriodoPago.FechaFin - planilla.PeriodoPago.FechaInicio).Days + 1;
-                                int diasEfPdf = planilla.DiasTrabajados > 0 ? planilla.DiasTrabajados : diasPeriodoPdf;
-                                if (diasEfPdf < diasPeriodoPdf)
-                                {
-                                    inner.Item().PaddingTop(4).Background(Color.FromHex("FFF3CD")).Padding(6).Row(r =>
-                                    {
-                                        r.ConstantItem(4).Background(Color.FromHex("FF7A00")).Text("");
-                                        r.RelativeItem().PaddingLeft(8)
-                                            .Text($"⚠ Período parcial: {diasEfPdf} día(s) trabajados de {diasPeriodoPdf}. " +
-                                                  $"Ingresó: {emp.FechaIngreso:dd/MM/yyyy}. " +
-                                                  $"Salario proporcional (Art. 164 CT).")
-                                            .FontSize(7.5f).Italic().FontColor(Color.FromHex("856404"));
-                                    });
-                                }
-                            }
 
                             // Devengados
                             SeccionLabel(inner, "Total Devengado");
@@ -396,7 +378,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                     page.Content().Column(col =>
                     {
                         Encabezado(col, logo, "COMPROBANTE DE HORAS EXTRAS",
-                            $"Período: {hx.PeriodoPago.Descripcion}");
+                            $"Período: {hx.PeriodoPago.Descripcion} | Año: {hx.PeriodoPago.Anio}");
 
                         col.Item().Padding(20).Column(inner =>
                         {
@@ -413,6 +395,8 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     "CÉDULA:", emp.Cedula);
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
                                     "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
+                                FilaDatos(t, "PERÍODO:", hx.PeriodoPago.Descripcion,
+                                    "AÑO:", hx.PeriodoPago.Anio.ToString());
                                 FilaDatos(t, "TOTAL HORAS:", $"{hx.TotalHoras:N2} hrs",
                                     "PORCENTAJE:", $"{hx.Porcentaje:N1}%");
                             });
@@ -477,7 +461,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                     page.Content().Column(col =>
                     {
                         Encabezado(col, logo, "COMPROBANTE DE HORAS EXTRAS — COPIA DIGITAL",
-                            $"Período: {hx.PeriodoPago.Descripcion}");
+                            $"Período: {hx.PeriodoPago.Descripcion} | Año: {hx.PeriodoPago.Anio}");
 
                         col.Item().Padding(20).Column(inner =>
                         {
@@ -502,6 +486,8 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     "CÉDULA:", emp.Cedula);
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
                                     "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
+                                FilaDatos(t, "PERÍODO:", hx.PeriodoPago.Descripcion,
+                                    "AÑO:", hx.PeriodoPago.Anio.ToString());
                                 FilaDatos(t, "TOTAL HORAS:", $"{hx.TotalHoras:N2} hrs",
                                     "PORCENTAJE:", $"{hx.Porcentaje:N1}%");
                             });
@@ -586,7 +572,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
         "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "TIPO DE PAGO:", emp.DescripcionTipoPago,
-                                    "PERÍODO:", comision.PeriodoPago?.Descripcion ?? "—");
+                                    "PERÍODO:", $"{comision.PeriodoPago?.Descripcion ?? "—"} | Año {comision.PeriodoPago?.Anio.ToString() ?? "—"}");
                             });
 
                             SeccionLabel(inner, "Detalle de la Comisión");
@@ -598,7 +584,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     c.ConstantColumn(90); c.RelativeColumn(2);
                                 });
                                 FilaDatos(t, "FECHA:", $"{comision.Fecha:dd/MM/yyyy}",
-                                    "PERÍODO:", comision.PeriodoPago?.Descripcion ?? "—");
+                                    "PERÍODO:", $"{comision.PeriodoPago?.Descripcion ?? "—"} | Año {comision.PeriodoPago?.Anio.ToString() ?? "—"}");
                                 t.Cell().Background(GrisFondo).Padding(4)
                                     .Text("DESCRIPCIÓN:").Bold().FontSize(9);
                                 t.Cell().ColumnSpan(3).Padding(4)
@@ -638,7 +624,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                     page.Content().Column(col =>
                     {
                         Encabezado(col, logo, "COMPROBANTE DE INCAPACIDAD",
-                            $"{inc.FechaInicio:dd/MM/yyyy} — {inc.FechaFin:dd/MM/yyyy}");
+                            $"Período: {inc.FechaInicio:dd/MM/yyyy} — {inc.FechaFin:dd/MM/yyyy} | Año: {inc.FechaInicio:yyyy}");
 
                         col.Item().Padding(20).Column(inner =>
                         {
@@ -735,7 +721,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                     page.Content().Column(col =>
                     {
                         Encabezado(col, logo, "COMPROBANTE DE INCAPACIDAD — COPIA DIGITAL",
-                            $"{inc.FechaInicio:dd/MM/yyyy} — {inc.FechaFin:dd/MM/yyyy}");
+                            $"Período: {inc.FechaInicio:dd/MM/yyyy} — {inc.FechaFin:dd/MM/yyyy} | Año: {inc.FechaInicio:yyyy}");
 
                         col.Item().Padding(20).Column(inner =>
                         {
@@ -822,7 +808,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     }
 
                                     // AGUINALDO
-                                    public byte[] GenerarPDFAguinaldo(Aguinaldo ag, List<PeriodoPago>? periodos = null, string usuario = "", List<PlanillaEmpleado>? planillas = null)
+                                    public byte[] GenerarPDFAguinaldo(Aguinaldo ag, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = ag.Empleado;
@@ -838,7 +824,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                     page.Content().Column(col =>
                     {
                         Encabezado(col, logo, "COMPROBANTE DE AGUINALDO",
-                            $"Período: {ag.FechaInicio:dd/MM/yyyy} — {ag.FechaFin:dd/MM/yyyy}");
+                            $"Período: {ag.FechaInicio:dd/MM/yyyy} — {ag.FechaFin:dd/MM/yyyy} | Año: {ag.Anio}");
 
                         col.Item().Padding(20).Column(inner =>
                         {
@@ -858,7 +844,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     "FECHA PAGO:", ag.FechaPago.ToString("dd/MM/yyyy"));
                             });
 
-                            SeccionLabel(inner, "Detalle del cálculo");
+                            SeccionLabel(inner, "Detalle");
                             inner.Item().Table(t =>
                             {
                                 t.ColumnsDefinition(c => { c.RelativeColumn(6); c.RelativeColumn(4); });
@@ -867,148 +853,16 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 t.Cell().Background(Naranja).Padding(4).AlignRight()
                                     .Text("MONTO").Bold().FontSize(8).FontColor(Blanco);
 
-                                var sumaBase = ag.SumaDevengados > 0 ? ag.SumaDevengados : ag.MontoTotal * 12m;
                                 t.Cell().Background(GrisFondo).Padding(3)
-                                    .Text("Suma total de ingresos brutos en el período").FontSize(8);
+                                    .Text($"Aguinaldo {ag.Anio}").FontSize(8);
                                 t.Cell().Padding(3).AlignRight()
-                                    .Text($"₡{sumaBase:N2}").FontSize(8);
-
-                                t.Cell().Background(GrisFondo).Padding(3)
-                                    .Text("Divisor legal (12 meses)").FontSize(8);
-                                t.Cell().Padding(3).AlignRight()
-                                    .Text("÷ 12").FontSize(8);
+                                    .Text($"₡{ag.MontoTotal:N2}").FontSize(8);
 
                                 t.Cell().Background(NaranjaFondo).Padding(3)
-                                    .Text("TOTAL AGUINALDO").Bold().FontSize(8);
+                                    .Text("TOTAL").Bold().FontSize(8);
                                 t.Cell().Background(NaranjaFondo).Padding(3).AlignRight()
                                     .Text($"₡{ag.MontoTotal:N2}").Bold().FontSize(8).FontColor(NaranjaOsc);
                             });
-
-                            // Nota de proporcionalidad
-                            if (ag.PeriodosConsiderados > 0 && ag.PeriodosConsiderados < 24)
-                            {
-                                inner.Item().PaddingTop(4).Background(Color.FromHex("FFF3CD")).Padding(6)
-                                    .Text($"⚠ Aguinaldo proporcional (Art. 166 Código de Trabajo / MTSS): el empleado laboró {ag.PeriodosConsiderados} período(s) dentro del año de cálculo. " +
-                                          "El derecho al aguinaldo se activa desde el primer día de trabajo. " +
-                                          "Sin deducciones de CCSS ni impuesto sobre la renta sobre este monto.")
-                                    .FontSize(7.5f).Italic().FontColor(Color.FromHex("856404"));
-                            }
-
-                            // Sección de períodos que se tomaron en cuenta
-                            if (periodos != null && periodos.Any())
-                            {
-                                SeccionLabel(inner, "Períodos incluidos en el cálculo");
-                                inner.Item().Table(t =>
-                                {
-                                    t.ColumnsDefinition(c =>
-                                    {
-                                        c.RelativeColumn(4);
-                                        c.RelativeColumn(3);
-                                        c.RelativeColumn(3);
-                                    });
-                                    t.Cell().Background(Naranja).Padding(4)
-                                        .Text("PERÍODO").Bold().FontSize(8).FontColor(Blanco);
-                                    t.Cell().Background(Naranja).Padding(4)
-                                        .Text("FECHA INICIO").Bold().FontSize(8).FontColor(Blanco);
-                                    t.Cell().Background(Naranja).Padding(4)
-                                        .Text("FECHA FIN").Bold().FontSize(8).FontColor(Blanco);
-                                    var fondo = false;
-                                    foreach (var p in periodos)
-                                    {
-                                        var bg = fondo ? GrisFondo : Blanco;
-                                        t.Cell().Background(bg).Padding(3).Text(p.Descripcion).FontSize(8);
-                                        t.Cell().Background(bg).Padding(3).Text(p.FechaInicio.ToString("dd/MM/yyyy")).FontSize(8);
-                                        t.Cell().Background(bg).Padding(3).Text(p.FechaFin.ToString("dd/MM/yyyy")).FontSize(8);
-                                        fondo = !fondo;
-                                    }
-                                });
-                                inner.Item().PaddingTop(4).Background(GrisFondo).Padding(6)
-                                    .Text($"Total de períodos considerados: {periodos.Count}")
-                                    .FontSize(8).Italic().FontColor(Color.FromHex("555555"));
-                            }
-
-                            // Desglose por mes con salario bruto
-                            if (planillas != null && planillas.Any())
-                            {
-                                SeccionLabel(inner, "Desglose mensual de salarios brutos");
-                                inner.Item().Table(t =>
-                                {
-                                    t.ColumnsDefinition(c =>
-                                    {
-                                        c.RelativeColumn(5); c.RelativeColumn(2);
-                                        c.RelativeColumn(4); c.RelativeColumn(5);
-                                    });
-                                    foreach (var h in new[] { "MES", "DÍAS TRAB.", "SAL. BRUTO (₡)", "OBSERVACIÓN" })
-                                        t.Cell().Background(Naranja).Padding(3).Text(h).Bold().FontSize(7.5f).FontColor(Blanco);
-
-                                    string[] mesesNombre = { "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                                                               "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre" };
-
-                                    var gruposMes = planillas
-                                        .GroupBy(pe => new { pe.PeriodoPago.Anio, pe.PeriodoPago.Mes })
-                                        .OrderBy(g => g.Key.Anio).ThenBy(g => g.Key.Mes);
-
-                                    bool alt = false;
-                                    foreach (var grupo in gruposMes)
-                                    {
-                                        var pList = grupo.ToList();
-                                        var tipoPer = pList.First().PeriodoPago.TipoPeriodo;
-                                        int esperados = tipoPer == TipoPeriodo.Mensual ? 1 : 2;
-                                        bool mesCompleto = pList.Count >= esperados;
-                                        bool tieneProrrateo = pList.Any(pe =>
-                                            pe.DiasTrabajados > 0 &&
-                                            pe.DiasTrabajados < (pe.PeriodoPago.FechaFin - pe.PeriodoPago.FechaInicio).Days + 1);
-                                        bool esParcial = !mesCompleto || tieneProrrateo;
-
-                                        var brutoGrupo = pList.Sum(pe => pe.TotalDevengado);
-                                        var nombreMes  = mesesNombre[grupo.Key.Mes];
-
-                                        if (!esParcial)
-                                        {
-                                            var bg = alt ? GrisFondo : Blanco;
-                                            t.Cell().Background(bg).Padding(3).Text($"{nombreMes} {grupo.Key.Anio}").Bold().FontSize(8);
-                                            t.Cell().Background(bg).Padding(3).AlignCenter().Text("—").FontSize(8);
-                                            t.Cell().Background(bg).Padding(3).AlignRight().Text($"₡{brutoGrupo:N2}").Bold().FontSize(8);
-                                            t.Cell().Background(bg).Padding(3)
-                                                .Text("Mes completo").FontSize(7.5f).FontColor(Color.FromHex("2E7D32"));
-                                            alt = !alt;
-                                        }
-                                        else
-                                        {
-                                            foreach (var pe in pList.OrderBy(x => x.PeriodoPago.FechaInicio))
-                                            {
-                                                int diasPer = (pe.PeriodoPago.FechaFin - pe.PeriodoPago.FechaInicio).Days + 1;
-                                                int diasEf  = pe.DiasTrabajados > 0 ? pe.DiasTrabajados : diasPer;
-                                                bool parcial = diasEf < diasPer;
-                                                var bg = alt ? GrisFondo : Blanco;
-
-                                                string label = tipoPer == TipoPeriodo.Mensual
-                                                    ? $"{nombreMes} {grupo.Key.Anio}"
-                                                    : $"Q{(int)pe.PeriodoPago.Quincena} — {nombreMes} {grupo.Key.Anio}";
-                                                string nota = parcial
-                                                    ? $"Parcial — {diasEf}/{diasPer} días"
-                                                    : $"Solo Q{(int)pe.PeriodoPago.Quincena}";
-
-                                                t.Cell().Background(bg).Padding(3).Text(label).FontSize(7.5f);
-                                                t.Cell().Background(parcial ? RojoFondo : bg).Padding(3).AlignCenter()
-                                                    .Text(parcial ? $"{diasEf}/{diasPer}" : $"{diasPer}")
-                                                    .Bold().FontSize(7.5f).FontColor(parcial ? Rojo : Color.FromHex("333333"));
-                                                t.Cell().Background(bg).Padding(3).AlignRight()
-                                                    .Text($"₡{pe.TotalDevengado:N2}").Bold().FontSize(7.5f);
-                                                t.Cell().Background(bg).Padding(3).Text(nota)
-                                                    .FontSize(7f).FontColor(parcial ? Rojo : Color.FromHex("666666")).Italic();
-                                                alt = !alt;
-                                            }
-                                        }
-                                    }
-                                    // Fila total
-                                    t.Cell().Background(NaranjaFondo).Padding(3).Text("TOTAL BRUTO").Bold().FontSize(8).FontColor(NaranjaOsc);
-                                    t.Cell().Background(NaranjaFondo).Padding(3).Text("").FontSize(8);
-                                    t.Cell().Background(NaranjaFondo).Padding(3).AlignRight()
-                                        .Text($"₡{planillas.Sum(x => x.TotalDevengado):N2}").Bold().FontSize(8).FontColor(NaranjaOsc);
-                                    t.Cell().Background(NaranjaFondo).Padding(3).Text("").FontSize(8);
-                                });
-                            }
 
                             if (!string.IsNullOrEmpty(ag.Observaciones))
                             {
@@ -1038,7 +892,8 @@ namespace GEPCP_Ferreteria_El_Pana.Services
         }
 
         // AGUINALDO SIN FIRMAS (para envío por email)
-        public byte[] GenerarPDFAguinaldoSinFirmas(Aguinaldo ag, List<PeriodoPago>? periodos = null, string usuario = "", List<PlanillaEmpleado>? planillas = null)
+
+        public byte[] GenerarPDFAguinaldoSinFirmas(Aguinaldo ag, string usuario = "")
         {
             var logo = ObtenerLogoBytes();
             var emp = ag.Empleado;
@@ -1054,7 +909,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                     page.Content().Column(col =>
                     {
                         Encabezado(col, logo, "COMPROBANTE DE AGUINALDO — COPIA DIGITAL",
-                            $"Período: {ag.FechaInicio:dd/MM/yyyy} — {ag.FechaFin:dd/MM/yyyy}");
+                            $"Período: {ag.FechaInicio:dd/MM/yyyy} — {ag.FechaFin:dd/MM/yyyy} | Año: {ag.Anio}");
 
                         col.Item().Padding(20).Column(inner =>
                         {
@@ -1082,7 +937,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     "FECHA PAGO:", ag.FechaPago.ToString("dd/MM/yyyy"));
                             });
 
-                            SeccionLabel(inner, "Detalle del cálculo");
+                            SeccionLabel(inner, "Detalle");
                             inner.Item().Table(t =>
                             {
                                 t.ColumnsDefinition(c => { c.RelativeColumn(6); c.RelativeColumn(4); });
@@ -1091,144 +946,16 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 t.Cell().Background(Naranja).Padding(4).AlignRight()
                                     .Text("MONTO").Bold().FontSize(8).FontColor(Blanco);
 
-                                var sumaBase2 = ag.SumaDevengados > 0 ? ag.SumaDevengados : ag.MontoTotal * 12m;
                                 t.Cell().Background(GrisFondo).Padding(3)
-                                    .Text("Suma total de ingresos brutos en el período").FontSize(8);
+                                    .Text($"Aguinaldo {ag.Anio}").FontSize(8);
                                 t.Cell().Padding(3).AlignRight()
-                                    .Text($"₡{sumaBase2:N2}").FontSize(8);
-
-                                t.Cell().Background(GrisFondo).Padding(3)
-                                    .Text("Divisor legal (12 meses)").FontSize(8);
-                                t.Cell().Padding(3).AlignRight()
-                                    .Text("÷ 12").FontSize(8);
+                                    .Text($"₡{ag.MontoTotal:N2}").FontSize(8);
 
                                 t.Cell().Background(NaranjaFondo).Padding(3)
-                                    .Text("TOTAL AGUINALDO").Bold().FontSize(8);
+                                    .Text("TOTAL").Bold().FontSize(8);
                                 t.Cell().Background(NaranjaFondo).Padding(3).AlignRight()
                                     .Text($"₡{ag.MontoTotal:N2}").Bold().FontSize(8).FontColor(NaranjaOsc);
                             });
-
-                            // Nota de proporcionalidad
-                            if (ag.PeriodosConsiderados > 0 && ag.PeriodosConsiderados < 24)
-                            {
-                                inner.Item().PaddingTop(4).Background(Color.FromHex("FFF3CD")).Padding(6)
-                                    .Text($"⚠ Aguinaldo proporcional (Art. 166 Código de Trabajo / MTSS): el empleado laboró {ag.PeriodosConsiderados} período(s) dentro del año de cálculo. " +
-                                          "El derecho al aguinaldo se activa desde el primer día de trabajo. " +
-                                          "Sin deducciones de CCSS ni impuesto sobre la renta sobre este monto.")
-                                    .FontSize(7.5f).Italic().FontColor(Color.FromHex("856404"));
-                            }
-
-                            // Sección de períodos que se tomaron en cuenta
-                            if (periodos != null && periodos.Any())
-                            {
-                                SeccionLabel(inner, "Períodos incluidos en el cálculo");
-                                inner.Item().Table(t =>
-                                {
-                                    t.ColumnsDefinition(c =>
-                                    {
-                                        c.RelativeColumn(4);
-                                        c.RelativeColumn(3);
-                                        c.RelativeColumn(3);
-                                    });
-                                    t.Cell().Background(Naranja).Padding(4)
-                                        .Text("PERÍODO").Bold().FontSize(8).FontColor(Blanco);
-                                    t.Cell().Background(Naranja).Padding(4)
-                                        .Text("FECHA INICIO").Bold().FontSize(8).FontColor(Blanco);
-                                    t.Cell().Background(Naranja).Padding(4)
-                                        .Text("FECHA FIN").Bold().FontSize(8).FontColor(Blanco);
-                                    var fondo = false;
-                                    foreach (var p in periodos)
-                                    {
-                                        var bg = fondo ? GrisFondo : Blanco;
-                                        t.Cell().Background(bg).Padding(3).Text(p.Descripcion).FontSize(8);
-                                        t.Cell().Background(bg).Padding(3).Text(p.FechaInicio.ToString("dd/MM/yyyy")).FontSize(8);
-                                        t.Cell().Background(bg).Padding(3).Text(p.FechaFin.ToString("dd/MM/yyyy")).FontSize(8);
-                                        fondo = !fondo;
-                                    }
-                                });
-                                inner.Item().PaddingTop(4).Background(GrisFondo).Padding(6)
-                                    .Text($"Total de períodos considerados: {periodos.Count}")
-                                    .FontSize(8).Italic().FontColor(Color.FromHex("555555"));
-                            }
-
-                            // Desglose mensual de salarios (sin firmas)
-                            if (planillas != null && planillas.Any())
-                            {
-                                SeccionLabel(inner, "Desglose mensual de salarios brutos");
-                                inner.Item().Table(t =>
-                                {
-                                    t.ColumnsDefinition(c =>
-                                    {
-                                        c.RelativeColumn(5); c.RelativeColumn(2);
-                                        c.RelativeColumn(4); c.RelativeColumn(5);
-                                    });
-                                    foreach (var h in new[] { "MES", "DÍAS TRAB.", "SAL. BRUTO (₡)", "OBSERVACIÓN" })
-                                        t.Cell().Background(Naranja).Padding(3).Text(h).Bold().FontSize(7.5f).FontColor(Blanco);
-
-                                    string[] mesesNombre = { "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                                                               "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre" };
-
-                                    var gruposMes = planillas
-                                        .GroupBy(pe => new { pe.PeriodoPago.Anio, pe.PeriodoPago.Mes })
-                                        .OrderBy(g => g.Key.Anio).ThenBy(g => g.Key.Mes);
-
-                                    bool alt = false;
-                                    foreach (var grupo in gruposMes)
-                                    {
-                                        var pList = grupo.ToList();
-                                        var tipoPer = pList.First().PeriodoPago.TipoPeriodo;
-                                        int esperados = tipoPer == TipoPeriodo.Mensual ? 1 : 2;
-                                        bool mesCompleto = pList.Count >= esperados;
-                                        bool tieneProrrateo = pList.Any(pe =>
-                                            pe.DiasTrabajados > 0 &&
-                                            pe.DiasTrabajados < (pe.PeriodoPago.FechaFin - pe.PeriodoPago.FechaInicio).Days + 1);
-                                        bool esParcial = !mesCompleto || tieneProrrateo;
-                                        var brutoGrupo = pList.Sum(pe => pe.TotalDevengado);
-                                        var nombreMes = mesesNombre[grupo.Key.Mes];
-
-                                        if (!esParcial)
-                                        {
-                                            var bg = alt ? GrisFondo : Blanco;
-                                            t.Cell().Background(bg).Padding(3).Text($"{nombreMes} {grupo.Key.Anio}").Bold().FontSize(8);
-                                            t.Cell().Background(bg).Padding(3).AlignCenter().Text("—").FontSize(8);
-                                            t.Cell().Background(bg).Padding(3).AlignRight().Text($"₡{brutoGrupo:N2}").Bold().FontSize(8);
-                                            t.Cell().Background(bg).Padding(3)
-                                                .Text("Mes completo").FontSize(7.5f).FontColor(Color.FromHex("2E7D32"));
-                                            alt = !alt;
-                                        }
-                                        else
-                                        {
-                                            foreach (var pe in pList.OrderBy(x => x.PeriodoPago.FechaInicio))
-                                            {
-                                                int diasPer = (pe.PeriodoPago.FechaFin - pe.PeriodoPago.FechaInicio).Days + 1;
-                                                int diasEf = pe.DiasTrabajados > 0 ? pe.DiasTrabajados : diasPer;
-                                                bool parcial = diasEf < diasPer;
-                                                var bg = alt ? GrisFondo : Blanco;
-                                                string label = tipoPer == TipoPeriodo.Mensual
-                                                    ? $"{nombreMes} {grupo.Key.Anio}"
-                                                    : $"Q{(int)pe.PeriodoPago.Quincena} — {nombreMes} {grupo.Key.Anio}";
-                                                string nota = parcial
-                                                    ? $"Parcial — {diasEf}/{diasPer} días"
-                                                    : $"Solo Q{(int)pe.PeriodoPago.Quincena}";
-                                                t.Cell().Background(bg).Padding(3).Text(label).FontSize(7.5f);
-                                                t.Cell().Background(parcial ? RojoFondo : bg).Padding(3).AlignCenter()
-                                                    .Text(parcial ? $"{diasEf}/{diasPer}" : $"{diasPer}")
-                                                    .Bold().FontSize(7.5f).FontColor(parcial ? Rojo : Color.FromHex("333333"));
-                                                t.Cell().Background(bg).Padding(3).AlignRight()
-                                                    .Text($"₡{pe.TotalDevengado:N2}").Bold().FontSize(7.5f);
-                                                t.Cell().Background(bg).Padding(3).Text(nota)
-                                                    .FontSize(7f).FontColor(parcial ? Rojo : Color.FromHex("666666")).Italic();
-                                                alt = !alt;
-                                            }
-                                        }
-                                    }
-                                    t.Cell().Background(NaranjaFondo).Padding(3).Text("TOTAL BRUTO").Bold().FontSize(8).FontColor(NaranjaOsc);
-                                    t.Cell().Background(NaranjaFondo).Padding(3).Text("").FontSize(8);
-                                    t.Cell().Background(NaranjaFondo).Padding(3).AlignRight()
-                                        .Text($"₡{planillas.Sum(x => x.TotalDevengado):N2}").Bold().FontSize(8).FontColor(NaranjaOsc);
-                                    t.Cell().Background(NaranjaFondo).Padding(3).Text("").FontSize(8);
-                                });
-                            }
 
                             if (!string.IsNullOrEmpty(ag.Observaciones))
                             {
@@ -1277,7 +1004,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             _ => "CONTROL PLANILLA QUINCENAL"
                         };
                         Encabezado(col, logo, tituloPlanilla,
-                            $"Período: {periodo.FechaInicio:dd/MM/yyyy} — {periodo.FechaFin:dd/MM/yyyy}");
+                            $"Período: {periodo.Descripcion} | Año: {periodo.Anio}");
 
                         col.Item().Padding(14).Column(inner =>
                         {
@@ -1422,7 +1149,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
     "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "TIPO DE PAGO:", emp.DescripcionTipoPago,
-                                    "PERÍODO:", comision.PeriodoPago?.Descripcion ?? "—");
+                                    "PERÍODO:", $"{comision.PeriodoPago?.Descripcion ?? "—"} | Año {comision.PeriodoPago?.Anio.ToString() ?? "—"}");
                             });
 
                             SeccionLabel(inner, "Detalle de la Comisión");
@@ -1434,7 +1161,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                     c.ConstantColumn(90); c.RelativeColumn(2);
                                 });
                                 FilaDatos(t, "FECHA:", $"{comision.Fecha:dd/MM/yyyy}",
-                                    "PERÍODO:", comision.PeriodoPago?.Descripcion ?? "—");
+                                    "PERÍODO:", $"{comision.PeriodoPago?.Descripcion ?? "—"} | Año {comision.PeriodoPago?.Anio.ToString() ?? "—"}");
                                 t.Cell().Background(GrisFondo).Padding(4)
                                     .Text("DESCRIPCIÓN:").Bold().FontSize(9);
                                 t.Cell().ColumnSpan(3).Padding(4)
@@ -1519,7 +1246,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "FECHA INICIO:", $"{vacacion.FechaInicio:dd/MM/yyyy}",
                                     "FECHA FIN:", $"{vacacion.FechaFin:dd/MM/yyyy}");
                                 FilaDatos(t, "DÍAS SOLICITADOS:", $"{vacacion.DiasHabiles:N1} día(s)",
-                                    "BASE LEGAL:", "Art. 153 Código de Trabajo CR");
+                                    "TIPO:", "Con Pago");
                             });
 
                             SeccionLabel(inner, "Resumen de Días por Período (Art. 153 Código de Trabajo CR)");
@@ -1555,7 +1282,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             {
                                 r.ConstantItem(4).Background(Verde).Text("");
                                 r.RelativeItem().PaddingLeft(8)
-                                    .Text("El empleado recibirá su salario ordinario durante el período de vacaciones (Art. 156 CT).")
+                                    .Text("Vacaciones con pago — El empleado recibirá su salario ordinario durante el período de vacaciones.")
                                     .FontColor(Verde).Bold().FontSize(9);
                             });
 
@@ -1641,7 +1368,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "FECHA INICIO:", $"{vacacion.FechaInicio:dd/MM/yyyy}",
                                     "FECHA FIN:", $"{vacacion.FechaFin:dd/MM/yyyy}");
                                 FilaDatos(t, "DÍAS SOLICITADOS:", $"{vacacion.DiasHabiles:N1} día(s)",
-                                    "BASE LEGAL:", "Art. 153 Código de Trabajo CR");
+                                    "TIPO:", "Con Pago");
                             });
 
                             SeccionLabel(inner, "Resumen de Días (Art. 153 Código de Trabajo CR)");
@@ -1677,7 +1404,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                             {
                                 r.ConstantItem(4).Background(Verde).Text("");
                                 r.RelativeItem().PaddingLeft(8)
-                                    .Text("El empleado recibirá su salario ordinario durante el período de vacaciones (Art. 156 CT).")
+                                    .Text("Vacaciones con pago — El empleado recibirá su salario ordinario durante el período de vacaciones.")
                                     .FontColor(Verde).Bold().FontSize(9);
                             });
 
@@ -2504,8 +2231,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                     page.Content().Column(col =>
                     {
                         Encabezado(col, logo, "COMPROBANTE DE PAGO — COPIA DIGITAL",
-                            $"Período: {planilla.PeriodoPago.FechaInicio:dd/MM/yyyy} " +
-                            $"— {planilla.PeriodoPago.FechaFin:dd/MM/yyyy}");
+                            $"Período: {planilla.PeriodoPago.Descripcion} | Año: {planilla.PeriodoPago.Anio}");
 
                         col.Item().Padding(12).Column(inner =>
                         {
@@ -2536,7 +2262,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                                 FilaDatos(t, "DEPARTAMENTO:", emp.Departamento,
                                     "PUESTO:", ObtenerPuestoConCodigo(emp.Puesto));
                                 FilaDatos(t, "TIPO DE PAGO:", emp.DescripcionTipoPago,
-                                    "PERÍODO:", planilla.PeriodoPago.Descripcion);
+                                    "PERÍODO:", $"{planilla.PeriodoPago.Descripcion} | Año {planilla.PeriodoPago.Anio}");
                             });
 
                             SeccionLabel(inner, "Total Devengado");
@@ -2694,7 +2420,7 @@ namespace GEPCP_Ferreteria_El_Pana.Services
                     page.Content().Column(col =>
                     {
                         Encabezado(col, logo, "BOLETA DE PAGO — FERIADO",
-                            $"Período: {periodo.FechaInicio:dd/MM/yyyy} — {periodo.FechaFin:dd/MM/yyyy}");
+                            $"Período: {periodo.Descripcion} | Año: {periodo.Anio}");
 
                         col.Item().Padding(20).Column(inner =>
                         {

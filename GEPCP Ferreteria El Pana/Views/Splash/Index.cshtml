@@ -1,0 +1,251 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargando GEPCP Ferretería El Pana</title>
+    <link rel="icon" type="image/jpeg" href="~/images/logo-el-pana.jpg">
+    <link rel="shortcut icon" type="image/jpeg" href="~/images/logo-el-pana.jpg">
+    <link rel="apple-touch-icon" href="~/images/logo-el-pana.jpg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #FF7A00 0%, #E56E00 35%, #FF9A2F 65%, #CC5E00 100%);
+            background-size: 220% 220%;
+            animation: orangeFlow 6s ease-in-out infinite;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            padding: 20px;
+        }
+
+        .splash-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 50px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: fadeIn 0.8s ease-in-out;
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .splash-container::before {
+            content: "";
+            position: absolute;
+            inset: -3px;
+            border-radius: 22px;
+            border: var(--borde-carga-grosor, 1.8px) solid var(--borde-carga-color, rgba(255, 122, 0, 0.45));
+            box-shadow: var(--borde-carga-sombra, 0 0 0 rgba(255,122,0,0));
+            pointer-events: none;
+            transition: border-width 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+        }
+
+        .brand-text {
+            margin: 0 auto 18px;
+            text-align: center;
+            color: #fff;
+            text-shadow: 0 0 4px rgba(255,255,255,0.25);
+            animation: textGlow 2.6s ease-in-out infinite alternate;
+        }
+
+        .brand-text .linea-principal {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            line-height: 1.1;
+        }
+
+        .brand-text .linea-secundaria {
+            margin-top: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            opacity: 0.95;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            margin-bottom: 35px;
+            opacity: 0.95;
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 25px;
+            border: 6px solid rgba(255,255,255,0.3);
+            border-top: 6px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .progress-bar-wrapper {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #FFD28A 0%, #FF7A00 45%, #FFB347 75%, #FFE7BF 100%);
+            background-size: 180% 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            animation: progressGlow 1.4s linear infinite;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            font-size: 0.95rem;
+        }
+
+        .progress-percentage {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .loading-message {
+            font-size: 1rem;
+            opacity: 0.9;
+            animation: blink 1.5s infinite;
+            margin-bottom: 20px;
+        }
+
+        .footer {
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.85rem;
+            opacity: 0.85;
+        }
+
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @@keyframes textGlow {
+            0% {
+                opacity: 0.82;
+                filter: brightness(0.95);
+                text-shadow: 0 0 4px rgba(255,255,255,0.20);
+            }
+            100% {
+                opacity: 1;
+                filter: brightness(1.18);
+                text-shadow: 0 0 16px rgba(255,255,255,0.55);
+            }
+        }
+        @@keyframes spin {
+            0%   { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @@keyframes blink {
+            0%, 100% { opacity: 0.9; }
+            50%       { opacity: 0.5; }
+        }
+        @@keyframes orangeFlow {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @@keyframes progressGlow {
+            0%   { background-position: 0% 50%; }
+            100% { background-position: 180% 50%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="splash-container">
+        <div class="brand-text">
+            <div class="linea-principal">Ferretería El Pana</div>
+            <div class="linea-secundaria">Departamento de Recursos Humanos</div>
+        </div>
+        <h1>GEPCP</h1>
+        <p class="subtitle">Sistema de Gestión de Planillas y Control de Personal</p>
+        <div class="loader"></div>
+        <p class="loading-message" id="loadingMessage">Iniciando sistema...</p>
+        <div class="progress-bar-wrapper">
+            <div class="progress-bar" id="progressBar" style="width: 0%;"></div>
+        </div>
+        <div class="progress-info">
+            <span class="progress-percentage" id="progressPercentage">0%</span>
+        </div>
+        <div class="footer">
+            GEPCP © 2026 — Ferretería El Pana SRL<br>Sistema de Gestión de RR.HH.
+        </div>
+    </div>
+
+    <script>
+        const steps = [
+            { percent: 0,   message: 'Iniciando sistema...' },
+            { percent: 15,  message: 'Cargando configuración...' },
+            { percent: 30,  message: 'Conectando con base de datos...' },
+            { percent: 45,  message: 'Verificando permisos...' },
+            { percent: 60,  message: 'Cargando módulos...' },
+            { percent: 75,  message: 'Preparando interfaz...' },
+            { percent: 90,  message: 'Finalizando carga...' },
+            { percent: 100, message: 'Sistema listo' }
+        ];
+
+        let i = 0;
+        const bar = document.getElementById('progressBar');
+        const pct = document.getElementById('progressPercentage');
+        const msg = document.getElementById('loadingMessage');
+        const container = document.querySelector('.splash-container');
+
+        function actualizarBordeCarga(percent) {
+            if (!container) return;
+
+            const grosor = 1.8 + (percent / 100) * 2.7;
+            const opacidad = 0.42 + (percent / 100) * 0.35;
+            container.style.setProperty('--borde-carga-grosor', `${grosor.toFixed(2)}px`);
+            container.style.setProperty('--borde-carga-color', `rgba(255, 122, 0, ${opacidad.toFixed(2)})`);
+            container.style.setProperty('--borde-carga-sombra', `0 0 ${(percent / 100 * 12).toFixed(1)}px rgba(255,122,0,0.32)`);
+        }
+
+        function tick() {
+            if (i < steps.length) {
+                const percent = steps[i].percent;
+                bar.style.width = percent + '%';
+                pct.textContent  = percent + '%';
+                msg.textContent  = steps[i].message;
+                actualizarBordeCarga(percent);
+                i++;
+                setTimeout(tick, 300 + Math.random() * 200);
+            } else {
+                setTimeout(() => { window.location.href = '/Account/Login'; }, 800);
+            }
+        }
+
+        window.addEventListener('load', () => setTimeout(tick, 300));
+    </script>
+</body>
+</html>
+</html>

@@ -40,6 +40,12 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Pago Feriados (₡)")]
         public decimal MontoFeriados { get; set; }
 
+        [Display(Name = "Pago Vacaciones (₡)")]
+        public decimal MontoVacaciones { get; set; }
+
+        [Display(Name = "Pago Incapacidades (₡)")]
+        public decimal MontoIncapacidades { get; set; }
+
         [Display(Name = "Total Devengado (₡)")]
         public decimal TotalDevengado { get; set; }
 

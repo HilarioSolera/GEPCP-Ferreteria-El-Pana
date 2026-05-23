@@ -2,6 +2,7 @@
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Services;
+using GEPCP_Ferreteria_El_Pana.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -173,6 +174,22 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     return View(model);
                 }
 
+                // Validar que el empleado esté activo y que la fecha no sea anterior al ingreso
+                var empleado = await _context.Empleados.FindAsync(model.EmpleadoId);
+
+                if (!EmpleadoValidationHelper.ValidarEmpleadoActivo(empleado, ModelState, "registrar horas extras"))
+                {
+                    await CargarViewBagPeriodos(model.PeriodoPagoId);
+                    return View(model);
+                }
+
+                if (!EmpleadoValidationHelper.ValidarFechaContraIngreso(
+                    empleado!, model.Fecha, ModelState, "Fecha", "horas extras"))
+                {
+                    await CargarViewBagPeriodos(model.PeriodoPagoId);
+                    return View(model);
+                }
+
                 // Validar que la fecha esté dentro del rango del período
                 if (model.Fecha != default &&
                     (model.Fecha < periodo.FechaInicio || model.Fecha > periodo.FechaFin))
@@ -195,14 +212,6 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     ModelState.AddModelError(string.Empty,
                         $"Ya existe un registro de horas extras para este empleado en la fecha {model.Fecha:dd/MM/yyyy}. " +
                         "Si necesitás agregar más horas, editá el registro existente.");
-                    await CargarViewBagPeriodos(model.PeriodoPagoId);
-                    return View(model);
-                }
-
-                var empleado = await _context.Empleados.FindAsync(model.EmpleadoId);
-                if (empleado == null)
-                {
-                    ModelState.AddModelError("EmpleadoId", "Empleado no encontrado.");
                     await CargarViewBagPeriodos(model.PeriodoPagoId);
                     return View(model);
                 }
@@ -317,6 +326,21 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     TempData["Error"] = "No se pueden editar horas extras de un período cerrado.";
                     return RedirectToAction(nameof(Index),
                         new { periodoId = registro.PeriodoPagoId });
+                }
+
+                // Validar que la fecha de las horas extras no sea anterior a la fecha de ingreso
+                if (model.Fecha < registro.Empleado.FechaIngreso)
+                {
+                    ModelState.AddModelError("Fecha", 
+                        $"La fecha de las horas extras no puede ser anterior a la fecha de ingreso del empleado ({registro.Empleado.FechaIngreso:dd/MM/yyyy}).");
+                    await CargarViewBagPeriodos(model.PeriodoPagoId);
+                    ViewBag.EmpleadoNombre = $"{registro.Empleado.PrimerApellido} {registro.Empleado.Nombre}";
+                    ViewBag.EmpleadoCedula = registro.Empleado.Cedula;
+                    ViewBag.EmpleadoValorHora = registro.Empleado.ValorHora;
+                    ViewBag.PeriodoFechaInicio = registro.PeriodoPago.FechaInicio.ToString("yyyy-MM-dd");
+                    ViewBag.PeriodoFechaFin = registro.PeriodoPago.FechaFin.ToString("yyyy-MM-dd");
+                    ViewBag.PeriodoDescripcion = registro.PeriodoPago.Descripcion;
+                    return View(model);
                 }
 
                 // Validar que la fecha esté dentro del rango del período

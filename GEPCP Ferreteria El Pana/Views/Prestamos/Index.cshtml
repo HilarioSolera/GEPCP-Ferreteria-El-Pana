@@ -1,4 +1,4 @@
-﻿@model List<GEPCP_Ferreteria_El_Pana.Models.Prestamo>
+@model List<GEPCP_Ferreteria_El_Pana.Models.Prestamo>
 @{
     ViewData["Title"] = "Préstamos - GEPCP Ferretería El Pana";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -157,7 +157,6 @@ else
 
                     <tr class="@(!p.Activo ? "table-light" : "")">
 
-                        @* Expandir historial *@
                         <td class="text-center">
                             @if (tieneAbonos)
                             {
@@ -171,7 +170,6 @@ else
                             }
                         </td>
 
-                        @* Empleado *@
                         <td>
                             <div class="fw-bold">
                                 @p.Empleado.PrimerApellido @p.Empleado.Nombre
@@ -179,10 +177,8 @@ else
                             <div class="text-muted small">@p.Empleado.Cedula</div>
                         </td>
 
-                        @* Monto original *@
                         <td class="text-end">₡@montoOriginal.ToString("N0")</td>
 
-                        @* Saldo actual *@
                         <td class="text-end fw-bold"
                             style="color:@(p.Activo ? "#c55000" : "#1a4a1a")">
                             ₡@p.Monto.ToString("N0")
@@ -195,13 +191,11 @@ else
                             }
                         </td>
 
-                        @* Pagado *@
                         <td class="text-end" style="color:#1a4a1a;">
                             ₡@pagado.ToString("N0")
                             <div class="text-muted" style="font-size:0.7rem;">@pct%</div>
                         </td>
 
-                        @* Faltante — solo si activo *@
                         <td class="text-end">
                             @if (p.Activo)
                             {
@@ -210,8 +204,8 @@ else
                                 </span>
                                 <div class="text-muted" style="font-size:0.68rem;">
                                     ~@((p.CuotaMensual > 0
-                                                                            ? (int)Math.Ceiling((double)(faltante / p.CuotaMensual))
-                                                                            : 0)) cuota(s)
+                                        ? (int)Math.Ceiling((double)(faltante / p.CuotaMensual))
+                                        : 0)) cuota(s)
                                 </div>
                             }
                             else
@@ -226,28 +220,26 @@ else
                             @p.FechaPrestamo.ToString("dd/MM/yyyy")
                         </td>
 
-                        @* Estado *@
                         <td class="text-center">
                             <span class="badge @(p.Activo ? "bg-success" : "bg-secondary")">
                                 @(p.Activo ? "Activo" : "Saldado")
                             </span>
                         </td>
 
-                        @* Acciones *@
                         <td class="text-center">
                             <div class="d-flex gap-1 justify-content-center flex-wrap">
 
-                                @* PDF disponible en cualquier estado *@
                                 <a asp-action="DescargarFiniquito"
                                        asp-route-id="@p.PrestamoId"
-                                       class="btn btn-sm btn-outline-danger"
+                                       class="btn btn-sm btn-outline-danger long-action"
+                                       data-loading-message="Generando PDF..."
                                        title="@(p.Activo ? "Estado actual PDF" : "Finiquito PDF")">
                                     <i class="bi bi-file-earmark-pdf"></i>
                                 </a>
 
                                 @if (!string.IsNullOrEmpty(p.Empleado.CorreoElectronico))
                                 {
-                                    <form asp-action="EnviarPorEmail" method="post" class="d-inline">
+                                    <form asp-action="EnviarPorEmail" method="post" class="d-inline form-loading" data-loading-message="Enviando correo...">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@p.PrestamoId" />
                                         <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar correo">
@@ -269,45 +261,46 @@ else
                                             data-nombre="@p.Empleado.PrimerApellido @p.Empleado.Nombre">
                                         <i class="bi bi-cash-stack"></i>
                                     </button>
-                                    <form asp-action="Cerrar" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Cerrar manualmente el préstamo de @p.Empleado.PrimerApellido?')">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@p.PrestamoId" />
-                                        <button type="submit"
-                                                class="btn btn-sm btn-secondary"
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-warning"
+                                            title="Aumentar monto"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalAumento"
+                                            data-id="@p.PrestamoId"
+                                            data-saldo="@p.Monto"
+                                            data-cuota="@p.CuotaMensual"
+                                            data-nombre="@p.Empleado.PrimerApellido @p.Empleado.Nombre">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </button>
+                                        <button type="button"
+                                                class="btn btn-sm btn-secondary btnCerrarPrestamo"
+                                                data-id="@p.PrestamoId"
+                                                data-empleado="@p.Empleado.PrimerApellido"
                                                 title="Cerrar manualmente">
                                             <i class="bi bi-x-circle"></i>
                                         </button>
-                                    </form>
-                                }
-                                else
-                                {
-                                    <form asp-action="Reabrir" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Reabrir el préstamo de @p.Empleado.PrimerApellido?')">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@p.PrestamoId" />
-                                        <button type="submit"
-                                                class="btn btn-sm btn-warning"
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-warning btnRreabrirPrestamo"
+                                                data-id="@p.PrestamoId"
+                                                data-empleado="@p.Empleado.PrimerApellido"
                                                 title="Reabrir">
                                             <i class="bi bi-arrow-counterclockwise"></i>
                                         </button>
-                                    </form>
-                                    <form asp-action="Eliminar" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Eliminar permanentemente el préstamo de @p.Empleado.PrimerApellido? Esta acción no se puede deshacer.')">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@p.PrestamoId" />
-                                        <button type="submit"
-                                                class="btn btn-sm btn-danger"
+                                        <button type="button"
+                                                class="btn btn-sm btn-danger btnEliminarPrestamo"
+                                                data-id="@p.PrestamoId"
+                                                data-empleado="@p.Empleado.PrimerApellido"
                                                 title="Eliminar">
                                             <i class="bi bi-trash"></i>
                                         </button>
-                                    </form>
                                 }
                             </div>
                         </td>
                     </tr>
 
-                    @* ── Historial expandible ── *@
                     @if (tieneAbonos)
                     {
                         <tr class="collapse" id="hist-@p.PrestamoId">
@@ -326,22 +319,22 @@ else
                                         <div style="font-size:0.72rem;color:#888;">
                                             Monto original:
                                             <strong>₡@montoOriginal.ToString("N0")</strong>
-                                            · Pagado:
+                                            — Pagado:
                                             <strong style="color:#1a4a1a;">
                                                 ₡@pagado.ToString("N0")
                                             </strong>
-                                            · Saldo:
+                                            — Saldo:
                                             <strong style="color:#c55000;">
                                                 ₡@p.Monto.ToString("N0")
                                             </strong>
                                             @if (p.Activo)
                                             {
                                                 <span style="color:#c55000;">
-                                                    · Faltante:
+                                                    — Faltante:
                                                     <strong>₡@faltante.ToString("N0")</strong>
                                                     (~@((p.CuotaMensual > 0
-                                                                                                            ? (int)Math.Ceiling((double)(faltante / p.CuotaMensual))
-                                                                                                            : 0)) cuota(s))
+                                                        ? (int)Math.Ceiling((double)(faltante / p.CuotaMensual))
+                                                        : 0)) cuota(s))
                                                 </span>
                                             }
                                         </div>
@@ -353,22 +346,12 @@ else
                                             <tr>
                                                 <th style="padding:5px 10px;">#</th>
                                                 <th style="padding:5px 10px;">Fecha</th>
-                                                <th style="padding:5px 10px;text-align:right;">
-                                                    Monto Abono
-                                                </th>
-                                                <th style="padding:5px 10px;text-align:right;">
-                                                    Saldo Anterior
-                                                </th>
-                                                <th style="padding:5px 10px;text-align:right;">
-                                                    Saldo Después
-                                                </th>
-                                                <th style="padding:5px 10px;text-align:right;">
-                                                    Faltante
-                                                </th>
+                                                <th style="padding:5px 10px;text-align:right;">Monto Abono</th>
+                                                <th style="padding:5px 10px;text-align:right;">Saldo Anterior</th>
+                                                <th style="padding:5px 10px;text-align:right;">Saldo Después</th>
+                                                <th style="padding:5px 10px;text-align:right;">Faltante</th>
                                                 <th style="padding:5px 10px;">Observaciones</th>
-                                                <th style="padding:5px 10px;text-align:center;">
-                                                    Acciones
-                                                </th>
+                                                <th style="padding:5px 10px;text-align:center;">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -386,18 +369,14 @@ else
                                                 var esFinal = saldoCalc == 0;
 
                                                 <tr style="background:@(numAbono % 2 == 0 ? "#f5f5f5" : "#fff")">
-                                                    <td style="padding:5px 10px;color:#888;">
-                                                        @numAbono
-                                                    </td>
+                                                    <td style="padding:5px 10px;color:#888;">@numAbono</td>
                                                     <td style="padding:5px 10px;">
                                                         @a.FechaAbono.ToString("dd/MM/yyyy HH:mm")
                                                     </td>
-                                                    <td style="padding:5px 10px;text-align:right;
-                                                        font-weight:700;color:#1a4a1a;">
+                                                    <td style="padding:5px 10px;text-align:right;font-weight:700;color:#1a4a1a;">
                                                         ₡@a.Monto.ToString("N0")
                                                     </td>
-                                                    <td style="padding:5px 10px;text-align:right;
-                                                        color:#888;">
+                                                    <td style="padding:5px 10px;text-align:right;color:#888;">
                                                         ₡@saldoAnt.ToString("N0")
                                                     </td>
                                                     <td style="padding:5px 10px;text-align:right;
@@ -414,17 +393,14 @@ else
                                                         font-size:0.75rem;">
                                                         @if (esFinal)
                                                         {
-                                                            <span style="color:#1a4a1a;font-weight:700;">
-                                                                Saldado ✓
-                                                            </span>
+                                                            <span style="color:#1a4a1a;font-weight:700;">Saldado ✓</span>
                                                         }
                                                         else
                                                         {
                                                             <span>₡@saldoCalc.ToString("N0")</span>
                                                         }
                                                     </td>
-                                                    <td style="padding:5px 10px;color:#555;
-                                                        font-size:0.75rem;max-width:180px;">
+                                                    <td style="padding:5px 10px;color:#555;font-size:0.75rem;max-width:180px;">
                                                         @(a.Observaciones ?? "—")
                                                     </td>
                                                     <td style="padding:5px 10px;text-align:center;">
@@ -466,8 +442,7 @@ else
                                                 <td style="padding:5px 10px;text-align:right;">
                                                     ₡@abonos.Sum(a => a.Monto).ToString("N0")
                                                 </td>
-                                                <td colspan="2" style="padding:5px 10px;
-                                                    text-align:right;">
+                                                <td colspan="2" style="padding:5px 10px;text-align:right;">
                                                     Saldo: ₡@p.Monto.ToString("N0")
                                                 </td>
                                                 <td style="padding:5px 10px;text-align:right;">
@@ -501,7 +476,7 @@ else
     </div>
 }
 
-@* ── Modal Abono ── *@
+@* -- Modal Abono -- *@
 <div class="modal fade" id="modalAbono" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -522,7 +497,7 @@ else
                         <small>
                             Saldo actual:
                             <strong id="abonoSaldoTexto" class="text-warning"></strong>
-                            · Cuota quincenal:
+                            — Cuota quincenal:
                             <strong id="abonoCuotaTexto"></strong>
                         </small>
                     </div>
@@ -561,7 +536,7 @@ else
     </div>
 </div>
 
-@* ── Modal Corregir Abono ── *@
+@* -- Modal Corregir Abono -- *@
 <div class="modal fade" id="modalCorregir" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -620,9 +595,47 @@ else
     </div>
 </div>
 
+@* -- Modal Aumentar Monto -- *@
+<div class="modal fade" id="modalAumento" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header text-white" style="background:#6c757d;">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle"></i> Aumentar Monto del Préstamo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="AumentarMonto" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <input type="hidden" name="prestamoId" id="aumentoPrestamoId" />
+                    <div class="alert alert-warning py-2 mb-3">
+                        <strong id="aumentoNombre"></strong><br />
+                        <small>Saldo actual: <strong id="aumentoSaldoTexto"></strong></small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Monto adicional (₡) <span class="text-danger">*</span></label>
+                        <input type="number" name="montoExtra" id="aumentoMonto" class="form-control" step="0.01" min="0.01" placeholder="Ingresá el monto adicional" />
+                        <div class="form-text text-muted" id="aumentoHint"></div>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label fw-bold">Observaciones <span class="text-muted fw-normal">(opcional)</span></label>
+                        <input type="text" name="observaciones" class="form-control" maxlength="150" placeholder="Ej: Ampliación aprobada" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning px-4" onclick="return validarAumentoPrestamo()">
+                        <i class="bi bi-check-circle"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        // ── Modal Abono ───────────────────────────────────────────────────────
         document.getElementById('modalAbono')
             .addEventListener('show.bs.modal', function(e) {
                 var btn = e.relatedTarget;
@@ -632,8 +645,7 @@ else
                 document.getElementById('abonoPrestamoId').value = btn.getAttribute('data-id');
                 document.getElementById('abonoMonto').value = '';
                 document.getElementById('abonoMonto').max = saldo;
-                document.getElementById('abonoNombre').textContent =
-                    btn.getAttribute('data-nombre');
+                document.getElementById('abonoNombre').textContent = btn.getAttribute('data-nombre');
                 document.getElementById('abonoSaldoTexto').textContent =
                     '₡' + saldo.toLocaleString('es-CR', { minimumFractionDigits: 2 });
                 document.getElementById('abonoCuotaTexto').textContent =
@@ -661,7 +673,31 @@ else
             return true;
         }
 
-        // ── Modal Corregir ────────────────────────────────────────────────────
+        document.getElementById('modalAumento')
+            .addEventListener('show.bs.modal', function(e) {
+                var btn = e.relatedTarget;
+                var saldo = parseFloat(btn.getAttribute('data-saldo'));
+
+                document.getElementById('aumentoPrestamoId').value = btn.getAttribute('data-id');
+                document.getElementById('aumentoMonto').value = '';
+                document.getElementById('aumentoNombre').textContent = btn.getAttribute('data-nombre');
+                document.getElementById('aumentoSaldoTexto').textContent =
+                    '₡' + saldo.toLocaleString('es-CR', { minimumFractionDigits: 2 });
+                document.getElementById('aumentoHint').textContent = 'Se recalculará la cuota automáticamente.';
+                document.getElementById('aumentoHint').className = 'form-text text-muted';
+            });
+
+        function validarAumentoPrestamo() {
+            var monto = parseFloat(document.getElementById('aumentoMonto').value);
+            var hint = document.getElementById('aumentoHint');
+            if (isNaN(monto) || monto <= 0) {
+                hint.textContent = '⚠ El monto adicional debe ser mayor a cero.';
+                hint.className = 'form-text text-danger';
+                return false;
+            }
+            return true;
+        }
+
         document.getElementById('modalCorregir')
             .addEventListener('show.bs.modal', function(e) {
                 var btn = e.relatedTarget;
@@ -669,12 +705,146 @@ else
 
                 document.getElementById('corregirAbonoId').value = btn.getAttribute('data-abono-id');
                 document.getElementById('corregirMontoNuevo').value = monto.toFixed(2);
-                document.getElementById('corregirNombre').textContent =
-                    btn.getAttribute('data-nombre');
-                document.getElementById('corregirFecha').textContent =
-                    btn.getAttribute('data-fecha');
+                document.getElementById('corregirNombre').textContent = btn.getAttribute('data-nombre');
+                document.getElementById('corregirFecha').textContent = btn.getAttribute('data-fecha');
                 document.getElementById('corregirMontoActual').textContent =
                     '₡' + monto.toLocaleString('es-CR', { minimumFractionDigits: 2 });
             });
+
+        // Modales de préstamo
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnsCerrar = document.querySelectorAll('.btnCerrarPrestamo');
+            const btnsReabrir = document.querySelectorAll('.btnRreabrirPrestamo');
+            const btnsEliminar = document.querySelectorAll('.btnEliminarPrestamo');
+
+            let accionActual = null;
+            let idActual = null;
+
+            function abrirModal(accion, id, empleado) {
+                accionActual = accion;
+                idActual = id;
+                let titulo = '';
+                let mensaje = '';
+
+                if (accion === 'cerrar') {
+                    titulo = 'Cerrar Préstamo';
+                    mensaje = `¿Cerrar manualmente el préstamo de ${empleado}?`;
+                } else if (accion === 'reabrir') {
+                    titulo = 'Reabrir Préstamo';
+                    mensaje = `¿Reabrir el préstamo de ${empleado}?`;
+                } else if (accion === 'eliminar') {
+                    titulo = 'Eliminar Préstamo';
+                    mensaje = `¿Eliminar permanentemente el préstamo de ${empleado}? Esta acción no se puede deshacer.`;
+                }
+
+                document.getElementById('modalAccionPrestamoTitulo').textContent = titulo;
+                document.getElementById('modalAccionPrestamoMensaje').textContent = mensaje;
+
+                const modal = new bootstrap.Modal(document.getElementById('confirmAccionPrestamoModal'), {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                modal.show();
+            }
+
+            btnsCerrar.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    abrirModal('cerrar', this.dataset.id, this.dataset.empleado);
+                });
+            });
+
+            btnsReabrir.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    abrirModal('reabrir', this.dataset.id, this.dataset.empleado);
+                });
+            });
+
+            btnsEliminar.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    abrirModal('eliminar', this.dataset.id, this.dataset.empleado);
+                });
+            });
+
+            const btnConfirmar = document.getElementById('btnConfirmarAccionPrestamo');
+            if (btnConfirmar) {
+                btnConfirmar.addEventListener('click', function() {
+                    const forms = document.querySelectorAll('form[data-accion-prestamo]');
+                    let formularioAEnviar = null;
+
+                    forms.forEach(function(form) {
+                        const inputId = form.querySelector('input[type="hidden"][name="id"]');
+                        if (inputId && inputId.value === idActual) {
+                            const accion = form.getAttribute('data-accion-prestamo');
+                            if (accion === accionActual) {
+                                formularioAEnviar = form;
+                            }
+                        }
+                    });
+
+                    if (formularioAEnviar) {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmAccionPrestamoModal'));
+                        modal.hide();
+                        Loading.show('Procesando acción...');
+                        setTimeout(function() {
+                            formularioAEnviar.submit();
+                        }, 100);
+                    }
+                });
+            }
+        });
     </script>
+
+    <!-- Modal Acción Préstamo -->
+    <div class="modal fade" id="confirmAccionPrestamoModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+                <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                    <h5 class="modal-title text-white fw-bold" id="modalAccionPrestamoTitulo">
+                        <i class="bi bi-exclamation-triangle"></i> Acción Préstamo
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding: 24px;">
+                    <div style="background-color: #FFF5EB; border-left: 4px solid #FF7A00; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+                        <div style="color: #333; font-weight: 600;" id="modalAccionPrestamoMensaje">
+                            <i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>
+                            Mensaje
+                        </div>
+                    </div>
+
+                    <div style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px;">
+                        <p style="color: #888; font-size: 0.85rem; margin-bottom: 0;">
+                            <i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>
+                            Asegúrese de que esta es la acción correcta.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #E0E0E0; padding: 12px 16px;">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarAccionPrestamo">
+                        <i class="bi bi-check-circle"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formularios ocultos para acciones de préstamo -->
+    @foreach (var p in Model)
+    {
+        <form method="post" asp-action="Cerrar" style="display:none;" data-accion-prestamo="cerrar">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@p.PrestamoId" />
+        </form>
+        <form method="post" asp-action="Reabrir" style="display:none;" data-accion-prestamo="reabrir">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@p.PrestamoId" />
+        </form>
+        <form method="post" asp-action="Eliminar" style="display:none;" data-accion-prestamo="eliminar">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@p.PrestamoId" />
+        </form>
+    }
 }

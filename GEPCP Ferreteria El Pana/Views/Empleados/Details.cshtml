@@ -457,31 +457,124 @@ else if (Model.ContratoProximoAVencer)
         </a>
         @if (Model.Estado == "Activo")
         {
-            <form asp-action="Desactivar" method="post" class="d-inline"
-                  onsubmit="return confirm('¿Desactivar a @Model.Nombre @Model.PrimerApellido?')">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="id" value="@Model.EmpleadoId" />
-                <button type="submit" class="btn btn-secondary">
+                <button type="button" class="btn btn-secondary btnDesactivarEmpleado"
+                        data-id="@Model.EmpleadoId"
+                        data-nombre="@Model.Nombre @Model.PrimerApellido">
                     <i class="bi bi-pause-circle"></i> Desactivar
                 </button>
-            </form>
-        }
-        else
-        {
-            <form asp-action="Activar" method="post" class="d-inline"
-                  onsubmit="return confirm('¿Activar a @Model.Nombre @Model.PrimerApellido?')">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="id" value="@Model.EmpleadoId" />
-                <button type="submit" class="btn btn-success">
+            }
+            else
+            {
+                <button type="button" class="btn btn-success btnActivarEmpleado"
+                        data-id="@Model.EmpleadoId"
+                        data-nombre="@Model.Nombre @Model.PrimerApellido">
                     <i class="bi bi-play-circle"></i> Activar
                 </button>
-            </form>
         }
         <a asp-action="Delete" asp-route-id="@Model.EmpleadoId" class="btn btn-danger">
-            <i class="bi bi-trash"></i> Eliminar
-        </a>
-        <a asp-action="Index" asp-route-busqueda="@busqueda" class="btn btn-outline-secondary ms-auto">
-            <i class="bi bi-arrow-left"></i> Volver al Listado
-        </a>
-    </div>
-</div>
+                        <i class="bi bi-trash"></i> Eliminar
+                    </a>
+                    <a asp-action="Index" asp-route-busqueda="@busqueda" class="btn btn-outline-secondary ms-auto">
+                        <i class="bi bi-arrow-left"></i> Volver al Listado
+                    </a>
+                </div>
+            </div>
+
+            <!-- Modal Activar/Desactivar Empleado -->
+            <div class="modal fade" id="confirmAccionEmpleadoModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+                        <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                            <h5 class="modal-title text-white fw-bold" id="modalAccionEmpleadoTitulo">
+                                <i class="bi bi-exclamation-triangle"></i> Cambiar Estado
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" style="padding: 24px;">
+                            <div style="background-color: #FFF5EB; border-left: 4px solid #FF7A00; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+                                <div style="color: #333; font-weight: 600;" id="modalAccionEmpleadoMensaje">
+                                    <i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>
+                                    Mensaje
+                                </div>
+                            </div>
+
+                            <div style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px;">
+                                <p style="color: #888; font-size: 0.85rem; margin-bottom: 0;">
+                                    <i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>
+                                    Asegúrese de que esta es la acción correcta.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="modal-footer" style="border-top: 1px solid #E0E0E0; padding: 12px 16px;">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </button>
+                            <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarAccionEmpleado">
+                                <i class="bi bi-check-circle"></i> Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formularios ocultos para acciones de empleado -->
+            <form method="post" asp-action="Desactivar" style="display:none;" id="formDesactivarEmpleado">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.EmpleadoId" />
+            </form>
+            <form method="post" asp-action="Activar" style="display:none;" id="formActivarEmpleado">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.EmpleadoId" />
+            </form>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const btnDesactivar = document.querySelector('.btnDesactivarEmpleado');
+                    const btnActivar = document.querySelector('.btnActivarEmpleado');
+                    const formDesactivar = document.getElementById('formDesactivarEmpleado');
+                    const formActivar = document.getElementById('formActivarEmpleado');
+                    let accionActual = null;
+
+                    const modal = new bootstrap.Modal(document.getElementById('confirmAccionEmpleadoModal'), {
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+
+                    if (btnDesactivar) {
+                        btnDesactivar.addEventListener('click', function() {
+                            accionActual = 'desactivar';
+                            document.getElementById('modalAccionEmpleadoTitulo').textContent = 'Desactivar Empleado';
+                            document.getElementById('modalAccionEmpleadoMensaje').innerHTML = 
+                                '<i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>' +
+                                '¿Desactivar a ' + this.dataset.nombre + '?';
+                            modal.show();
+                        });
+                    }
+
+                    if (btnActivar) {
+                        btnActivar.addEventListener('click', function() {
+                            accionActual = 'activar';
+                            document.getElementById('modalAccionEmpleadoTitulo').textContent = 'Activar Empleado';
+                            document.getElementById('modalAccionEmpleadoMensaje').innerHTML = 
+                                '<i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>' +
+                                '¿Activar a ' + this.dataset.nombre + '?';
+                            modal.show();
+                        });
+                    }
+
+                    const btnConfirmar = document.getElementById('btnConfirmarAccionEmpleado');
+                    if (btnConfirmar) {
+                        btnConfirmar.addEventListener('click', function() {
+                            modal.hide();
+                            Loading.show('Procesando acción...');
+                            setTimeout(function() {
+                                if (accionActual === 'desactivar') {
+                                    formDesactivar.submit();
+                                } else if (accionActual === 'activar') {
+                                    formActivar.submit();
+                                }
+                            }, 100);
+                        });
+                    }
+                });
+            </script>

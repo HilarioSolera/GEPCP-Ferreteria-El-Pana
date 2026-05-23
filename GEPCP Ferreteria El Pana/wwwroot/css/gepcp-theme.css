@@ -1,4 +1,7 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400&display=swap');
+﻿El problema es claro: tenés dos bloques duplicados de `#btnCerrarPrograma .nav-label` y el segundo (con `#ff6666`) sobreescribe al primero. Además falta el bloque del contenedor `#btnCerrarPrograma` con el fondo rojo. Aquí está el CSS completo y limpio:
+
+```css
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400&display=swap');
 
 :root {
     --white-glass: rgba(255,255,255,0.12);
@@ -150,57 +153,113 @@ code {
                 opacity: 1;
             }
 
-/* ── BOTÓN SALIR ────────────────────────────────────────────── */
-.nav-salir {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+/* ── BOTONES SUPERIORES ─────────────────────────────────────── */
+
+#btnCerrarPrograma,
+.nav-cerrar {
+    background: rgba(180,0,0,0.18) !important;
+    border: 2px solid #000000 !important;
+    color: #000000 !important;
+    border-radius: 8px !important;
+    padding: 8px 4px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100%;
     gap: 4px;
-    padding: 8px 16px;
-    border: 2.5px solid rgba(255,255,255,0.90) !important;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.10);
-    color: #ffffff;
-    font-family: inherit;
-    cursor: pointer;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    margin: 6px 3px !important;
+    min-width: unset !important;
     transition: all 0.18s ease;
-    min-width: 60px;
-    margin: 6px 3px;
-    text-decoration: none;
-    font-weight: 700;
 }
 
-    .nav-salir:hover {
-        color: #fff !important;
-        background: rgba(255,255,255,0.25) !important;
-        border-color: #ffffff !important;
-        transform: translateY(-3px);
-        box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-    }
+#btnCerrarPrograma:hover,
+.nav-cerrar:hover {
+    background: rgba(200,0,0,0.55) !important;
+    border-color: #000000 !important;
+    color: #000000 !important;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 14px rgba(180,0,0,0.45) !important;
+}
 
-    .nav-salir i {
-        font-size: clamp(1rem, 1.4vw, 1.5rem);
-        line-height: 1;
-        display: block;
-    }
+#btnCerrarPrograma i,
+.nav-cerrar i {
+    font-size: clamp(1rem, 1.4vw, 1.5rem) !important;
+    line-height: 1;
+    display: block;
+    color: #cc0000 !important;
+}
 
-    .nav-salir span {
-        font-size: clamp(0.42rem, 0.55vw, 0.6rem);
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        line-height: 1;
-        white-space: nowrap;
-    }
+#btnCerrarPrograma .nav-label,
+.nav-cerrar .nav-label {
+    font-size: clamp(0.42rem, 0.55vw, 0.6rem) !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.6px !important;
+    line-height: 1;
+    display: block;
+    color: #000000 !important;
+}
+
+#btnCerrarPrograma:hover .nav-label,
+.nav-cerrar:hover .nav-label {
+    color: #000000 !important;
+}
+
+.nav-usuario {
+    background: rgba(255,255,255,0.08) !important;
+    border: 2px solid #000000 !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    padding: 8px 4px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100%;
+    gap: 4px;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    margin: 6px 3px !important;
+    min-width: unset !important;
+    transition: all 0.18s ease;
+}
+
+.nav-usuario:hover {
+    background: rgba(255,255,255,0.22) !important;
+    border-color: #000000 !important;
+    color: #fff !important;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.22) !important;
+}
+
+.nav-usuario i {
+    font-size: clamp(1rem, 1.4vw, 1.5rem) !important;
+    line-height: 1;
+    display: block;
+    color: #ffffff !important;
+}
+
+.nav-usuario .nav-label {
+    font-size: clamp(0.42rem, 0.55vw, 0.6rem) !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.6px !important;
+    line-height: 1;
+    display: block;
+    color: #ffffff !important;
+}
 
 .nav-divisor {
-    width: 2px;
-    background: rgba(255,255,255,0.45);
+    width: 3px;
+    background: rgba(255,255,255,0.65);
     height: 44px;
-    margin: 0 6px;
+    margin: 0 10px;
     flex-shrink: 0;
     border-radius: 2px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
 /* ── RESPONSIVE ─────────────────────────────────────────────── */
@@ -254,6 +313,7 @@ code {
         display: none;
     }
 
+    .nav-cerrar-programa,
     .nav-salir {
         flex-direction: row;
         justify-content: flex-start;
@@ -711,6 +771,165 @@ footer {
     font-size: 0.8rem;
 }
 
+/* ── CIERRE GLOBAL ───────────────────────────────────────────── */
+.btn-cierre-global {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 11500;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #111, #2a2a2a);
+    color: #fff;
+    padding: 10px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .78rem;
+    font-weight: 700;
+    box-shadow: 0 10px 26px rgba(0,0,0,.25);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.btn-cierre-global:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(0,0,0,.30);
+}
+
+/* ── LOADING GLOBAL NO BLOQUEANTE ───────────────────────────── */
+.loading-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 12000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .25s ease;
+}
+
+.loading-indicator.show {
+    opacity: 1;
+}
+
+.loading-indicator__topbar {
+    height: 8px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent 0%, #FFFFFF 10%, #FFFFFF 50%, #FFFFFF 90%, transparent 100%);
+    background-size: 200% 100%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9), 0 0 24px rgba(0, 0, 0, 0.8);
+    position: relative;
+}
+
+.loading-indicator__topbar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, #111111 25%, #333333 50%, #111111 75%, transparent 100%);
+    background-size: 180% 100%;
+    animation: loading-shine 1.2s linear infinite;
+}
+
+.loading-indicator.show .loading-indicator__topbar {
+    animation: none;
+}
+
+.loading-indicator__panel {
+    position: fixed;
+    top: 20px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 300px;
+    max-width: 450px;
+    border-radius: 12px;
+    border: 2px solid #111111;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.96), rgba(24, 24, 24, 0.95));
+    color: #fff;
+    padding: 12px 14px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 20px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(10px);
+}
+
+.loading-indicator__panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: linear-gradient(110deg, transparent 15%, rgba(255,255,255,.18) 45%, transparent 75%);
+    transform: translateX(-120%);
+}
+
+.loading-indicator.show .loading-indicator__panel::before {
+    animation: loading-panel-shine 1.8s ease-in-out infinite;
+}
+
+.loading-indicator__logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid #FFFFFF;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .45);
+    flex: 0 0 auto;
+}
+
+.loading-indicator__content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.loading-indicator__title {
+    font-size: .85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: #FFFFFF;
+    line-height: 1.2;
+}
+
+.loading-indicator__text {
+    font-size: .88rem;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.loading-indicator__spinner {
+    margin-left: auto;
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-top-color: #FFFFFF;
+    border-right-color: #D9D9D9;
+    border-bottom-color: #BFBFBF;
+    border-radius: 50%;
+    animation: loading-spin .6s linear infinite;
+    flex: 0 0 auto;
+}
+
+@keyframes loading-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes loading-shine {
+    0% { background-position: 180% 0; }
+    50% { background-position: 0% 0; }
+    100% { background-position: -180% 0; }
+}
+
+@keyframes loading-panel-shine {
+    0%, 100% { transform: translateX(-120%); opacity: 0; }
+    25% { opacity: 1; }
+    50% { transform: translateX(0%); opacity: 1; }
+    75% { opacity: 1; }
+    100% { transform: translateX(120%); opacity: 0; }
+}
+
 /* ── DASHBOARD ──────────────────────────────────────────────── */
 .db-wrap {
     font-family: 'DM Sans', sans-serif;
@@ -921,7 +1140,8 @@ footer {
 
 /* ── LOGIN ──────────────────────────────────────────────────── */
 .login-page {
-    background-image: url('/images/logo-el-pana.jpg');
+    background: linear-gradient(135deg, #FF7A00 0%, #E56E00 100%);
+    background-image: url('/css/images/logo-el-pana.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -999,20 +1219,6 @@ footer {
         padding: 2.2rem 2.5rem;
     }
 
-@media (max-width: 575px) {
-    .login-card .card-body {
-        padding: 1.5rem 1.25rem;
-    }
-
-    .login-card .card-header {
-        padding: 1.4rem 1.25rem 1.1rem !important;
-    }
-
-        .login-card .card-header h4 {
-            font-size: 1.3rem !important;
-        }
-}
-
     .login-card .form-label {
         color: var(--text-light) !important;
         font-weight: 600 !important;
@@ -1073,3 +1279,41 @@ footer {
         color: #fff !important;
         text-shadow: none !important;
     }
+
+/* ── RESUMEN DE ENVÍO DE BOLETAS ─────────────────────────────── */
+.custom-details {
+    margin: 0;
+}
+
+.custom-details summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.custom-details summary:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.custom-details summary .bi {
+    transition: transform 0.2s ease;
+}
+
+.custom-details[open] summary .bi {
+    transform: rotate(90deg);
+}
+
+.custom-details summary::marker {
+    display: none;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+```

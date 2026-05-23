@@ -19,13 +19,9 @@
         </a>
         @if (Context.Session.GetString("Rol") == "RRHH")
         {
-            <form asp-action="CalcularTodos" method="post" onsubmit="return confirm('¿Calcular aguinaldo para todos los empleados activos del año @anioActual?')">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="anio" value="@anioActual" />
-                <button type="submit" class="btn btn-primary btn">
-                    <i class="bi bi-calculator"></i> Calcular Automático
-                </button>
-            </form>
+            <button type="button" class="btn btn-primary btnCalcularAguinaldoAutomatico" data-anio="@anioActual">
+                <i class="bi bi-calculator"></i> Calcular Automático
+            </button>
         }
     </div>
 </div>
@@ -252,38 +248,180 @@ else
                         </td>
                         <td class="text-center">
                             <a asp-action="DescargarPDF" asp-route-id="@a.AguinaldoId"
-                                   class="btn btn-sm btn-outline-danger me-1" title="Descargar PDF">
+                                   class="btn btn-sm btn-outline-danger me-1 long-action" data-loading-message="Generando PDF..." title="Descargar PDF">
                                 <i class="bi bi-file-earmark-pdf"></i>
                             </a>
                             @if (!string.IsNullOrEmpty(a.Empleado.CorreoElectronico))
                             {
-                                <form asp-action="EnviarPorEmail" method="post" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@a.AguinaldoId" />
-                                    <button type="submit" class="btn btn-sm btn-outline-success me-1" title="Enviar correo">
-                                        <i class="bi bi-envelope"></i>
-                                    </button>
-                                </form>
-                            }
-                            <a asp-action="Edit" asp-route-id="@a.AguinaldoId"
-                                   class="btn btn-sm btn-warning me-1" title="Editar">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            @if (Context.Session.GetString("Rol") == "RRHH")
-                            {
-                                <form asp-action="Delete" method="post" class="d-inline"
-                                      onsubmit="return confirm('Eliminar aguinaldo de @a.Empleado.PrimerApellido @a.Empleado.Nombre?')">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@a.AguinaldoId" />
-                                    <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
+                                                            <form asp-action="EnviarPorEmail" method="post" class="d-inline form-loading" data-loading-message="Enviando correo a @a.Empleado.CorreoElectronico...">
+                                                                @Html.AntiForgeryToken()
+                                                                <input type="hidden" name="id" value="@a.AguinaldoId" />
+                                                                <button type="submit" class="btn btn-sm btn-outline-success me-1" title="Enviar correo">
+                                                                    <i class="bi bi-envelope"></i>
+                                                                </button>
+                                                            </form>
+                                                        }
+                                                        <a asp-action="Edit" asp-route-id="@a.AguinaldoId"
+                                                               class="btn btn-sm btn-warning me-1" title="Editar">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                        @if (Context.Session.GetString("Rol") == "RRHH")
+                                                        {
+                                                            <button type="button" class="btn btn-sm btn-danger btnEliminarAguinaldo"
+                                                                    data-id="@a.AguinaldoId"
+                                                                    data-empleado="@a.Empleado.PrimerApellido @a.Empleado.Nombre"
+                                                                    title="Eliminar">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                                     </tbody>
+                                                 </table>
+                                             </div>
+                                        }
+
+                                        <!-- Modal Eliminar Aguinaldo -->
+                                        <div class="modal fade" id="confirmEliminarAguinaldoModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+                                                    <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                                                        <h5 class="modal-title text-white fw-bold">
+                                                            <i class="bi bi-exclamation-triangle"></i> Eliminar Aguinaldo
+                                                        </h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body" style="padding: 24px;">
+                                                        <div style="background-color: #FFF5EB; border-left: 4px solid #FF7A00; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+                                                            <div style="color: #333; font-weight: 600;">
+                                                                <i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>
+                                                                ¿Eliminar aguinaldo de <span id="modalAguinaldoEmpleado"></span>?
+                                                            </div>
+                                                        </div>
+
+                                                        <div style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px;">
+                                                            <p style="color: #888; font-size: 0.85rem; margin-bottom: 0;">
+                                                                <i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>
+                                                                Esta operación no se puede deshacer.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer" style="border-top: 1px solid #E0E0E0; padding: 12px 16px;">
+                                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                                            <i class="bi bi-x-circle"></i> Cancelar
+                                                        </button>
+                                                        <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarEliminarAguinaldo">
+                                                            <i class="bi bi-check-circle"></i> Sí, Eliminar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Formulario oculto -->
+                                        <form method="post" asp-action="Delete" style="display:none;" id="formEliminarAguinaldo">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" id="inputIdAguinaldo" />
+                                        </form>
+
+                                        <script>
+                                            document.addEventListener('DOMContentLoaded', function() {
+                                                const botonesEliminar = document.querySelectorAll('.btnEliminarAguinaldo');
+                                                const modalEliminar = new bootstrap.Modal(document.getElementById('confirmEliminarAguinaldoModal'), {
+                                                    backdrop: 'static',
+                                                    keyboard: false
+                                                });
+                                                const btnConfirmar = document.getElementById('btnConfirmarEliminarAguinaldo');
+                                                const formEliminar = document.getElementById('formEliminarAguinaldo');
+                                                const inputId = document.getElementById('inputIdAguinaldo');
+
+                                                botonesEliminar.forEach(function(btn) {
+                                                    btn.addEventListener('click', function() {
+                                                        document.getElementById('modalAguinaldoEmpleado').textContent = this.dataset.empleado;
+                                                        inputId.value = this.dataset.id;
+                                                        modalEliminar.show();
+                                                    });
+                                                });
+
+                                                        btnConfirmar.addEventListener('click', function() {
+                                                            modalEliminar.hide();
+                                                            Loading.show('Eliminando aguinaldo...');
+                                                            setTimeout(function() {
+                                                                formEliminar.submit();
+                                                            }, 100);
+                                                        });
+                                                    });
+                                                </script>
+
+                                                <!-- Modal Calcular Automático -->
+                                                <div class="modal fade" id="confirmCalcularAguinaldoModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+                                                    <div class="modal-dialog modal-dialog-centered">
+                                                        <div class="modal-content" style="background-color: #ffffff; border: 2px solid #FF7A00;">
+                                                            <div class="modal-header" style="background-color: #FF7A00; border-bottom: 2px solid #FF7A00;">
+                                                                <h5 class="modal-title text-white fw-bold">
+                                                                    <i class="bi bi-calculator"></i> Calcular Aguinaldos Automáticamente
+                                                                </h5>
+                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body" style="padding: 24px;">
+                                                                <div style="background-color: #FFF5EB; border-left: 4px solid #FF7A00; padding: 16px; margin-bottom: 16px; border-radius: 6px;">
+                                                                    <div style="color: #333; font-weight: 600;">
+                                                                        <i class="bi bi-exclamation-triangle-fill" style="color: #FF7A00; margin-right: 8px;"></i>
+                                                                        ¿Calcular aguinaldo automático para todos los empleados activos de <span id="modalAguinaldoAnio"></span>?
+                                                                    </div>
+                                                                </div>
+
+                                                                <div style="background-color: #F8F8F8; border: 1px solid #E0E0E0; border-radius: 6px; padding: 12px;">
+                                                                    <p style="color: #888; font-size: 0.85rem; margin: 0;">
+                                                                        <i class="bi bi-info-circle" style="color: #FF7A00; margin-right: 6px;"></i>
+                                                                        Se calcularán los aguinaldos basados en el salario promedio y períodos de nómina cerrados.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer" style="border-top: 1px solid #E0E0E0; padding: 12px 16px;">
+                                                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                                                    <i class="bi bi-x-circle"></i> Cancelar
+                                                                </button>
+                                                                <button type="button" class="btn text-white fw-bold" style="background-color: #FF7A00; border-color: #FF7A00;" id="btnConfirmarCalcularAguinaldo">
+                                                                    <i class="bi bi-check-circle"></i> Sí, Calcular
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Formulario oculto para Calcular Automático -->
+                                                <form asp-action="CalcularTodos" method="post" style="display:none;" id="formCalcularAguinaldoAutomatico">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="anio" id="inputAnioAguinaldo" />
+                                                </form>
+
+                                                <script>
+                                                    document.addEventListener('DOMContentLoaded', function() {
+                                                        const btnCalcularAutomatico = document.querySelector('.btnCalcularAguinaldoAutomatico');
+                                                        const modalCalcular = new bootstrap.Modal(document.getElementById('confirmCalcularAguinaldoModal'), {
+                                                            backdrop: 'static',
+                                                            keyboard: false
+                                                        });
+                                                        const btnConfirmar = document.getElementById('btnConfirmarCalcularAguinaldo');
+                                                        const formCalcular = document.getElementById('formCalcularAguinaldoAutomatico');
+                                                        const inputAnio = document.getElementById('inputAnioAguinaldo');
+
+                                                        if (btnCalcularAutomatico) {
+                                                            btnCalcularAutomatico.addEventListener('click', function() {
+                                                                document.getElementById('modalAguinaldoAnio').textContent = this.dataset.anio;
+                                                                inputAnio.value = this.dataset.anio;
+                                                                modalCalcular.show();
+                                                            });
+                                                        }
+
+                                                        btnConfirmar.addEventListener('click', function() {
+                                                            modalCalcular.hide();
+                                                            Loading.show('Calculando aguinaldos para todos los empleados...');
+                                                            setTimeout(function() {
+                                                                formCalcular.submit();
+                                                            }, 100);
+                                                        });
+                                                    });
+                                                </script>

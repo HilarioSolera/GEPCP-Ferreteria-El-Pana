@@ -4,6 +4,7 @@ using GEPCP_Ferreteria_El_Pana.Data;
 using GEPCP_Ferreteria_El_Pana.Models;
 using GEPCP_Ferreteria_El_Pana.Filters;
 using GEPCP_Ferreteria_El_Pana.Services;
+using GEPCP_Ferreteria_El_Pana.Helpers;
 
 namespace GEPCP_Ferreteria_El_Pana.Controllers
 {
@@ -104,30 +105,25 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     .AsNoTracking()
                     .FirstOrDefaultAsync(e => e.EmpleadoId == model.EmpleadoId);
 
-                if (empleado == null)
-                {
-                    ModelState.AddModelError("EmpleadoId", "Empleado no encontrado.");
+                // Validar que el empleado esté activo
+                if (!EmpleadoValidationHelper.ValidarEmpleadoActivo(empleado, ModelState, "crear un préstamo"))
                     return View(model);
-                }
+
+                // Validar que la fecha del préstamo no sea anterior a la fecha de ingreso
+                if (!EmpleadoValidationHelper.ValidarFechaContraIngreso(
+                    empleado!, model.FechaPrestamo, ModelState, "FechaPrestamo", "préstamo"))
+                    return View(model);
 
                 // Después — usar FactorCuotaPrestamo del empleado
                 var salarioReferencia = Math.Round(
-                    empleado.SalarioBase / empleado.FactorCuotaPrestamo, 2);
+                    empleado!.SalarioBase / empleado.FactorCuotaPrestamo, 2);
                 AplicarValidaciones(model, salarioReferencia);
 
                 if (!ModelState.IsValid)
                     return View(model);
 
-                var tieneActivo = await _context.Prestamos
-                    .AnyAsync(p => p.EmpleadoId == model.EmpleadoId && p.Activo);
-
-                if (tieneActivo)
-                {
-                    ModelState.AddModelError(string.Empty,
-                        "Este empleado ya tiene un préstamo activo. " +
-                        "Debe saldarlo antes de otorgar uno nuevo.");
-                    return View(model);
-                }
+                // CAMBIO: Se permite múltiples préstamos activos ahora
+                // Se eliminó la restricción de "un solo préstamo activo"
 
                 var montoRedondeado = Math.Round(model.MontoPrincipal, 2);
                 var cuotaRedondeada = Math.Round(model.CuotaMensual, 2);
@@ -251,12 +247,72 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             return RedirectToAction(nameof(Index), new { verTodos = true });
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AumentarMonto(
+            int prestamoId, decimal montoExtra, string? observaciones)
+        {
+            try
+            {
+                if (montoExtra <= 0)
+                {
+                    TempData["Error"] = "El monto adicional debe ser mayor a cero.";
+                    return RedirectToAction(nameof(Index), new { verTodos = true });
+                }
+
+                var prestamo = await _context.Prestamos
+                    .Include(p => p.Empleado)
+                    .FirstOrDefaultAsync(p => p.PrestamoId == prestamoId);
+
+                if (prestamo == null)
+                {
+                    TempData["Error"] = "Préstamo no encontrado.";
+                    return RedirectToAction(nameof(Index), new { verTodos = true });
+                }
+
+                if (!prestamo.Activo)
+                {
+                    TempData["Error"] = "Solo se puede aumentar un préstamo activo.";
+                    return RedirectToAction(nameof(Index), new { verTodos = true });
+                }
+
+                montoExtra = Math.Round(montoExtra, 2);
+                var saldoAnterior = prestamo.Monto;
+                var cuotaAnterior = prestamo.CuotaMensual;
+                var cuotasPendientes = prestamo.CuotaMensual > 0
+                    ? Math.Max(1, (int)Math.Ceiling((double)(prestamo.Monto / prestamo.CuotaMensual)))
+                    : Math.Max(1, prestamo.Cuotas);
+
+                prestamo.Monto = Math.Round(prestamo.Monto + montoExtra, 2);
+                prestamo.MontoOriginal = Math.Round(prestamo.MontoOriginal + montoExtra, 2);
+                prestamo.CuotaMensual = Math.Round(prestamo.Monto / cuotasPendientes, 2);
+
+                await _context.SaveChangesAsync();
+
+                await _auditoria.RegistrarAsync(
+                    HttpContext.Session.GetString("Usuario") ?? "",
+                    "Aumentar monto préstamo", "Préstamos",
+                    $"{prestamo.Empleado.PrimerApellido} {prestamo.Empleado.Nombre} — " +
+                    $"Aumento: ₡{montoExtra:N0} — Saldo anterior: ₡{saldoAnterior:N0} → Nuevo saldo: ₡{prestamo.Monto:N0} — " +
+                    $"Cuota anterior: ₡{cuotaAnterior:N0} → Nueva cuota: ₡{prestamo.CuotaMensual:N0}");
+
+                TempData["Success"] =
+                    $"Se sumaron ₡{montoExtra:N0} al préstamo. Nuevo saldo: ₡{prestamo.Monto:N0} y cuota recalculada: ₡{prestamo.CuotaMensual:N0}.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al aumentar préstamo. PrestamoId: {P}", prestamoId);
+                TempData["Error"] = "Error al aumentar el préstamo. Intentá de nuevo.";
+            }
+
+            return RedirectToAction(nameof(Index), new { verTodos = true });
+        }
+
         // CORREGIR ABONO
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CorregirAbono(
-            int abonoId, decimal montoNuevo, string? observaciones)
+        public async Task<IActionResult> CorregirAbono(            int abonoId, decimal montoNuevo, string? observaciones)
         {
             try
             {
@@ -540,11 +596,28 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     .AsNoTracking()
                     .FirstOrDefaultAsync(p => p.PrestamoId == id);
 
-                if (prestamo == null) return NotFound();
+                if (prestamo == null)
+                {
+                    TempData["Error"] = $"No se encontró el préstamo con ID {id}.";
+                    return RedirectToAction(nameof(Index), new { verTodos = true });
+                }
 
-                // Funciona para activos (estado actual) y cerrados (finiquito)
                 var usuario = HttpContext.Session.GetString("Usuario") ?? "Sistema";
-                var pdfBytes = _servicioPDF.GenerarFiniquitoPrestamo(prestamo, usuario);
+
+                _logger.LogInformation("Generando PDF préstamo ID: {Id}, Empleado: {Emp}",
+                    id, $"{prestamo.Empleado.PrimerApellido} {prestamo.Empleado.Nombre}");
+
+                byte[] pdfBytes;
+                try
+                {
+                    pdfBytes = _servicioPDF.GenerarFiniquitoPrestamo(prestamo, usuario);
+                }
+                catch (Exception pdfEx)
+                {
+                    _logger.LogError(pdfEx, "Error interno en GenerarFiniquitoPrestamo ID: {Id}", id);
+                    TempData["Error"] = $"Error al generar el PDF: {pdfEx.Message}";
+                    return RedirectToAction(nameof(Index), new { verTodos = true });
+                }
 
                 var tipo = prestamo.Activo ? "EstadoPrestamo" : "Finiquito";
                 var nombre =
@@ -557,12 +630,15 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     "Préstamos",
                     $"{prestamo.Empleado.PrimerApellido} {prestamo.Empleado.Nombre}");
 
+                _logger.LogInformation("PDF préstamo generado OK: {Nombre} ({Bytes} bytes)", nombre, pdfBytes.Length);
+
                 return File(pdfBytes, "application/pdf", nombre);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al generar PDF préstamo ID: {Id}", id);
-                TempData["Error"] = "Error al generar el PDF. Intentá de nuevo.";
+                _logger.LogError(ex, "Error inesperado al generar PDF préstamo ID: {Id} — {Type}: {Msg}",
+                    id, ex.GetType().Name, ex.Message);
+                TempData["Error"] = $"Error al generar el PDF: {ex.Message}";
                 return RedirectToAction(nameof(Index), new { verTodos = true });
             }
         }

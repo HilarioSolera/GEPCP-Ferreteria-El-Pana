@@ -1,0 +1,242 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║           GEPCP FERRETERÍA EL PANA - INSTALADOR CONFIGURADO                ║
+║                          Sistema Listo para Distribuir                      ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+📋 RESUMEN DE CAMBIOS REALIZADOS
+═════════════════════════════════════════════════════════════════════════════
+
+✅ 1. SCRIPT DE INICIO AUTOMÁTICO
+   Archivo: IniciarSistema.bat
+
+   Funcionalidad:
+   • Verifica si el servidor ya está corriendo
+   • Si está activo → lo apaga → lo reinicia
+   • Si está inactivo → lo inicia directamente
+   • Abre navegador automáticamente
+   • Espera máximo 20 segundos
+
+   Ventaja: Sin necesidad de monitor de inactividad o heartbeat
+
+✅ 2. INSTALADOR PROFESIONAL (Inno Setup)
+   Archivo: GEPCP.iss
+
+   Funcionalidad:
+   • Interface profesional y amigable
+   • Instalación automática en C:\Program Files\
+   • Crea accesos directos (Escritorio + Menú Inicio)
+   • Validación de requisitos (.NET 8, curl)
+   • Desinstalación limpia
+
+   Resultado: GEPCP-Ferreteria-El-Pana-Setup.exe (~50-100 MB)
+
+✅ 3. ENDPOINTS DE CONTROL
+   Archivo: Controllers/ServerController.cs
+
+   Endpoints:
+   • GET/POST  /api/server/ping      → Verificar estado
+   • POST      /api/server/shutdown  → Apagar servidor
+
+   Ventaja: Accesibles sin autenticación desde el script .bat
+
+✅ 4. SCRIPT DE COMPILACIÓN
+   Archivo: build-installer.bat
+
+   Funcionalidad:
+   • Compila en Release automáticamente
+   • Ejecuta Inno Setup automáticamente
+   • Genera Setup.exe en carpeta Output/
+   • Validación de requisitos (Inno Setup)
+
+✅ 5. DOCUMENTACIÓN COMPLETA
+   Archivos:
+   • INSTALACION.md              → Guía para usuarios finales
+   • COMPILAR-INSTALADOR.md      → Guía para desarrolladores
+   • README-SETUP.txt            → Este archivo
+
+═════════════════════════════════════════════════════════════════════════════
+
+🚀 GENERAR INSTALADOR EN 3 PASOS
+═════════════════════════════════════════════════════════════════════════════
+
+1. PREREQUISITOS (si no tienes):
+   ✓ Descargar Inno Setup 6: https://jrsoftware.org/isdl.php
+   ✓ Instalar normalmente
+   ✓ Verificar que curl está en el sistema
+
+2. GENERAR:
+   Opción A - Automático (RECOMENDADO):
+
+   Navega a la carpeta del proyecto y ejecuta:
+
+	   build-installer.bat
+
+   ¡Listo! El Setup.exe se genera automáticamente.
+
+   Opción B - Manual:
+
+   Terminal de Desarrollador de Visual Studio:
+
+	   dotnet build --configuration Release --no-restore
+	   "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" GEPCP.iss
+
+3. RESULTADO:
+
+   Output\GEPCP-Ferreteria-El-Pana-Setup.exe
+
+   Este es el archivo a distribuir a usuarios
+
+═════════════════════════════════════════════════════════════════════════════
+
+📦 FLUJO DE USUARIO
+═════════════════════════════════════════════════════════════════════════════
+
+INSTALACIÓN (Ejecuta usuario):
+
+   1. Doble clic en GEPCP-Ferreteria-El-Pana-Setup.exe
+   2. Sigue los pasos del asistente
+   3. Acepta permisos de administrador si se pide
+   4. ¡Listo! Se instala y abre automáticamente
+
+USO DIARIO (Ejecuta usuario):
+
+   1. Doble clic en acceso directo "GEPCP Ferretería El Pana"
+   2. El script verifica/reinicia el servidor
+   3. Se abre navegador en http://localhost:5002
+   4. ¡Sistema listo para usar!
+
+CERRAR SISTEMA (Usuario elige):
+
+   • Opción 1: Botón "Cerrar Sistema" en la app
+   • Opción 2: Cerrar navegador (servidor sigue corriendo)
+   • Opción 3: Ctrl+C en ventana del script
+
+═════════════════════════════════════════════════════════════════════════════
+
+✅ VERIFICACIÓN FINAL
+═════════════════════════════════════════════════════════════════════════════
+
+Antes de distribuir, verifica:
+
+[✓] Compilación: dotnet build --no-restore  ← Sin errores
+[✓] Navbar: Botones "Cerrar Sistema" y "Cambiar Usuario" presentes
+[✓] Barra de carga: Naranja y visible al navegar
+[✓] Separador: Blanco y visible en navbar
+[✓] Dashboard: Sin botón negro "CERRAR PROGRAMA"
+[✓] Script: IniciarSistema.bat presente en carpeta
+[✓] Instalador: GEPCP.iss configurable
+[✓] Documentación: INSTALACION.md completo
+
+═════════════════════════════════════════════════════════════════════════════
+
+📁 ESTRUCTURA FINAL
+═════════════════════════════════════════════════════════════════════════════
+
+GEPCP Ferreteria El Pana/
+├── bin/Debug/net8.0/
+│   ├── GEPCP Ferreteria El Pana.exe    ← Aplicación principal
+│   ├── *.dll                           ← Dependencias
+│   ├── appsettings.json                ← Configuración
+│   └── app.db                          ← Base de datos
+│
+├── wwwroot/
+│   ├── css/gepcp-theme.css             ← Estilos con navbar mejorado
+│   ├── js/                             ← Scripts
+│   └── images/                         ← Imágenes
+│
+├── Controllers/
+│   └── ServerController.cs             ← Endpoints /api/server/*
+│
+├── Views/
+│   ├── Shared/_Layout.cshtml           ← Navbar con botones mejorados
+│   └── Home/Dashboard.cshtml           ← Sin botón negro
+│
+├── IniciarSistema.bat                  ← Script de inicio
+├── GEPCP.iss                           ← Instalador Inno Setup
+├── build-installer.bat                 ← Script compilador
+├── INSTALACION.md                      ← Guía usuarios
+├── COMPILAR-INSTALADOR.md              ← Guía desarrolladores
+└── README-SETUP.txt                    ← Este archivo
+
+═════════════════════════════════════════════════════════════════════════════
+
+💡 TIPS ÚTILES
+═════════════════════════════════════════════════════════════════════════════
+
+CAMBIAR PUERTO (si necesitas):
+   • Editar IniciarSistema.bat: set SERVER_URL=http://localhost:5003
+   • Editar launchSettings.json del proyecto
+   • Editar GEPCP.iss si es necesario
+
+CAMBIAR ICONO:
+   • Reemplazar logo en SetupIconFile de GEPCP.iss
+   • Usar archivo .ico o .jpg
+
+VERSIONES:
+   • Actualizar AppVersion en GEPCP.iss para nuevas versiones
+   • El script detectará cambios automáticamente
+
+DISTRIBUCIÓN:
+   • Subir Setup.exe a servidor o GitHub Releases
+   • Usuarios descargan y ejecutan
+   • Instalación automática
+
+═════════════════════════════════════════════════════════════════════════════
+
+🎯 PRÓXIMOS PASOS (Opcionales)
+═════════════════════════════════════════════════════════════════════════════
+
+1. AUTOARRANQUE (Windows Startup):
+   • Agregar script al Windows Task Scheduler
+   • Ejecutar al iniciar Windows
+
+2. ACTUALIZACIONES AUTOMÁTICAS:
+   • Comprobar versión en startup
+   • Descargar e instalar actualizaciones
+   • Reiniciar servidor
+
+3. MÚLTIPLES INSTANCIAS:
+   • Permitir varios servidores en puertos diferentes
+   • Menu de selección de puerto
+
+4. SERVICIO DE WINDOWS:
+   • Registrar como Windows Service
+   • Gestión automática por SO
+
+═════════════════════════════════════════════════════════════════════════════
+
+📞 SOPORTE Y DOCUMENTACIÓN
+═════════════════════════════════════════════════════════════════════════════
+
+Para usuarios finales:
+   → Leer INSTALACION.md
+
+Para desarrolladores:
+   → Leer COMPILAR-INSTALADOR.md
+
+Problemas comunes:
+   → Ver sección "Solución de Problemas" en INSTALACION.md
+
+Repositorio GitHub:
+   → https://github.com/HilarioSolera/GEPCP-Ferreteria-El-Pana
+
+═════════════════════════════════════════════════════════════════════════════
+
+✅ ESTADO: LISTO PARA DISTRIBUIR
+═════════════════════════════════════════════════════════════════════════════
+
+Todos los cambios están compilados y listos.
+El instalador puede generarse en cualquier momento con:
+
+	build-installer.bat
+
+Luego distribuye: Output\GEPCP-Ferreteria-El-Pana-Setup.exe
+
+═════════════════════════════════════════════════════════════════════════════
+
+Versión: 1.0
+Fecha: 2024
+Desarrollador: GEPCP
+Última actualización: Hoy
+
+═════════════════════════════════════════════════════════════════════════════

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using GEPCP_Ferreteria_El_Pana.Data;
@@ -176,6 +176,12 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                 !model.FechaVencimientoContrato.HasValue)
                 ModelState.AddModelError("FechaVencimientoContrato",
                     "Para contrato a plazo fijo debés indicar la fecha de vencimiento.");
+
+            if (model.TipoContrato == TipoContrato.PlazoFijo &&
+                model.FechaVencimientoContrato.HasValue &&
+                model.FechaVencimientoContrato.Value.Date <= DateTime.Today)
+                ModelState.AddModelError("FechaVencimientoContrato",
+                    "La fecha de vencimiento debe ser posterior a la fecha actual.");
 
             if (model.FechaVencimientoContrato.HasValue &&
                 model.FechaVencimientoContrato.Value < model.FechaIngreso)
@@ -536,6 +542,18 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     TempData["Error"] = "Empleado no encontrado.";
                     return RedirectToAction(nameof(Index));
                 }
+
+                var tienePrestamosPendientes = await _context.Prestamos.AnyAsync(p =>
+                    p.EmpleadoId == id && p.Activo && p.Monto > 0);
+                var tieneCreditosPendientes = await _context.CreditosFerreteria.AnyAsync(c =>
+                    c.EmpleadoId == id && c.Activo && c.Saldo > 0);
+
+                if (tienePrestamosPendientes || tieneCreditosPendientes)
+                {
+                    TempData["Error"] = "No se puede desactivar el empleado porque tiene préstamos o créditos pendientes.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 empleado.Activo = false;
                 await _context.SaveChangesAsync();
                 await _auditoria.RegistrarAsync(
@@ -677,11 +695,9 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             {
                 if (string.IsNullOrWhiteSpace(departamento))
                     return Json(new List<object>());
-
-                var departamentoTrim = departamento.Trim();
                 var puestos = await _context.Puestos
                     .AsNoTracking()
-                    .Where(p => p.Departamento.Trim() == departamentoTrim && p.Activo)
+                    .Where(p => p.Departamento == departamento && p.Activo)
                     .OrderBy(p => p.Nombre)
                     .Select(p => new { p.Nombre, p.Codigo, p.SalarioBase })
                     .ToListAsync();
@@ -708,16 +724,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                     .Distinct()
                     .OrderBy(d => d)
                     .ToListAsync();
-
-                // Filtrar valores vacíos o con solo espacios en blanco
-                var deptosFiltrados = deptos
-                    .Where(d => !string.IsNullOrWhiteSpace(d))
-                    .Select(d => d.Trim())
-                    .Distinct()
-                    .OrderBy(d => d)
-                    .ToList();
-
-                return Json(deptosFiltrados);
+                return Json(deptos);
             }
             catch (Exception ex)
             {

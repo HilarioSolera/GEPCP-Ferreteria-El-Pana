@@ -15,17 +15,30 @@
             <code>@emp?.Cedula</code>
         </small>
     </div>
-    <div class="d-flex gap-2">
-        @if (Model.Any() && !string.IsNullOrWhiteSpace(emp?.CorreoElectronico))
+    <div class="d-flex gap-2 flex-wrap">
+        @if (Model.Any())
         {
-            <form asp-action="EnviarPorEmail" method="post" style="display:inline;">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="empleadoId" value="@emp?.EmpleadoId" />
-                <button type="submit" class="btn btn-outline-primary"
-                        title="Enviar historial por correo electrónico">
-                    <i class="bi bi-envelope"></i> Enviar por Email
-                </button>
-            </form>
+            @if (!string.IsNullOrWhiteSpace(emp?.CorreoElectronico))
+            {
+                <form asp-action="EnviarPorEmail" method="post" style="display:inline;" class="form-loading" data-loading-message="Enviando correo...">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="empleadoId" value="@emp?.EmpleadoId" />
+                    <button type="submit" class="btn btn-outline-primary"
+                            title="Enviar historial por correo electrónico">
+                        <i class="bi bi-envelope"></i> Enviar por Email
+                    </button>
+                </form>
+            }
+            <a href="javascript:void(0)" class="btn btn-outline-danger long-action" data-loading-message="Generando PDF..." 
+               onclick="document.getElementById('formDescargarPDF').submit();"
+               title="Descargar historial en PDF">
+                <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+            </a>
+            <a href="javascript:void(0)" class="btn btn-outline-info long-action" data-loading-message="Generando Excel..." 
+               onclick="document.getElementById('formDescargarExcel').submit();"
+               title="Descargar historial en Excel">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Descargar Excel
+            </a>
         }
         <a asp-controller="Empleados" asp-action="Details"
                asp-route-id="@emp?.EmpleadoId"
@@ -34,6 +47,14 @@
         </a>
     </div>
 </div>
+
+<!-- Formularios ocultos -->
+<form asp-action="DescargarPDF" method="get" style="display:none;" id="formDescargarPDF">
+    <input type="hidden" name="empleadoId" value="@emp?.EmpleadoId" />
+</form>
+<form asp-action="DescargarExcel" method="get" style="display:none;" id="formDescargarExcel">
+    <input type="hidden" name="empleadoId" value="@emp?.EmpleadoId" />
+</form>
 
 @if (!Model.Any())
 {

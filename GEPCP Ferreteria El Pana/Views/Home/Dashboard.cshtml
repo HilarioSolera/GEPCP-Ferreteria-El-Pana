@@ -53,7 +53,7 @@
                         var dv = (dynamic)v;
                         <span style="background:#3d3d3d;color:#fff;border:1px solid #555;
                             border-radius:5px;padding:2px 8px;font-size:0.72rem;font-weight:600;">
-                            @dv.Nombre — @dv.Disponibles días disp. (vence en @dv.DiasParaFinPeriodo d)
+                            @dv.Nombre - @dv.Disponibles días disp. (vence en @dv.DiasParaFinPeriodo d)
                         </span>
                     }
                     @if (vacAlerta.Count > 6)
@@ -80,7 +80,7 @@
                     <i class="bi bi-unlock me-1"></i> Período activo
                 </div>
                 <div class="banner-detail">
-                    <strong>@periodoActivo.Descripcion</strong> —
+                    <strong>@periodoActivo.Descripcion</strong> -
                     @periodoActivo.FechaInicio.ToString("dd/MM/yyyy")
                     al @periodoActivo.FechaFin.ToString("dd/MM/yyyy")
                 </div>
@@ -245,7 +245,7 @@
                 <div class="kpi-body flex-column align-items-start p-3 pb-0">
                     <div class="kpi-label3 mb-3">
                         <i class="bi bi-bar-chart-line"></i>
-                        Neto pagado — últimos 6 períodos cerrados
+                        Neto pagado - últimos 6 períodos cerrados
                     </div>
                 </div>
                 @if (graficoLabels.Any())
@@ -353,7 +353,7 @@
                                     <td class="px-3 text-muted" style="font-size:0.75rem;">
                                         @puesto
                                     </td>
-                                    <td class="text-center px-3" title="@inicioPer.ToString("dd/MM/yyyy") — @finPer.ToString("dd/MM/yyyy")">@periodo</td>
+                                    <td class="text-center px-3" title="@inicioPer.ToString("dd/MM/yyyy") - @finPer.ToString("dd/MM/yyyy")">@periodo</td>
                                     <td class="text-center px-3">@base_</td>
                                     <td class="text-center px-3">@tomados</td>
                                     <td class="text-center px-3 fw-bold"
@@ -510,4 +510,12 @@
             });
         </script>
     }
-}
+
+    <script>
+        function cerrarPrograma() {
+            if (typeof cerrarProgramaGlobal === 'function') {
+                cerrarProgramaGlobal();
+            }
+        }
+    </script>
+    }

@@ -6,25 +6,44 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>GEPCP_Ferreteria_El_Pana</RootNamespace>
     <UserSecretsId>58db9786-3f80-4357-8804-bbc66d2b32b5</UserSecretsId>
+    <OutputType>WinExe</OutputType>
+    <ApplicationIcon>logo-el-pana-valid.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Properties\launchSettings.json" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="MailKit" Version="4.16.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.25" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.25" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.25">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.8" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.23" />
     <PackageReference Include="QuestPDF" Version="2026.2.3" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="wwwroot\images\logo-el-pana.jpg">
+    <Content Update="wwwroot\css\images\logo-el-pana.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Views\Shared\_layout.css">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>_layout.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 
 </Project>
