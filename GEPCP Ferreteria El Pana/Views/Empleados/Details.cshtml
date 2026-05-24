@@ -101,97 +101,48 @@ else if (Model.ContratoProximoAVencer)
     <div class="card-body p-4">
         <div class="row g-4">
 
-            @* Información Personal *@
+            @* Información Personal y General *@
             <div class="col-md-6">
                 <div class="card border-0 bg-light h-100">
                     <div class="card-body">
                         <h6 class="text-muted mb-3 fw-bold">
-                            <i class="bi bi-person"></i> Información Personal
+                            <i class="bi bi-person"></i> Información Personal y General
                         </h6>
                         <table class="table table-borderless mb-0">
                             <tbody>
-                                <tr>
-                                    <td class="fw-bold text-muted" style="width:45%">Cédula</td>
-                                    <td><strong>@Model.Cedula</strong></td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-bold text-muted">Nombre completo</td>
-                                    <td>@Model.PrimerApellido @Model.SegundoApellido @Model.Nombre</td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-bold text-muted">Fecha de Nacimiento</td>
-                                    <td>
-                                        @if (Model.FechaNacimiento.HasValue)
-                                        {
-                                            @Model.FechaNacimiento.Value.ToString("dd/MM/yyyy")
-                                            <span class="badge bg-secondary ms-1">@edadTexto</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-bold text-muted">Teléfono</td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(Model.Telefono))
-                                        {
-                                            <a href="tel:@Model.Telefono" class="text-decoration-none">
-                                                <i class="bi bi-phone"></i> @Model.Telefono
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-bold text-muted">Correo</td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(Model.CorreoElectronico))
-                                        {
-                                            <a href="mailto:@Model.CorreoElectronico" class="text-decoration-none">
-                                                <i class="bi bi-envelope"></i> @Model.CorreoElectronico
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-bold text-muted">Forma de Pago</td>
-                                    <td>
-                                        @if (Model.FormaPago == GEPCP_Ferreteria_El_Pana.Models.FormaPago.Transferencia)
-                                        {
-                                            <span class="badge bg-primary">
-                                                <i class="bi bi-bank"></i> Transferencia BN
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">
-                                                <i class="bi bi-cash"></i> Efectivo
-                                            </span>
-                                        }
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-bold text-muted">Cuenta BN</td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(Model.NumeroCuenta))
-                                        {
-                                            <code>@Model.NumeroCuenta</code>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                    </td>
-                                </tr>
+                                <tr><td class="fw-bold text-muted">Cédula</td><td><strong>@Model.Cedula</strong></td></tr>
+                                <tr><td class="fw-bold text-muted">Nombre completo</td><td>@Model.PrimerApellido @Model.SegundoApellido @Model.Nombre</td></tr>
+                                <tr><td class="fw-bold text-muted">Fecha de Nacimiento</td><td>@(Model.FechaNacimiento?.ToString("dd/MM/yyyy") ?? "—") <span class="badge bg-secondary ms-1">@edadTexto</span></td></tr>
+                                <tr><td class="fw-bold text-muted">Teléfono</td><td>@(string.IsNullOrEmpty(Model.Telefono) ? "—" : Model.Telefono)</td></tr>
+                                <tr><td class="fw-bold text-muted">Correo</td><td>@(string.IsNullOrEmpty(Model.CorreoElectronico) ? "—" : Model.CorreoElectronico)</td></tr>
+                                <tr><td class="fw-bold text-muted">Estado</td><td><span class="badge @(Model.Estado == "Activo" ? "bg-success" : "bg-secondary")">@Model.Estado</span></td></tr>
+                                <tr><td class="fw-bold text-muted">Departamento</td><td>@Model.Departamento</td></tr>
+                                <tr><td class="fw-bold text-muted">Puesto</td><td>@Model.Puesto</td></tr>
+                                <tr><td class="fw-bold text-muted">Jornada</td><td>@Model.TipoJornada</td></tr>
+                                <tr><td class="fw-bold text-muted">Tipo de Pago</td><td>@Model.DescripcionTipoPago</td></tr>
+                                <tr><td class="fw-bold text-muted">Forma de Pago</td><td>@Model.FormaPago</td></tr>
+                                <tr><td class="fw-bold text-muted">Banco</td><td>@(string.IsNullOrEmpty(Model.Banco) ? "—" : Model.Banco)</td></tr>
+                                <tr><td class="fw-bold text-muted">Cuenta Bancaria</td><td>@(string.IsNullOrEmpty(Model.NumeroCuenta) ? "—" : Model.NumeroCuenta)</td></tr>
+                                <tr><td class="fw-bold text-muted">Fecha de Ingreso</td><td>@Model.FechaIngreso.ToString("dd/MM/yyyy")</td></tr>
+                                <tr><td class="fw-bold text-muted">Antigüedad</td><td>@antiguedad</td></tr>
+                                <tr><td class="fw-bold text-muted">Tipo de Contrato</td><td>@tipoContratoTexto</td></tr>
+                                <tr><td class="fw-bold text-muted">Fecha Vencimiento Contrato</td><td>@(Model.FechaVencimientoContrato?.ToString("dd/MM/yyyy") ?? "—")</td></tr>
+                                <tr><td class="fw-bold text-muted">Salario Base</td><td>₡@Model.SalarioBase.ToString("N2")</td></tr>
+                                <tr><td class="fw-bold text-muted">Salario Diario</td><td>₡@Model.SalarioDiario.ToString("N2")</td></tr>
+                                <tr><td class="fw-bold text-muted">Valor Hora</td><td>₡@Model.ValorHora.ToString("N2")</td></tr>
+                                <tr><td class="fw-bold text-muted">Valor Hora Extra</td><td>₡@Model.ValorHoraExtra.ToString("N2")</td></tr>
+                                <tr><td class="fw-bold text-muted">Horas Mensuales</td><td>@Model.HorasMensuales</td></tr>
+                                <tr><td class="fw-bold text-muted">Horas Quincenales</td><td>@Model.HorasQuincenales</td></tr>
+                                <tr><td class="fw-bold text-muted">Barrio</td><td>@(string.IsNullOrEmpty(Model.DireccionBarrio) ? "—" : Model.DireccionBarrio)</td></tr>
+                                <tr><td class="fw-bold text-muted">Provincia</td><td>@(string.IsNullOrEmpty(Model.DireccionProvincia) ? "—" : Model.DireccionProvincia)</td></tr>
+                                <tr><td class="fw-bold text-muted">Cantón</td><td>@(string.IsNullOrEmpty(Model.DireccionCanton) ? "—" : Model.DireccionCanton)</td></tr>
+                                <tr><td class="fw-bold text-muted">Distrito</td><td>@(string.IsNullOrEmpty(Model.DireccionDistrito) ? "—" : Model.DireccionDistrito)</td></tr>
+                                <tr><td class="fw-bold text-muted">Dirección Exacta</td><td>@(string.IsNullOrEmpty(Model.DireccionExacta) ? "—" : Model.DireccionExacta)</td></tr>
+                                <tr><td class="fw-bold text-muted">Contacto Emergencia</td><td>@(string.IsNullOrEmpty(Model.ContactoEmergenciaNombre) ? "—" : Model.ContactoEmergenciaNombre)</td></tr>
+                                <tr><td class="fw-bold text-muted">Teléfono Emergencia</td><td>@(string.IsNullOrEmpty(Model.ContactoEmergenciaTelefono) ? "—" : Model.ContactoEmergenciaTelefono)</td></tr>
+                                <tr><td class="fw-bold text-muted">Relación Contacto Emergencia</td><td>@(string.IsNullOrEmpty(Model.RelacionContactoEmergencia) ? "—" : Model.RelacionContactoEmergencia)</td></tr>
+                                <tr><td class="fw-bold text-muted">Días Vacaciones Disponibles</td><td>@Model.DiasVacacionesDisponibles</td></tr>
+                                <tr><td class="fw-bold text-muted">Factor Cuota Préstamo</td><td>@Model.FactorCuotaPrestamo</td></tr>
                             </tbody>
                         </table>
                     </div>

@@ -31,8 +31,26 @@
   </head>
   <body class="bg-light">
 
-    @if (Context.Session.GetString("Usuario") != null)
-    {
+      <div id="alertaInternet" style="display:none;z-index:9999;position:fixed;top:0;left:0;width:100vw;" class="alert alert-danger text-center rounded-0 mb-0 py-2">
+          <i class="bi bi-wifi-off"></i> Problemas de conexión a internet: algunos elementos de la aplicación pueden no cargar correctamente.
+      </div>
+
+      <script>
+      function checkInternet() {
+          if (!navigator.onLine) {
+              document.getElementById('alertaInternet').style.display = 'block';
+          } else {
+              document.getElementById('alertaInternet').style.display = 'none';
+          }
+      }
+      window.addEventListener('online', checkInternet);
+      window.addEventListener('offline', checkInternet);
+      setInterval(checkInternet, 5000);
+      checkInternet();
+      </script>
+
+      @if (Context.Session.GetString("Usuario") != null)
+      {
     var usuario = Context.Session.GetString("Usuario");
     var rol = Context.Session.GetString("Rol");
     var ctrl = ViewContext.RouteData.Values["controller"]?.ToString()?.ToLower() ?? "";

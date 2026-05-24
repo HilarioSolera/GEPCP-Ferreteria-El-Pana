@@ -80,6 +80,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             Telefono = e.Telefono,
             CorreoElectronico = e.CorreoElectronico,
             NumeroCuenta = e.NumeroCuenta,
+            Banco = e.Banco,
             FormaPago = e.FormaPago,
             Estado = e.Activo ? "Activo" : "Inactivo",
             // Contrato
@@ -95,6 +96,7 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
             // Contacto emergencia
             ContactoEmergenciaNombre = e.ContactoEmergenciaNombre,
             ContactoEmergenciaTelefono = e.ContactoEmergenciaTelefono,
+            RelacionContactoEmergencia = e.RelacionContactoEmergencia,
             // ISR créditos fiscales
             NumHijos = e.NumHijos,
             TieneConyuge = e.TieneConyuge
@@ -332,6 +334,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                                             ? null : model.CorreoElectronico.Trim().ToLower(),
                     NumeroCuenta = string.IsNullOrWhiteSpace(model.NumeroCuenta)
                                             ? null : model.NumeroCuenta.Trim(),
+                    Banco = string.IsNullOrWhiteSpace(model.Banco)
+                                            ? null : model.Banco.Trim(),
                     FormaPago = model.FormaPago,
                     TipoContrato = model.TipoContrato,
                     FechaVencimientoContrato = model.TipoContrato == TipoContrato.Indefinido
@@ -350,6 +354,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                                             ? null : SanitizarTexto(model.ContactoEmergenciaNombre),
                     ContactoEmergenciaTelefono = string.IsNullOrWhiteSpace(model.ContactoEmergenciaTelefono)
                                             ? null : model.ContactoEmergenciaTelefono.Trim(),
+                    RelacionContactoEmergencia = string.IsNullOrWhiteSpace(model.RelacionContactoEmergencia)
+                                            ? null : model.RelacionContactoEmergencia.Trim(),
                     NumHijos = model.NumHijos,
                     TieneConyuge = model.TieneConyuge,
                     Activo = true
@@ -464,6 +470,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                                                       ? null : model.CorreoElectronico.Trim().ToLower();
                 empleado.NumeroCuenta = string.IsNullOrWhiteSpace(model.NumeroCuenta)
                                                       ? null : model.NumeroCuenta.Trim();
+                empleado.Banco = string.IsNullOrWhiteSpace(model.Banco)
+                                                      ? null : model.Banco.Trim();
                 empleado.FormaPago = model.FormaPago;
                 // Contrato
                 empleado.TipoContrato = model.TipoContrato;
@@ -485,6 +493,8 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                                                       ? null : SanitizarTexto(model.ContactoEmergenciaNombre);
                 empleado.ContactoEmergenciaTelefono = string.IsNullOrWhiteSpace(model.ContactoEmergenciaTelefono)
                                                       ? null : model.ContactoEmergenciaTelefono.Trim();
+                empleado.RelacionContactoEmergencia = string.IsNullOrWhiteSpace(model.RelacionContactoEmergencia)
+                                                      ? null : model.RelacionContactoEmergencia.Trim();
                 // ISR créditos fiscales
                 empleado.NumHijos = model.NumHijos;
                 empleado.TieneConyuge = model.TieneConyuge;

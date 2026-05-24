@@ -101,6 +101,10 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Teléfono de Emergencia")]
         public string? ContactoEmergenciaTelefono { get; set; }
 
+        [StringLength(100)]
+        [Display(Name = "Relación Contacto de Emergencia")]
+        public string? RelacionContactoEmergencia { get; set; }
+
         // Valor hora segun salario base y tipo de jornada
         [NotMapped]
         public int HorasMensuales => TipoJornada == TipoJornada.Completa ? 240 : 120;
@@ -163,9 +167,12 @@ namespace GEPCP_Ferreteria_El_Pana.Models
         [Display(Name = "Número de Cuenta SINPE/Banco")]
         public string? NumeroCuenta { get; set; }
 
+        [StringLength(100)]
+        [Display(Name = "Banco")]
+        public string? Banco { get; set; }
+
         [Required]
         [Display(Name = "Forma de Pago")]
-
         public FormaPago FormaPago { get; set; } = FormaPago.Transferencia;
         [Display(Name = "Fecha de Nacimiento")]
         [DataType(DataType.Date)]

@@ -131,18 +131,68 @@ function initDireccionCR(provinciaId, cantonId, distritoId, provinciaVal, canton
 
     selProv.addEventListener('change', function () {
         poblarCantones(this.value, null);
+        selDist.innerHTML = '<option value="">-- Seleccione distrito --</option>';
     });
 
     selCant.addEventListener('change', function () {
         poblarDistritos(selProv.value, this.value, null);
     });
 
+    selDist.addEventListener('change', function () {
+        // No-op, pero permite futuras validaciones si se requiere
+    });
+
     // Inicializar con valores existentes (para Edit)
-    if (provinciaVal) {
-        selProv.value = provinciaVal;   // selecciona la provincia en el dropdown
-        poblarCantones(provinciaVal, cantonVal);
-        if (cantonVal) {
-            poblarDistritos(provinciaVal, cantonVal, distritoVal);
+    // Inicialización robusta con reintentos para poblar cantón y distrito
+    function inicializarDireccion(reintentos) {
+        if (!provinciaVal) return;
+        function normalizar(str) {
+            return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+        }
+        // Seleccionar provincia
+        let provinciaEncontrada = false;
+        for (let i = 0; i < selProv.options.length; i++) {
+            if (normalizar(selProv.options[i].value) === normalizar(provinciaVal)) {
+                selProv.selectedIndex = i;
+                provinciaEncontrada = true;
+                break;
+            }
+        }
+        if (provinciaEncontrada) {
+            poblarCantones(selProv.value, cantonVal);
+            // Esperar a que los cantones estén cargados
+            setTimeout(function() {
+                let cantonEncontrado = false;
+                if (cantonVal) {
+                    for (let i = 0; i < selCant.options.length; i++) {
+                        if (normalizar(selCant.options[i].value) === normalizar(cantonVal)) {
+                            selCant.selectedIndex = i;
+                            cantonEncontrado = true;
+                            break;
+                        }
+                    }
+                }
+                if (cantonEncontrado) {
+                    poblarDistritos(selProv.value, selCant.value, distritoVal);
+                    setTimeout(function() {
+                        if (distritoVal) {
+                            for (let i = 0; i < selDist.options.length; i++) {
+                                if (normalizar(selDist.options[i].value) === normalizar(distritoVal)) {
+                                    selDist.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                    }, 100);
+                } else if (reintentos > 0) {
+                    // Si no se encuentra el cantón, reintentar
+                    setTimeout(function() { inicializarDireccion(reintentos - 1); }, 200);
+                }
+            }, 100);
+        } else if (reintentos > 0) {
+            // Si no se encuentra la provincia, reintentar
+            setTimeout(function() { inicializarDireccion(reintentos - 1); }, 200);
         }
     }
+    inicializarDireccion(10);
 }

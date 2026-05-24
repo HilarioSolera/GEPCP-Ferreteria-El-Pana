@@ -7,6 +7,45 @@ namespace GEPCP_Ferreteria_El_Pana.Models
 {
     public class EmpleadoViewModel
     {
+        // --- Bancos y relaciones para dropdowns ---
+        public static readonly List<string> ListaBancos = new()
+        {
+            // Bancos Públicos
+            "Banco Nacional de Costa Rica (BNCR)",
+            "Banco de Costa Rica (BCR)",
+            "Banco Popular y de Desarrollo Comunal (BPDC)",
+            // Bancos Privados
+            "Banco BAC San José S.A.",
+            "Banco BCT S.A.",
+            "Banco Cathay de Costa Rica S.A.",
+            "Banco CMB (Costa Rica)",
+            "Banco Davivienda (Costa Rica) S.A.",
+            "Banco General (Costa Rica) S.A.",
+            "Banco Improsa S.A.",
+            "Banco Lafise S.A.",
+            "Banco Promérica S.A.",
+            "DAVIBANK de Costa Rica S.A.",
+            // Otras entidades
+            "Cafsa", "Comeca", "MultiMoney", "Monge",
+            "Grupo Mutual Alajuela-La Vivienda", "Mutual Cartago",
+            "Coope-ANDE", "Coopecaja", "Coopemep", "COOCIQUE", "Coopealianza", "CREDECOOP", "COOPENAE", "San Marcos",
+            "Otro"
+        };
+        public static readonly List<string> ListaRelacionesContacto = new()
+        {
+            "Padre", "Madre", "Abuelo(a)", "Hermano(a)", "Hijo(a)", "Tío(a)", "Primo(a)",
+            "Padrastro / Madrastra", "Hijastro(a)", "Esposo(a)", "Novio(a) / Pareja", "Amigo(a)", "Vecino(a)",
+            "Compañero(a) de clase o trabajo", "Otro"
+        };
+
+        [StringLength(100)]
+        [Display(Name = "Banco")]
+        public string? Banco { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "Relación Contacto de Emergencia")]
+        public string? RelacionContactoEmergencia { get; set; }
+
         public int EmpleadoId { get; set; }
 
         [Required(ErrorMessage = "La cédula es obligatoria")]

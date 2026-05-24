@@ -206,6 +206,10 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                     b.Property<bool>("Activo")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Banco")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Cedula")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -279,6 +283,10 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
 
                     b.Property<string>("Puesto")
                         .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RelacionContactoEmergencia")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -942,7 +950,7 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                             PuestoId = 1,
                             Activo = true,
                             Codigo = "TOCG",
-                            Departamento = "",
+                            Departamento = "Recursos Humanos",
                             Nombre = "Encargada de RR.H.H.",
                             SalarioBase = 450000m
                         },
@@ -951,7 +959,7 @@ namespace GEPCP_Ferreteria_El_Pana.Migrations
                             PuestoId = 2,
                             Activo = true,
                             Codigo = "TOCG",
-                            Departamento = "",
+                            Departamento = "Ventas",
                             Nombre = "Vendedor",
                             SalarioBase = 380000m
                         });

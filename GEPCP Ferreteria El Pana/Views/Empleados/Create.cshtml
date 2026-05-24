@@ -261,7 +261,18 @@
                            maxlength="100" placeholder="Ej: María González (madre)" />
                     <span asp-validation-for="ContactoEmergenciaNombre" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
-
+                <div class="col-md-4">
+                    <label asp-for="RelacionContactoEmergencia" class="form-label fw-bold small">
+                        Relación con el Contacto
+                    </label>
+                    <select asp-for="RelacionContactoEmergencia" class="form-select form-select-sm">
+                        <option value="">-- Seleccione relación --</option>
+                        @foreach (var relacion in GEPCP_Ferreteria_El_Pana.Models.EmpleadoViewModel.ListaRelacionesContacto) {
+                            <option value="@relacion">@relacion</option>
+                        }
+                    </select>
+                    <span asp-validation-for="RelacionContactoEmergencia" class="text-danger" style="font-size: 0.7rem;"></span>
+                </div>
                 <div class="col-md-4">
                     <label asp-for="ContactoEmergenciaTelefono" class="form-label fw-bold small">
                         Teléfono del Contacto
@@ -310,7 +321,7 @@
                     <span asp-validation-for="FormaPago" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
-                <div class="col-md-3" id="divNumeroCuenta">
+                <div class="col-md-3" id="divNumeroCuenta" style="display:none;">
                     <label asp-for="NumeroCuenta" class="form-label fw-bold small">
                         <i class="bi bi-bank"></i> Número de Cuenta
                         <span class="text-muted fw-normal" style="font-size: 0.7rem;">(opcional)</span>
@@ -319,7 +330,19 @@
                            maxlength="30" placeholder="IBAN u otro formato" />
                     <span asp-validation-for="NumeroCuenta" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
-
+                <div class="col-md-3" id="divBanco" style="display:none;">
+                    <label asp-for="Banco" class="form-label fw-bold small">
+                        <i class="bi bi-building"></i> Banco
+                        <span class="text-muted fw-normal" style="font-size: 0.7rem;">(opcional)</span>
+                    </label>
+                    <select asp-for="Banco" class="form-select form-select-sm">
+                        <option value="">-- Seleccione banco --</option>
+                        @foreach (var banco in GEPCP_Ferreteria_El_Pana.Models.EmpleadoViewModel.ListaBancos) {
+                            <option value="@banco">@banco</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Banco" class="text-danger" style="font-size: 0.7rem;"></span>
+                </div>
             </div>
 
             <div class="mt-3 d-flex gap-2">
@@ -454,7 +477,9 @@
 
         function toggleCuenta() {
             var forma = parseInt(document.getElementById('selectFormaPago').value);
-            document.getElementById('divNumeroCuenta').style.display = forma === 1 ? 'block' : 'none';
+            var show = forma === 1;
+            document.getElementById('divNumeroCuenta').style.display = show ? 'block' : 'none';
+            document.getElementById('divBanco').style.display = show ? 'block' : 'none';
         }
         document.getElementById('selectFormaPago').addEventListener('change', toggleCuenta);
         toggleCuenta();
