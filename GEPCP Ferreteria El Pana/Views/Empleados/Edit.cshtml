@@ -198,16 +198,20 @@
 
                 <div class="col-md-3">
                     <label asp-for="DireccionProvincia" class="form-label fw-bold small">Provincia</label>
-                    <select asp-for="DireccionProvincia" class="form-select form-select-sm" id="selectProvincia">
-                        <option value="">-- Seleccione --</option>
-                        <option value="San José">San José</option>
-                        <option value="Alajuela">Alajuela</option>
-                        <option value="Cartago">Cartago</option>
-                        <option value="Heredia">Heredia</option>
-                        <option value="Guanacaste">Guanacaste</option>
-                        <option value="Puntarenas">Puntarenas</option>
-                        <option value="Limón">Limón</option>
-                    </select>
+                   <select asp-for="DireccionProvincia" 
+        class="form-select form-select-sm" 
+        id="selectProvincia"
+        data-init-canton="@(Model.DireccionCanton ?? "")"
+        data-init-distrito="@(Model.DireccionDistrito ?? "")">
+    <option value="">-- Seleccione --</option>
+    <option value="San José">San José</option>
+    <option value="Alajuela">Alajuela</option>
+    <option value="Cartago">Cartago</option>
+    <option value="Heredia">Heredia</option>
+    <option value="Guanacaste">Guanacaste</option>
+    <option value="Puntarenas">Puntarenas</option>
+    <option value="Limón">Limón</option>
+</select>
                     <span asp-validation-for="DireccionProvincia" class="text-danger" style="font-size: 0.7rem;"></span>
                 </div>
 
@@ -356,23 +360,33 @@
     }
     <script src="~/js/direccion-cr.js"></script>
     <script>
-        // ── Dirección cascada ─────────────────────────────────────────────────
-        setTimeout(function() {
-            const provincia = '@(Model.DireccionProvincia ?? "")';
-            const canton = '@(Model.DireccionCanton ?? "")';
-            const distrito = '@(Model.DireccionDistrito ?? "")';
-            console.log('Init dirección:', provincia, canton, distrito);
-            initDireccionCR('selectProvincia', 'selectCanton', 'selectDistrito', provincia, canton, distrito);
-        }, 100);
+        // ── Valores iniciales serializados correctamente (tildes y espaciales) ──
+        var _initProvincia = @Html.Raw(Json.Serialize(Model.DireccionProvincia ?? ""));
+        var _initCanton    = @Html.Raw(Json.Serialize(Model.DireccionCanton ?? ""));
+        var _initDistrito  = @Html.Raw(Json.Serialize(Model.DireccionDistrito ?? ""));
+
+        // ── Dirección cascada — sin setTimeout, directo en DOMContentLoaded ──
+      document.addEventListener('DOMContentLoaded', function () {
+    var selProv = document.getElementById('selectProvincia');
+    var initCanton   = selProv.getAttribute('data-init-canton');
+    var initDistrito = selProv.getAttribute('data-init-distrito');
+    var initProvincia = selProv.value; // ya viene preseleccionada por asp-for
+
+    initDireccionCR(
+        'selectProvincia', 'selectCanton', 'selectDistrito',
+        initProvincia, initCanton, initDistrito
+    );
+});
 
         // ── Cargar departamentos y cascada Departamento → Puesto ──────────────
-        var _initDept = '@(Model.Departamento ?? "")';
-        var _initPuesto = '@(Model.Puesto ?? "")';
+        var _initDept  = @Html.Raw(Json.Serialize(Model.Departamento ?? ""));
+        var _initPuesto = @Html.Raw(Json.Serialize(Model.Puesto ?? ""));
+
         (async function() {
-            var selDept = document.getElementById('selectDepartamento');
+            var selDept   = document.getElementById('selectDepartamento');
             var selPuesto = document.getElementById('selectPuesto');
             try {
-                var res = await fetch('/Empleados/ObtenerDepartamentos');
+                var res   = await fetch('/Empleados/ObtenerDepartamentos');
                 var deptos = await res.json();
                 deptos.forEach(function(d) {
                     var opt = document.createElement('option');
@@ -408,7 +422,7 @@
             });
 
             selPuesto.addEventListener('change', function() {
-                var opt = this.options[this.selectedIndex];
+                var opt  = this.options[this.selectedIndex];
                 var hint = document.getElementById('salarioHint');
                 if (opt && opt.dataset.salario) {
                     document.getElementById('inputSalario').value = opt.dataset.salario;
@@ -427,16 +441,16 @@
         async function consultarTSE() {
             var cedula = document.getElementById('Cedula').value.trim();
             var alerta = document.getElementById('alertaTSE');
-            var btn = document.getElementById('btnBuscarCedula');
+            var btn    = document.getElementById('btnBuscarCedula');
             if (cedula.length < 8) return;
             btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
-            btn.disabled = true;
+            btn.disabled  = true;
             try {
-                var res = await fetch('/Empleados/ConsultarCedulaTSE?cedula=' + encodeURIComponent(cedula));
+                var res  = await fetch('/Empleados/ConsultarCedulaTSE?cedula=' + encodeURIComponent(cedula));
                 var data = await res.json();
                 if (data.exito) {
                     var nombreCompleto = [data.nombre, data.nombre2].filter(Boolean).join(' ');
-                    document.getElementById('Nombre').value = nombreCompleto.trim();
+                    document.getElementById('Nombre').value         = nombreCompleto.trim();
                     document.getElementById('PrimerApellido').value = data.apellido1 || '';
                     document.getElementById('SegundoApellido').value = data.apellido2 || '';
                     alerta.className = 'mt-1 small text-success';
@@ -453,7 +467,7 @@
                 alerta.style.display = 'block';
             } finally {
                 btn.innerHTML = '<i class="bi bi-search"></i>';
-                btn.disabled = false;
+                btn.disabled  = false;
                 setTimeout(() => alerta.style.display = 'none', 5000);
             }
         }
@@ -472,22 +486,23 @@
         function calcularValorHora() {
             var salario = parseFloat(document.getElementById('inputSalario').value) || 0;
             var jornada = parseInt(document.getElementById('selectJornada').value);
-            var horas = jornada === 1 ? 240 : 120;
-            var vHora = salario > 0 ? (salario / horas) : 0;
-            var vExtra = vHora * 1.5;
-            var ref = document.getElementById('valorHoraRef');
+            var horas   = jornada === 1 ? 240 : 120;
+            var vHora   = salario > 0 ? (salario / horas) : 0;
+            var vExtra  = vHora * 1.5;
+            var ref     = document.getElementById('valorHoraRef');
             ref.innerHTML = vHora > 0
                 ? '₡' + vHora.toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
-                ' <small class="text-muted fw-normal">(extra: ₡' +
-                vExtra.toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ')</small>'
+                  ' <small class="text-muted fw-normal">(extra: ₡' +
+                  vExtra.toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ')</small>'
                 : '—';
         }
 
+        // ── Forma de pago → mostrar cuenta / banco ────────────────────────────
         function toggleCuenta() {
             var forma = parseInt(document.getElementById('selectFormaPago').value);
-            var show = forma === 1;
+            var show  = forma === 1;
             document.getElementById('divNumeroCuenta').style.display = show ? 'block' : 'none';
-            document.getElementById('divBanco').style.display = show ? 'block' : 'none';
+            document.getElementById('divBanco').style.display        = show ? 'block' : 'none';
         }
         document.getElementById('selectFormaPago').addEventListener('change', toggleCuenta);
         toggleCuenta();
