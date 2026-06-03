@@ -15,6 +15,25 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include=".github\00_COMIENZA_AQUI.md" />
+    <None Include=".github\ARCHITECTURE.md" />
+    <None Include=".github\CHANGELOG.md" />
+    <None Include=".github\CODEOWNERS" />
+    <None Include=".github\CONTRIBUTING.md" />
+    <None Include=".github\DOCUMENTATION_SUMMARY.md" />
+    <None Include=".github\FAQ.md" />
+    <None Include=".github\FEATURES.md" />
+    <None Include=".github\INDEX.md" />
+    <None Include=".github\INSTALLATION.md" />
+    <None Include=".github\ISSUE_TEMPLATE\bug_report.md" />
+    <None Include=".github\ISSUE_TEMPLATE\feature_request.md" />
+    <None Include=".github\PULL_REQUEST_TEMPLATE.md" />
+    <None Include=".github\README_ES.md" />
+    <None Include=".github\RESUMEN_FINAL.md" />
+    <None Include=".github\SECURITY.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="MailKit" Version="4.16.0" />

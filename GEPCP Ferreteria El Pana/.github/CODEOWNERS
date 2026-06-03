@@ -1,0 +1,48 @@
+# Code Owners
+
+# This file defines the responsibility and review requirements for different parts of the codebase.
+# When a pull request is created, owners are automatically requested as reviewers.
+
+# Default owners for any file not explicitly listed below
+* @HilarioSolera
+
+# Core Application
+/GEPCP\ Ferreteria\ El\ Pana/Program.cs @HilarioSolera
+/GEPCP\ Ferreteria\ El\ Pana/appsettings.json @HilarioSolera
+
+# Controllers
+/GEPCP\ Ferreteria\ El\ Pana/Controllers/ @HilarioSolera
+
+# Data & Database
+/GEPCP\ Ferreteria\ El\ Pana/Data/ @HilarioSolera
+/GEPCP\ Ferreteria\ El\ Pana/Migrations/ @HilarioSolera
+
+# Models
+/GEPCP\ Ferreteria\ El\ Pana/Models/ @HilarioSolera
+
+# Services (Security-sensitive)
+/GEPCP\ Ferreteria\ El\ Pana/Services/AuthService.cs @HilarioSolera
+/GEPCP\ Ferreteria\ El\ Pana/Services/EmailService.cs @HilarioSolera
+/GEPCP\ Ferreteria\ El\ Pana/Services/ @HilarioSolera
+
+# Security & Filters
+/GEPCP\ Ferreteria\ El\ Pana/Filters/ @HilarioSolera
+
+# Helpers & Utilities
+/GEPCP\ Ferreteria\ El\ Pana/Helpers/ @HilarioSolera
+
+# Views
+/GEPCP\ Ferreteria\ El\ Pana/Views/ @HilarioSolera
+
+# Static Files
+/GEPCP\ Ferreteria\ El\ Pana/wwwroot/css/ @HilarioSolera
+/GEPCP\ Ferreteria\ El\ Pana/wwwroot/js/ @HilarioSolera
+/GEPCP\ Ferreteria\ El\ Pana/wwwroot/images/ @HilarioSolera
+
+# Project Configuration
+*.csproj @HilarioSolera
+*.sln @HilarioSolera
+
+# Documentation
+/.github/ @HilarioSolera
+/README.md @HilarioSolera
