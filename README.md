@@ -1,233 +1,252 @@
-# GEPCP Ferretería El Pana - Versión Limpia
+# GEPCP Ferretería El Pana - Human Resources & Payroll Management System
 
-## 📋 Descripción
-Sistema de gestión de planilla y recursos humanos para Ferretería El Pana.
+A comprehensive enterprise-grade payroll and human resources management system built with .NET 8 for Ferretería El Pana. This project demonstrates full-stack web development with role-based access control, automated payroll calculations, PDF report generation, and secure data management.
 
-## ✅ Estado del Proyecto
-**VERSIÓN LIMPIA Y FUNCIONAL** - Todos los archivos innecesarios han sido removidos.
+## 🎯 Overview
 
-## 🚀 Instalación
+**GEPCP** (Gestión de Empleados y Cálculo de Planilla) is a production-ready web application designed to streamline HR and payroll operations. It provides comprehensive employee management, automated biweekly/monthly payroll calculations, vacation tracking, loans administration, and compliance reporting with secure authentication and audit trails.
 
-### Ejecutar el instalador
-1. Ubicar el archivo: `Instalador\Setup_GEPCP_FerreteriaElPana.exe`
-2. Ejecutar como Administrador
-3. Seguir el asistente de instalación
-4. La aplicación se iniciará automáticamente con Windows
+## ✨ Key Features
 
-### Acceso al Sistema
-- **URL local**: http://localhost:5002
-- **Puerto**: 5002 (fijo)
-- **Acceso directo**: Se crea automáticamente en el escritorio
+### Employee Management
+- Complete CRUD operations for employee records
+- Personal and occupational information tracking
+- Automatic salary and deduction calculations
+- Multiple payment methods support (cash, bank transfer)
+- Emergency contact management
+- Department and position assignment
 
-## 👥 Usuarios Predeterminados
+### Payroll Processing
+- Automated biweekly/monthly payroll calculations
+- Configurable deduction calculations (CCSS, income tax, union fees)
+- Multi-step approval workflow with role-based authorization
+- PDF receipt generation for employee records
+- Excel export for accounting integration
+- Clear segregation between earnings and deductions
 
-### Usuario RRHH
-- **Usuario**: admin.rrhh
-- **Contraseña**: Pana2024
-- **Rol**: Recursos Humanos (puede gestionar empleados, planillas, deducciones)
+### Additional Modules
+- **Vacation Management** - Paid vacation tracking and accrual calculations
+- **Christmas Bonus (Aguinaldo)** - Automatic calculation and distribution
+- **Overtime Management** - Normal and double-time hour tracking
+- **Incapacity Management** - Sick leave and incapacity record tracking
+- **Loan Administration** - Employee loan tracking and repayment scheduling
+- **User Management** - Role-based access control with multi-user support
 
-### Usuario Jefatura
-- **Usuario**: jefatura
-- **Contraseña**: Pana2024
-- **Rol**: Jefatura (puede aprobar y consultar)
+## 🔒 Security Features
+- Session-based authentication with secure password management
+- BCrypt password hashing
+- Role-based authorization filters (HR, Management)
+- Comprehensive audit logging of all operations
+- Secure configuration management for sensitive data
 
-## 📁 Estructura del Proyecto
+## 💻 Technical Stack
+
+### Backend
+- **.NET 8.0** - Modern cross-platform framework
+- **ASP.NET Core MVC** - Server-side rendering with Razor Pages
+- **Entity Framework Core** - Object-relational mapping
+- **SQLite** - Lightweight, serverless database
+
+### Data & Reporting
+- **QuestPDF** - Professional PDF generation
+- **ClosedXML** - Excel export functionality
+- **MailKit/MimeKit** - Email integration for payroll distribution
+
+### Frontend
+- **Bootstrap 5** - Responsive UI framework
+- **Chart.js** - Interactive data visualization
+- **JavaScript** - Client-side form handling and validation
+
+### DevOps & Deployment
+- **Inno Setup** - Windows installer creation
+- **Entity Framework Migrations** - Database versioning
+- **Automated deployment** - Application auto-start configuration
+
+## 🏗️ Project Architecture
 
 ```
 GEPCP Ferreteria El Pana/
-├── Controllers/          # Controladores MVC
-├── Data/                # Contexto de base de datos
-├── Filters/             # Filtros de autorización
-├── Helpers/             # Utilidades y helpers
-├── Migrations/          # Migraciones de Entity Framework
-├── Models/              # Modelos de datos
-├── Services/            # Servicios (Auth, PDF, Email, Auditoría)
-├── Views/               # Vistas Razor
-│   ├── Account/         # Login, recuperación
-│   ├── Aguinaldo/       # Gestión de aguinaldos
-│   ├── Empleados/       # CRUD de empleados
-│   ├── HorasExtras/     # Registro de horas extras
-│   ├── Incapacidades/   # Gestión de incapacidades
-│   ├── Planilla/        # Cálculo y generación de planillas
-│   ├── Splash/          # Página de carga inicial
-│   ├── Usuarios/        # Gestión de usuarios
-│   └── Vacaciones/      # Gestión de vacaciones
-├── wwwroot/             # Archivos estáticos (CSS, JS, imágenes)
-├── Program.cs           # Punto de entrada de la aplicación
-└── appsettings.json     # Configuración
-
-Instalador/
-└── Setup_GEPCP_FerreteriaElPana.exe  # Instalador generado
+├── Controllers/          # MVC controllers (7+ action handlers)
+├── Data/                # Entity Framework DbContext
+├── Filters/             # Custom authorization filters
+├── Helpers/             # Utility functions
+├── Migrations/          # Database schema versioning
+├── Models/              # Domain and view models
+├── Services/            # Business logic (Auth, PDF, Email, Audit)
+├── Views/               # Razor templates
+│   ├── Account/         # Authentication pages
+│   ├── Empleados/       # Employee management
+│   ├── Planilla/        # Payroll processing
+│   ├── Aguinaldo/       # Christmas bonus
+│   ├── Vacaciones/      # Vacation management
+│   ├── HorasExtras/     # Overtime tracking
+│   ├── Incapacidades/   # Incapacity management
+│   ├── Prestamos/       # Loan administration
+│   ├── Usuarios/        # User management
+│   └── Shared/          # Layout and partials
+├── wwwroot/             # Static assets (CSS, JS, images)
+├── Program.cs           # Application entry point
+└── appsettings.json     # Configuration settings
 ```
 
-## 🔧 Tecnologías Utilizadas
-- **.NET 8.0** - Framework principal
-- **ASP.NET Core MVC** - Patrón de diseño
-- **Entity Framework Core** - ORM
-- **SQLite** - Base de datos
-- **BCrypt.Net** - Encriptación de contraseñas
-- **QuestPDF** - Generación de PDFs
-- **ClosedXML** - Exportación a Excel
-- **Inno Setup** - Empaquetado del instalador
+## 🚀 Quick Start
 
-## 📦 Paquetes NuGet
-```xml
-<PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
-<PackageReference Include="ClosedXML" Version="0.105.0" />
-<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.25" />
-<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.25" />
-<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.25" />
-<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.8" />
-<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.23" />
-<PackageReference Include="QuestPDF" Version="2026.2.3" />
-```
+### Prerequisites
+- Windows 10+ or Linux with .NET 8 runtime
+- Visual Studio 2022 or VS Code (for development)
+- .NET SDK 8.0+
 
-## 🎯 Funcionalidades Principales
+### Installation & Running
 
-### Módulo de Empleados
-- Alta, baja y modificación de empleados
-- Registro de información personal y laboral
-- Cálculo automático de salarios y deducciones
+#### Option 1: Windows Installer (Recommended)
+1. Locate `Setup_GEPCP_FerreteriaElPana.exe` in the `Instalador/` folder
+2. Run as Administrator
+3. Follow the installation wizard
+4. Application launches automatically on first run and at system startup
 
-### Módulo de Planilla
-- Cálculo automático de planilla quincenal/mensual
-- Cálculo de deducciones (CCSS, impuesto renta, asociación)
-- Generación de comprobantes en PDF
-- Exportación a Excel
-- **Separación visual entre Devengados y Deducciones**
-
-### Módulo de Vacaciones
-- **Las vacaciones son siempre pagadas** (no afectan la planilla actual)
-- Registro y seguimiento de vacaciones
-- Cálculo de días disponibles
-
-### Módulo de Aguinaldo
-- Cálculo automático de aguinaldo
-- Generación de comprobantes
-
-### Módulo de Horas Extras
-- Registro de horas extras normales y dobles
-- Cálculo automático de montos
-
-### Módulo de Incapacidades
-- Registro de incapacidades
-- Cálculo de días y montos
-
-### Módulo de Usuarios
-- Gestión de usuarios del sistema
-- Roles: RRHH y Jefatura
-- Recuperación de contraseñas
-
-## 🔐 Seguridad
-- Autenticación mediante sesiones
-- Contraseñas encriptadas con BCrypt
-- Filtros de autorización por rol
-- Auditoría de acciones
-
-## 📊 Reportes
-- Comprobantes de planilla en PDF
-- Comprobantes de aguinaldo en PDF
-- Exportación de planillas a Excel
-- Reportes con firmas digitales
-
-## 🛠️ Desarrollo
-
-### Compilar el proyecto
+#### Option 2: Direct Execution
 ```powershell
 cd "GEPCP Ferreteria El Pana"
 dotnet build -c Release
+dotnet run --configuration Release
 ```
 
-### Publicar
-```powershell
-dotnet publish -c Release -o publish
-```
+The application will start at `http://localhost:5002`
 
-### Crear instalador
-1. Asegurarse de tener Inno Setup 6 instalado
-2. Ejecutar:
-```powershell
-cd Instalador
-& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
-```
+### Default Credentials
 
-## 🔄 Funcionamiento
+| Role | Username | Password | Permissions |
+|------|----------|----------|-------------|
+| HR | admin.rrhh | Pana2024 | Employee management, payroll calculation, deductions |
+| Management | jefatura | Pana2024 | Approval workflow, reporting, consultation |
 
-### Al instalar
-1. El instalador crea la carpeta en `Program Files`
-2. Configura el inicio automático con Windows
-3. Crea accesos directos
-4. Inicia la aplicación
+## ⚙️ Configuration
 
-### Al ejecutar
-1. La aplicación se inicia en segundo plano (WinExe)
-2. Abre automáticamente el navegador en http://localhost:5002
-3. Muestra una página de carga (Splash)
-4. Redirige al login después de 3 segundos
+### Application Settings (`appsettings.json`)
 
-### Al usar
-1. Iniciar sesión con usuario y contraseña
-2. Navegar por los módulos según el rol
-3. Realizar operaciones (registros, cálculos, reportes)
-4. El sistema guarda todo en SQLite
-
-## 📝 Base de Datos
-- **Motor**: SQLite
-- **Ubicación**: `%LOCALAPPDATA%\GEPCP Ferreteria El Pana\Database\ferreteria.db`
-- **Migraciones**: Automáticas al iniciar
-- **Seed**: Usuarios predeterminados se crean automáticamente
-
-## ⚙️ Configuración
-
-### appsettings.json
+**Database:**
 ```json
 {
   "ConnectionStrings": {
 	"DefaultConnection": "Data Source=%LOCALAPPDATA%\\GEPCP Ferreteria El Pana\\Database\\ferreteria.db"
-  },
+  }
+}
+```
+
+**Business Rules:**
+```json
+{
   "ReglasNegocio": {
 	"PorcentajeCCSS": 10.67,
 	"PorcentajeAsociacion": 3.0,
-	"PorcentajeOtrasDeducciones": 0.0,
 	"HorasExtrasDobleMultiplicador": 2.0
-  },
+  }
+}
+```
+
+**Email Integration:**
+```json
+{
   "Smtp": {
 	"Host": "smtp.gmail.com",
 	"Port": 587,
-	"Username": "",
-	"Password": "",
+	"Username": "your-email@gmail.com",
+	"Password": "your-app-password",
 	"EnableSsl": true
   }
 }
 ```
 
-## 🧹 Limpieza Realizada
+## 📊 Reporting & Exports
 
-### Archivos/Carpetas Eliminados
-- ✅ `bin/` y `obj/` - Archivos de compilación
-- ✅ `publish/` - Publicaciones anteriores
-- ✅ `temp/` - Archivos temporales
-- ✅ `TestHashes/` - Archivos de prueba
-- ✅ `Instalador/` anteriores - Instaladores viejos
-- ✅ `Launcher/` - Lanzador obsoleto
-- ✅ Archivos `.log`, `.tmp`, `.bak`
-- ✅ Referencias a carpetas inexistentes en `.csproj`
+- **Payroll Receipts** - PDF generation for employee verification
+- **Aguinaldo Reports** - Christmas bonus statements
+- **Excel Exports** - Batch payroll data for accounting systems
+- **Digital Signatures** - PDF receipt authentication
 
-### Proyecto Limpio
-- ✅ Compila sin errores
-- ✅ Solo advertencias menores de nullability
-- ✅ Todos los controladores funcionales
-- ✅ Todas las vistas operativas
-- ✅ Base de datos inicializable
-- ✅ Instalador generado correctamente
+## 🔄 Workflow
 
-## 📄 Licencia
-Proyecto privado de Ferretería El Pana.
+1. **Employee Registration** → Add employee with personal, occupational, and payment information
+2. **Payroll Period Setup** → Define calculation dates and parameters
+3. **Data Entry** → Record overtime, incapacities, and manual adjustments
+4. **Calculation** → System automatically computes gross pay, deductions, and net salary
+5. **Review & Approval** → Management reviews and approves payroll
+6. **Distribution** → Generate PDF receipts or export to Excel
+7. **Email Delivery** → Send payroll receipts to employees (optional)
 
-## 📧 Soporte
-Para soporte técnico, contactar al administrador del sistema.
+## 📈 Development Workflow
+
+### Build Project
+```powershell
+cd "GEPCP Ferreteria El Pana"
+dotnet build -c Release
+```
+
+### Run Tests
+```powershell
+dotnet test
+```
+
+### Create Database Migrations
+```powershell
+dotnet ef migrations add DescriptiveName
+dotnet ef database update
+```
+
+### Generate Windows Installer
+1. Ensure Inno Setup 6 is installed
+2. Run: `& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" Instalador\installer.iss`
+3. Installer output: `Instalador\Setup_GEPCP_FerreteriaElPana.exe`
+
+## 💾 Database
+
+**Engine:** SQLite  
+**Location:** `%LOCALAPPDATA%\GEPCP Ferreteria El Pana\Database\ferreteria.db`  
+**Migrations:** Automatic on application startup  
+**Seeding:** Default users created automatically  
+
+## 🔐 Production Considerations
+
+- Configure real SMTP credentials for email notifications
+- Use strong, unique passwords for production user accounts
+- Enable Windows Firewall rules if accessing remotely
+- Implement regular database backups
+- Monitor audit logs for compliance and security
+- Consider TLS/SSL configuration for multi-user environments
+
+## 📦 NuGet Dependencies
+
+```
+BCrypt.Net-Next (4.1.0) - Password hashing
+ClosedXML (0.105.0) - Excel generation
+EntityFrameworkCore.Sqlite (8.0.25) - Database ORM
+QuestPDF (2026.2.3) - PDF generation
+MailKit (4.x) - Email functionality
+```
+
+## 🎓 Learning Outcomes & Skills Demonstrated
+
+This project showcases expertise in:
+- **.NET 8 & ASP.NET Core** - Modern web framework fundamentals
+- **Clean Architecture** - Separation of concerns with controllers, services, and models
+- **Database Design** - Relational schema with Entity Framework migrations
+- **Security** - Authentication, authorization, password hashing, and audit trails
+- **PDF/Excel Generation** - Document generation and export functionality
+- **Responsive Web Design** - Bootstrap-based UI with accessibility considerations
+- **Business Logic** - Complex payroll calculations with tax and deduction handling
+- **Deployment** - Windows installer creation and application lifecycle management
+
+## 📄 License
+
+Private project for Ferretería El Pana.
+
+## 📞 Contact & Support
+
+For technical inquiries or support: [Contact information]
 
 ---
-**Versión**: 1.0  
-**Fecha**: 2025  
-**Estado**: ✅ FUNCIONAL Y LISTO PARA PRODUCCIÓN
+
+**Version:** 1.0  
+**Status:** ✅ Production Ready  
+**Last Updated:** 2025  
+**Developer:** Solera
