@@ -954,10 +954,10 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                                 table.ColumnsDefinition(c =>
                                 {
                                     c.RelativeColumn(2.5f); // Periodo
-                                    c.RelativeColumn(1.2f); // Devengado
-                                    c.RelativeColumn(1.2f); // CCSS
-                                    c.RelativeColumn(1.2f); // ISR
-                                    c.RelativeColumn(1.2f); // Deducciones
+                                    c.RelativeColumn(1.2f); // Monto devengado
+                                    c.RelativeColumn(1.2f); // Monto CCSS
+                                    c.RelativeColumn(1.2f); // Monto ISR
+                                    c.RelativeColumn(1.2f); // Otras deducciones
                                     c.RelativeColumn(1.2f); // Neto
                                 });
                                 EncabezadoTabla(table, naranja, "Período", "Devengado", "CCSS", "ISR", "Deducciones", "Neto");

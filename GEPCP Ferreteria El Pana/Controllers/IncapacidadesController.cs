@@ -308,17 +308,17 @@ namespace GEPCP_Ferreteria_El_Pana.Controllers
                         }
                         else
                         {
+                            // Para otros casos, usar el porcentaje seleccionado por el usuario
                             registro.DiasPagadosPatrono = Math.Min(registro.TotalDias, 3);
-                            registro.PorcentajePago = 50;
-                            registro.MontoPorDia = Math.Round(salarioDiario * 0.50m, 2);
+                            registro.MontoPorDia = Math.Round(salarioDiario * (registro.PorcentajePago / 100m), 2);
                             registro.MontoTotal = Math.Round(registro.MontoPorDia * registro.DiasPagadosPatrono, 2);
                         }
                     }
                     else
                     {
+                        // INS: usar el porcentaje seleccionado por el usuario
                         registro.DiasPagadosPatrono = 0;
-                        registro.PorcentajePago = 60;
-                        registro.MontoPorDia = Math.Round(salarioDiario * 0.60m, 2);
+                        registro.MontoPorDia = Math.Round(salarioDiario * (registro.PorcentajePago / 100m), 2);
                         registro.MontoTotal = 0;
                         registro.ResponsablePago = ResponsablePago.INS;
                     }

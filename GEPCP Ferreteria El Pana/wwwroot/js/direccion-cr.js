@@ -1,4 +1,3 @@
-// División territorial de Costa Rica: Provincia → Cantón → Distritos
 const divisionCR = {
     "San José": {
         "San José": ["Carmen", "Merced", "Hospital", "Catedral", "Zapote", "San Francisco de Dos Ríos", "Uruca", "Mata Redonda", "Pavas", "Hatillo", "San Sebastián"],
